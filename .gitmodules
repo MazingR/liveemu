@@ -13,3 +13,6 @@
 [submodule "src/externals/qt"]
 	path = src/externals/qt
 	url = https://github.com/qtproject/qtbase.git
+[submodule "src/externals/emulators/yabause"]
+	path = src/externals/emulators/yabause
+	url = https://github.com/Yabause/yabause.git
