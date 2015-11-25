@@ -1,0 +1,9 @@
+[submodule "src/externals/emulators/mame"]
+	path = src/externals/emulators/mame
+	url = https://github.com/mamedev/mame.git
+[submodule "src/externals/emulators/demul"]
+	path = src/externals/emulators/demul
+	url = https://github.com/vgturtle127/demul.git
+[submodule "src/externals/emulators/dolphin"]
+	path = src/externals/emulators/dolphin
+	url = https://github.com/dolphin-emu/dolphin.git
