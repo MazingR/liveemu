@@ -7,3 +7,6 @@
 [submodule "src/externals/emulators/dolphin"]
 	path = src/externals/emulators/dolphin
 	url = https://github.com/dolphin-emu/dolphin.git
+[submodule "src/externals/sdl"]
+	path = src/externals/sdl
+	url = https://github.com/spurious/SDL-mirror.git
