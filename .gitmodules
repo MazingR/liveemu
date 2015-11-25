@@ -10,3 +10,6 @@
 [submodule "src/externals/sdl"]
 	path = src/externals/sdl
 	url = https://github.com/spurious/SDL-mirror.git
+[submodule "src/externals/qt"]
+	path = src/externals/qt
+	url = https://github.com/qtproject/qtbase.git
