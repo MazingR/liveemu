@@ -1,9 +1,12 @@
-#include <iostream>
-#include <string>
-#include <SDL.h>
+#include <SDKDDKVer.h>
+#include <stdio.h>
+#include <tchar.h>
+
+#define SDL_MAIN_HANDLED
 #include "respath.hpp"
 
-int main(int argc, char **argv){
+int _tmain(int argc, _TCHAR* argv[])
+{
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
 		std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
 		return 1;
@@ -46,7 +49,8 @@ int main(int argc, char **argv){
 	}
 
 	//A sleepy rendering loop, wait for 3 seconds and render and present the screen each time
-	for (int i = 0; i < 3; ++i){
+	while (true)
+	{
 		//First clear the renderer
 		SDL_RenderClear(ren);
 		//Draw the texture

@@ -4,18 +4,8 @@
 #include <string>
 #include <SDL.h>
 
-/*
-* Get the resource path for resources located in res/subDir
-* It's assumed the project directory is structured like:
-* bin/
-*  the executable
-* res/
-*  Lesson1/
-*  Lesson2/
-*
-* Paths returned will be Lessons/res/subDir
-*/
-std::string getResourcePath(const std::string &subDir = ""){
+std::string getResourcePath(const std::string &subDir = "")
+{
 	//We need to choose the path separator properly based on which
 	//platform we're running on, since Windows uses a different
 	//separator than most systems
@@ -41,7 +31,7 @@ std::string getResourcePath(const std::string &subDir = ""){
 		}
 		//We replace the last bin/ with res/ to get the the resource path
 		size_t pos = baseRes.rfind("bin");
-		baseRes = baseRes.substr(0, pos) + ".." + PATH_SEP + "data" + PATH_SEP;
+		baseRes = baseRes.substr(0, pos) + ".." + PATH_SEP + ".." + PATH_SEP + "data" + PATH_SEP;
 	}
 	//If we want a specific subdirectory path in the resource directory
 	//append it to the base path. This would be something like Lessons/res/Lesson0
