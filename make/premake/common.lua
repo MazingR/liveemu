@@ -192,8 +192,8 @@ groups =
 				c_src_root.."**/psp/**",
 				c_src_root.."**/pthread/**",
 				c_src_root.."**/stdcpp/**",
-				c_src_root.."**/dummy/**",
-				c_src_root.."**/bootstrap/**",
+				-- c_src_root.."**/dummy/**",
+				-- c_src_root.."**/bootstrap/**",
 				c_src_root.."**/android/**",
 			},
 			links = { "winmm.lib", "imm32.lib", "version.lib" },
@@ -212,6 +212,12 @@ groups =
 			{
 				c_src_root.."programs/frontend/**.hpp",
 				c_src_root.."programs/frontend/**.cpp",
+				
+				c_src_root.."modules/**.hpp",
+				c_src_root.."modules/**.cpp",
+				
+				c_src_root.."modules/**.h",
+				c_src_root.."modules/**.c",
 			},
 			includedirs = { c_src_root.."programs/frontend" },
 			defines = nil,
