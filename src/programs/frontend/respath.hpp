@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <string>
+
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 
 std::string getResourcePath(const std::string &subDir = "")

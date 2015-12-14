@@ -1,158 +1,100 @@
-#include <SDKDDKVer.h>
-#include <stdio.h>
-#include <tchar.h>
+#include <common/common.hpp>
+#include <rendering/module.hpp>
+#include <ui/module.hpp>
 
-#define SDL_MAIN_HANDLED
+
+#include <SDL_syswm.h>
 #include "respath.hpp"
 
-typedef unsigned int uint32;
+//#include <../src/video/SDL_sysvideo.h>
 
-namespace EFEReturnCode
-{
-	enum Type
-	{
-		Success = 0,
-		Failed
-	};
-};
+//C:\Work\Internal\git_liveemu\src\externals\sdl\src\video\SDL_sysvideo.h
 
-
-
-#define FEFAILED(a) (a!=EFEReturnCode::Success)
-#define FEFAILEDRETURN(a) { uint32 ___iResult = (a); { if FEFAILED(___iResult) return ___iResult; } }
-#define FELOG(fmt, ...) SDL_Log(fmt, __VA_ARGS__)
-
-class FEModule
+struct FeApplicationInit
 {
 public:
-	virtual uint32 Load() = 0;
-	virtual uint32 Unload() = 0;
-	virtual uint32 Update() = 0;
+	HINSTANCE	WindowsInstance;
+	HINSTANCE	WindowsPrevInstance;
+	wchar_t*	WindowsCmdLine;
+	int			WindowsCmdShow;
 };
-
-class FEApplication
+class FeApplication
 {
 private:
-	static const uint32 c_iMaxModules = 16;
-	uint32 m_iLoadedModules;
-	FEModule* m_modules[c_iMaxModules];
+
+	static const uint32 MaxModules = 16;
+	uint32				LoadedModules;
+
+	FeCommon::FeModule* Modules[MaxModules];
 public:
-	uint32 Load();
+	uint32 Load(const FeApplicationInit&);
 	uint32 Unload();
 	uint32 Run();
 };
 
-class FEModuleRenderer : public FEModule
+uint32 FeApplication::Load(const FeApplicationInit& appInit)
 {
-public:
-	virtual uint32 Load() override;
-	virtual uint32 Unload() override;
-	virtual uint32 Update() override;
+	memset(Modules, 0, MaxModules*sizeof( void*));
+	LoadedModules = 0;
 
-private:
-	SDL_Window* win;
-	SDL_Renderer* ren;
-	SDL_Texture* tex;
-};
-uint32 FEModuleRenderer::Unload()
-{
-	SDL_DestroyTexture(tex);
-	SDL_DestroyRenderer(ren);
-	SDL_DestroyWindow(win);
-	SDL_Quit();
-
-	return EFEReturnCode::Success;
-}
-uint32 FEModuleRenderer::Load()
-{
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
 		std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
-		return EFEReturnCode::Failed;
+		return EFeReturnCode::Failed;
 	}
-	FELOG("Resource path is: %s", getResourcePath());
+	FE_LOG("Resource path is: %s", getResourcePath());
 
-	win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
-	if (win == nullptr)
-	{
-		FELOG("SDL_CreateWindow Error: %s",SDL_GetError());
-		SDL_Quit();
-		return EFEReturnCode::Failed;
-	}
+	char szWindowName[512] = "Hello World!";
 
-	ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (ren == nullptr){
-		SDL_DestroyWindow(win);
-		FELOG("SDL_CreateRenderer Error: %s", SDL_GetError());
-		SDL_Quit();
-		return EFEReturnCode::Failed;
-	}
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version)
 
-	std::string imagePath = getResourcePath("Lesson1") + "lena512.bmp";
-	SDL_Surface *bmp = SDL_LoadBMP(imagePath.c_str());
-	if (bmp == nullptr){
-		SDL_DestroyRenderer(ren);
-		SDL_DestroyWindow(win);
-		FELOG("SDL_LoadBMP Error: %s", SDL_GetError());
-		SDL_Quit();
-		return EFEReturnCode::Failed;
-	}
-
-	tex = SDL_CreateTextureFromSurface(ren, bmp);
-	SDL_FreeSurface(bmp);
-
-	if (tex == nullptr){
-		SDL_DestroyRenderer(ren);
-		SDL_DestroyWindow(win);
-		FELOG("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-		SDL_Quit();
-		return EFEReturnCode::Failed;
-	}
-
-	return EFEReturnCode::Success;
-}
-uint32 FEModuleRenderer::Update()
-{
-	//First clear the renderer
-	SDL_RenderClear(ren);
-	//Draw the texture
-	SDL_RenderCopy(ren, tex, NULL, NULL);
-	//Update the screen
-	SDL_RenderPresent(ren);
+	SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
 	
-	//Take a quick break after all that hard work
-	//SDL_Delay(1000);
-
-	return EFEReturnCode::Success;
-}
-
-uint32 FEApplication::Load()
-{
-	memset(m_modules, 0, c_iMaxModules*sizeof(FEModule*));
-	m_iLoadedModules = 0;
-
-	m_modules[0] = new FEModuleRenderer;
-
-	for (uint32 i = 0; i < c_iMaxModules; ++i)
+	if (window == nullptr)
 	{
-		if (m_modules[i] != NULL)
-		{
-			FEFAILEDRETURN(m_modules[i]->Load());
-			m_iLoadedModules++;
-		}
+		FE_LOG("SDL_CreateWindow Error: %s", SDL_GetError());
+		SDL_Quit();
+		return EFeReturnCode::Failed;
+	}
+	
+	SDL_GetWindowWMInfo(window, &wmInfo);
+	HWND hwnd = wmInfo.info.win.window;
+
+	{
+		FeRendering::FeModuleRenderingInit init;
+		
+		init.WindowsCmdShow = appInit.WindowsCmdShow;
+		init.WindowsInstance = appInit.WindowsInstance;
+		init.WindowHandle = hwnd;
+
+		auto pModuleRendering = new FeRendering::FeModuleRendering();
+		FE_FAILEDRETURN(pModuleRendering->Load(&init));
+		
+		Modules[0] = pModuleRendering;
+		LoadedModules++;
+	}
+	{
+		FeUi::FeModuleUiInit init;
+
+		auto pModuleUi = new FeUi::FeModuleUi();
+		FE_FAILEDRETURN(pModuleUi->Load(&init));
+
+		Modules[1] = pModuleUi;
+		LoadedModules++;
 	}
 
-	return EFEReturnCode::Success;
+	return EFeReturnCode::Success;
 }
-uint32 FEApplication::Unload()
+uint32 FeApplication::Unload()
 {
-	for (uint32 i = 0; i < m_iLoadedModules; ++i)
+	for (uint32 i = 0; i < LoadedModules; ++i)
 	{
-		FEFAILEDRETURN(m_modules[i]->Unload());
+		FE_FAILEDRETURN(Modules[i]->Unload());
 	}
-	return EFEReturnCode::Success;
+	return EFeReturnCode::Success;
 }	  
-uint32 FEApplication::Run()
+uint32 FeApplication::Run()
 {
 	SDL_Event e;
 	bool bQuit = false;
@@ -165,22 +107,29 @@ uint32 FEApplication::Run()
 				bQuit = true;
 		 }
 		
-		for (uint32 i = 0; i < m_iLoadedModules; ++i)
+		for (uint32 i = 0; i < LoadedModules; ++i)
 		{
-			FEFAILEDRETURN(m_modules[i]->Update());
+			FE_FAILEDRETURN(Modules[i]->Update());
 		}
 	}
 
-	return EFEReturnCode::Success;
+	return EFeReturnCode::Success;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+//int _tmain(int argc, _TCHAR* argv[])
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	FEApplication app;
+	FeApplication app;
+	FeApplicationInit init;
 
-	FEFAILEDRETURN(app.Load());
-	FEFAILEDRETURN(app.Run());
-	FEFAILEDRETURN(app.Unload());
+	init.WindowsCmdLine			= lpCmdLine;
+	init.WindowsCmdShow			= nCmdShow;
+	init.WindowsInstance		= hInstance;
+	init.WindowsPrevInstance	= hPrevInstance;
+
+	FE_FAILEDRETURN(app.Load(init));
+	FE_FAILEDRETURN(app.Run());
+	FE_FAILEDRETURN(app.Unload());
 
 	return 0;
 }

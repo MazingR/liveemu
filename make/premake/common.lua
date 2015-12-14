@@ -78,18 +78,37 @@ c_targetDir			="../../bin/"
 
 function GetProjectTargetDir(config, prj)
 	if prj["kind"] == c_projectKindConsoleApp or prj["kind"] == c_projectKindWindowedApp then
-		return "../../build/bin/"..config
+		return "../../build/bin/"
 	else
-		return "../../build/bin/"..config.."/intermediate"
+		return "../../build/bin/libraries/"..config
 	end
 end
-function GetProjectTargetFullName(prj)
+function GetProjectTargetFullName(config, prj)
+	local targetConfig = "targetname_"..config
+	local extension = ""
+	
 	if prj["kind"] == c_projectKindConsoleApp or prj["kind"] == c_projectKindWindowedApp then
-		return prj["targetname"]..".exe"
+		extension = ".exe"
 	elseif prj["kind"] == c_projectKindStaticLib then
-		return prj["targetname"]..".lib"
+		extension = ".lib"
 	elseif prj["kind"] == c_projectKindSharedLib then
-		return prj["targetname"]..".dll"
+		extension = ".dll"
+	end
+	
+	
+	if ProjectHas(prj, targetConfig) then
+		return prj[targetConfig]..extension
+	else
+		return prj["targetname"]..extension
+	end
+end
+function GetProjectTargetName(config, prj)
+	local targetConfig = "targetname_"..config
+	
+	if ProjectHas(prj, targetConfig) then
+		return prj[targetConfig]
+	else
+		return prj["targetname"]
 	end
 end
 
@@ -97,9 +116,8 @@ function GenerateProject(config, groupName, projectName)
 	local prj = groups[groupName][projectName]
 	
 	configuration ""
-	if ProjectHas(prj, "name")			then project (prj["name"]) 				end
-	location(c_generateDir)
-	
+		if ProjectHas(prj, "name")			then project (prj["name"]) 				end
+		location(c_generateDir)
 	
 	configuration { config }
 		flags("Symbols")
@@ -108,11 +126,11 @@ function GenerateProject(config, groupName, projectName)
 		if ProjectHas(prj, "srcPath")		then files { prj["srcPath"] }			end
 		if ProjectHas(prj, "includedirs")	then includedirs { prj["includedirs"] }	end
 		if ProjectHas(prj, "defines")		then defines{ prj["defines"] }			end
-		if ProjectHas(prj, "targetname")	then targetname(prj["targetname"])		end
 		if ProjectHas(prj, "links")			then links(prj["links"])				end
 		if ProjectHas(prj, "excludes")		then excludes(prj["excludes"])			end
-		
-	configuration { config }
+		if ProjectHas(prj, "libdirs")		then libdirs(prj["libdirs"])			end
+	
+		targetname (GetProjectTargetName(config, prj))
 		
 		-- Fetch depdencies include dirs and lib names to link
 		if ProjectHas(prj, "dependencies") then 
@@ -120,18 +138,16 @@ function GenerateProject(config, groupName, projectName)
 			for i = 1, #dependencies do
 				local dependency = groups[ dependencies[i][1] ] [ dependencies[i][2] ]
 				
-				if ProjectHas(dependency, "dependencyInclude") then 
-					includedirs { dependency["dependencyInclude"] }
-				end
-				if ProjectHas(dependency, "links") then 
-					links  { dependency["links"] }
-				end
+				if ProjectHas(dependency, "dependencyInclude") then includedirs { dependency["dependencyInclude"] }	end
+				if ProjectHas(dependency, "includedirs") then 		includedirs  { dependency["includedirs"] }		end
+				if ProjectHas(dependency, "links") then 			links  { dependency["links"] }					end
+				if ProjectHas(dependency, "libdirs") then 			libdirs  { dependency["libdirs"] }				end
 				
-				links  { GetProjectTargetFullName(dependency) }
+				links  { GetProjectTargetFullName(config, dependency) }
 				libdirs { GetProjectTargetDir(config, dependency) }
 			end
 		end
-	configuration { config }
+	
 		targetdir(GetProjectTargetDir(config, prj))
 end
 
@@ -142,90 +158,3 @@ function GenerateProjects(config)
 		end
 	end
 end
-
-
-groups =
-{
-	emulator_mame = 
-	{
-		-- vmame = 
-		-- {
-			-- name = "emulator_vmame",
-			-- kind = c_projectKindStaticLib,
-			-- srcPath = 
-			-- {
-				-- c_src_root.."externals/emulators/mame/src/**.h",
-				-- c_src_root.."externals/emulators/mame/src/**.c",
-				-- c_src_root.."externals/emulators/mame/src/**.cpp"
-			-- },
-			-- defines = nil,
-			-- targetname = "vmame"
-		-- }
-	},
-	sdk_sdl = 
-	{
-		sdl = 
-		{
-			name = "external_sdl2",
-			kind = c_projectKindStaticLib,
-			dependencyInclude = 
-			{
-				c_src_root.."externals/sdl/include",
-			},
-			srcPath = 
-			{
-				c_src_root.."externals/sdl/include/**.h",
-				c_src_root.."externals/sdl/src/**.h",
-				c_src_root.."externals/sdl/src/**.c",
-			},
-			excludes =
-			{
-				-- c_src_root.."**/windows/**",
-				
-				c_src_root.."externals/sdl/src/thread/generic/SDL_sysmutex.c",
-				c_src_root.."externals/sdl/src/thread/generic/SDL_syssem.c",
-				c_src_root.."externals/sdl/src/thread/generic/SDL_systhread.c",
-				c_src_root.."externals/sdl/src/thread/generic/SDL_systls.c",
-				
-				c_src_root.."**/*_main.c",
-				
-				c_src_root.."**/psp/**",
-				c_src_root.."**/pthread/**",
-				c_src_root.."**/stdcpp/**",
-				-- c_src_root.."**/dummy/**",
-				-- c_src_root.."**/bootstrap/**",
-				c_src_root.."**/android/**",
-			},
-			links = { "winmm.lib", "imm32.lib", "version.lib" },
-			includedirs = { c_src_root.."externals/sdl/include" },
-			defines = nil,
-			targetname = "sdl2"
-		}
-	},
-	runtime = 
-	{
-		frontend = 
-		{
-			name = "frontend",
-			kind = c_projectKindConsoleApp,
-			srcPath = 
-			{
-				c_src_root.."programs/frontend/**.hpp",
-				c_src_root.."programs/frontend/**.cpp",
-				
-				c_src_root.."modules/**.hpp",
-				c_src_root.."modules/**.cpp",
-				
-				c_src_root.."modules/**.h",
-				c_src_root.."modules/**.c",
-			},
-			includedirs = { c_src_root.."programs/frontend" },
-			defines = nil,
-			targetname = "frontend",
-			dependencies = 
-			{
-				{"sdk_sdl", "sdl"}
-			},
-		}
-	}
-}

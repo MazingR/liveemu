@@ -1,4 +1,5 @@
 dofile('../premake/common.lua')
+dofile('../premake/projects.lua')
 
 c_workspaceName = "Liveemu_vs2013"
 
