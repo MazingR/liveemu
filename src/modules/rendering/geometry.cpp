@@ -54,24 +54,24 @@ namespace FeRendering
 	}
 	uint32 FeGeometryHelper::ComputeStaticGeometry()
 	{
-		StaticGeometryData.Resize(FeEGemetryDataType::Count);
+		StaticGeometryData.Resize(FeEGemetryDataType::Count);	
 		StaticGeometryData.SetZeroMemory();
 		
 		{
 			// Create vertex buffer
 			Vertex_T0 vertexData[] =
 			{
-				{ XMFLOAT3(0.0f, 0.0f, 0.5f), XMFLOAT2(0.f, 0.f) },
-				{ XMFLOAT3(1.0f, 0.0f, 0.5f), XMFLOAT2(0.f, 0.f) },
-				{ XMFLOAT3(1.0f, -1.0f, 0.5f), XMFLOAT2(0.f, 0.f) },
-				{ XMFLOAT3(0.0f, -1.0f, 0.5f), XMFLOAT2(0.f, 0.f) },
+				{ XMFLOAT3(0.0f, 0.0f, 0.f)	, XMFLOAT2(0.f, 0.f) },
+				{ XMFLOAT3(1.0f, 0.0f, 0.f)	, XMFLOAT2(1.f, 0.f) },
+				{ XMFLOAT3(1.0f, -1.0f, 0.f)	, XMFLOAT2(1.f, 1.f) },
+				{ XMFLOAT3(0.0f, -1.0f, 0.f)	, XMFLOAT2(0.f, 1.f) },
 			};
 			uint16 indexData[] =
 			{
 				0, 1, 2,
 				0, 2, 3
 			};
-			StaticGeometryData[FeEGemetryDataType::Quad].Stride = 3*4 + 2*4;
+			StaticGeometryData[FeEGemetryDataType::Quad].Stride = sizeof(Vertex_T0);
 			StaticGeometryData[FeEGemetryDataType::Quad].IndexCount = 6;
 			
 			CreateVertexAndIndexBuffer(

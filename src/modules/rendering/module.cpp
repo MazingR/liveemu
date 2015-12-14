@@ -37,6 +37,24 @@ namespace FeRendering
 		FeRenderEffect& newEffect = Effects.Add();
 		FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/Tutorial02.fx"));
 
+
+		// DEBUG code 
+		FeGeometryDataId geometryId;
+
+		Geometries.Reserve(16);
+		Geometries.SetZeroMemory();
+
+		FeRenderGeometryData& geometryData = Geometries.Add();
+
+		FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Quad, &geometryData, &geometryId);
+
+		renderBatch.Viewport.CreateFromBackBuffer();
+		FeRenderGeometryInstance& geomInstance = renderBatch.GeometryInstances.Add();
+
+		geomInstance.Effect = 1;
+		geomInstance.Geometry = geometryId;
+
+
 		return EFeReturnCode::Success;
 	}
 	uint32 FeModuleRendering::Unload()
@@ -57,22 +75,6 @@ namespace FeRendering
 		int iMaxProcessedMsg = 3;
 
 		MSG msg = { 0 };
-
-		FeRenderBatch renderBatch;
-		FeGeometryDataId geometryId;
-
-		Geometries.Reserve(16);
-		Geometries.SetZeroMemory();
-
-		FeRenderGeometryData& geometryData = Geometries.Add();
-
-		FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Quad, &geometryData, &geometryId);
-
-		renderBatch.Viewport.CreateFromBackBuffer();
-		FeRenderGeometryInstance& geomInstance = renderBatch.GeometryInstances.Add();
-		
-		geomInstance.Effect = 1;
-		geomInstance.Geometry = geometryId;
 
 		while (WM_QUIT != msg.message && iProcessedMsg++<iMaxProcessedMsg)
 		{

@@ -48,6 +48,8 @@ namespace FeRendering
 		FeCommon::FeTArray<FeRenderEffect> Effects;
 		FeCommon::FeTArray<FeRenderGeometryData> Geometries;
 
+		FeRenderBatch renderBatch;
+
 	};
 
 	struct FeModuleRenderingInit : public ::FeCommon::FeModuleInit
