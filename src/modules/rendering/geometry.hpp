@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common/common.hpp>
+#include <common/tarray.hpp>
 
 namespace FeRendering
 {

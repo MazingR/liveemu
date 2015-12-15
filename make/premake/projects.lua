@@ -56,6 +56,16 @@ groups =
 			targetname = "sdl2"
 		}
 	},
+	externals = 
+	{
+		hoard = 
+		{
+			kind = c_projectKindExternal,
+			dependencyInclude = { c_src_root.."externals/hoard/src/include" },
+			dependencyLibDir = { c_src_root.."externals/hoard/lib" },
+			targetname = "libhoard",
+		},
+	},
 	modules = 
 	{
 		common = 
@@ -73,6 +83,7 @@ groups =
 			dependencies = 
 			{
 				{"sdk_sdl", "sdl"},
+				{"externals","hoard"}
 			},
 		},
 		renderer = 
@@ -94,7 +105,6 @@ groups =
 			dependencies = 
 			{	
 				{"modules", "common"},
-				{"sdk_sdl", "sdl"},
 			},
 		},
 		ui = 
@@ -111,9 +121,7 @@ groups =
 			defines = nil,
 			targetname = "ui",
 			dependencies = 
-			{	
-				{"modules", "common"},
-				{"sdk_sdl", "sdl"},
+			{
 				{"modules", "renderer"},
 			},
 		}
@@ -135,7 +143,6 @@ groups =
 			flags { "WinMain" },
 			dependencies = 
 			{
-				{"sdk_sdl", "sdl"},
 				{"modules", "renderer"},
 				{"modules", "ui"},
 				{"modules", "common"},

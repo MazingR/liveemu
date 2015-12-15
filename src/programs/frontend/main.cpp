@@ -1,14 +1,12 @@
 #include <common/common.hpp>
+#include <common/string.hpp>
+#include <common/tarray.hpp>
+
 #include <rendering/module.hpp>
 #include <ui/module.hpp>
 
-
 #include <SDL_syswm.h>
 #include "respath.hpp"
-
-//#include <../src/video/SDL_sysvideo.h>
-
-//C:\Work\Internal\git_liveemu\src\externals\sdl\src\video\SDL_sysvideo.h
 
 struct FeApplicationInit
 {
@@ -115,10 +113,98 @@ uint32 FeApplication::Run()
 
 	return EFeReturnCode::Success;
 }
+struct TestValue
+{
+	char Name[32];
+};
+
+#define PERF_RESET(time) time = std::clock();
+
+#define PERF_PRINT_SET(time, msg) {\
+	double ___duration = (std::clock() - time) / (double)CLOCKS_PER_SEC; \
+	FE_LOG("\tPerf (%s) = %4.8f (s)", msg, ___duration); \
+	PERF_RESET(time) }
+
+#include <map>
+
+void test1()
+{
+	srand(time(NULL));
+	std::clock_t time;
+	double duration;
+	
+	uint32 iValuesCount = 2 << 22;
+	FE_LOG("Unit test map with %d elements", iValuesCount);
+
+	PERF_RESET(time);
+	
+	uint32* testKeys = new uint32[iValuesCount];
+	TestValue* testValues = new TestValue[iValuesCount];
+
+	for (uint32 i = 0; i < iValuesCount; ++i)
+	{
+		uint32 iKey = rand() % 1000;
+
+		testKeys[i] = iKey;
+		sprintf_s(testValues[i].Name, "value_%d", iKey);
+	}
+	uint32 iIdxOfFind = 2 << 16;
+	uint32 iFindTimes = 2 << 16;
+
+	uint32 iKeyToFind = testKeys[iIdxOfFind];
+	TestValue* valueToFind = &testValues[iIdxOfFind];
+	
+	PERF_PRINT_SET(time, "Generate data");
+
+	{
+		FeCommon::FeTMap<uint32, TestValue*> map;
+
+		map.Reserve(iValuesCount);
+		for (uint32 i = 0; i < iValuesCount; ++i)
+		{
+			map.AddNoSort(testKeys[i], &testValues[i]);
+		}
+		
+		FE_LOG("FeTMap");
+		PERF_PRINT_SET(time, "inject data");
+		uint32 iFoundIdx = 0;
+		for(int i=0;i<iFindTimes;++i)
+			iFoundIdx = map.Find(iKeyToFind);
+		PERF_PRINT_SET(time, "find");
+		FE_LOG("\tFound value '%s' ?= %s ", valueToFind->Name, map.GetValueAt(iFoundIdx)->Name);
+	}
+	{
+		std::map<uint32, TestValue*> map;
+		
+		for (uint32 i = 0; i < iValuesCount; ++i)
+		{
+			map[testKeys[i]] = &testValues[i];
+		}
+		
+		FE_LOG("StdMap");
+
+		PERF_PRINT_SET(time, "inject data");
+		std::map<uint32, TestValue*>::iterator it;
+			
+		for (int i = 0; i < iFindTimes; ++i)
+			it = map.find(iKeyToFind);
+		PERF_PRINT_SET(time, "find");
+		FE_LOG("\tFound value '%s' ?= %s ", valueToFind->Name, it->second->Name);
+	}
+	
+}
+
+
+void test2()
+{
+
+}
 
 //int _tmain(int argc, _TCHAR* argv[])
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
+	test2();
+
 	FeApplication app;
 	FeApplicationInit init;
 

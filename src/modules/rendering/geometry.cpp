@@ -61,8 +61,8 @@ namespace FeRendering
 			// Create vertex buffer
 			Vertex_T0 vertexData[] =
 			{
-				{ XMFLOAT3(0.0f, 0.0f, 0.f)	, XMFLOAT2(0.f, 0.f) },
-				{ XMFLOAT3(1.0f, 0.0f, 0.f)	, XMFLOAT2(1.f, 0.f) },
+				{ XMFLOAT3(0.0f, 0.0f, 0.f)		, XMFLOAT2(0.f, 0.f) },
+				{ XMFLOAT3(1.0f, 0.0f, 0.f)		, XMFLOAT2(1.f, 0.f) },
 				{ XMFLOAT3(1.0f, -1.0f, 0.f)	, XMFLOAT2(1.f, 1.f) },
 				{ XMFLOAT3(0.0f, -1.0f, 0.f)	, XMFLOAT2(0.f, 1.f) },
 			};

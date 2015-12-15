@@ -52,6 +52,7 @@ c_projectKindConsoleApp	="ConsoleApp"
 c_projectKindWindowedApp="WindowedApp"
 c_projectKindSharedLib	="SharedLib"
 c_projectKindStaticLib	="StaticLib"
+c_projectKindExternal	="External"
 
 c_generateDir = "projects"
 c_workspaceName = "Liveemu"
@@ -79,6 +80,8 @@ c_targetDir			="../../bin/"
 function GetProjectTargetDir(config, prj)
 	if prj["kind"] == c_projectKindConsoleApp or prj["kind"] == c_projectKindWindowedApp then
 		return "../../build/bin/"
+	elseif prj["kind"] == c_projectKindExternal then
+		return prj["dependencyLibDir"]
 	else
 		return "../../build/bin/libraries/"..config
 	end
@@ -112,43 +115,47 @@ function GetProjectTargetName(config, prj)
 	end
 end
 
+function ProcessDependencies(config, prj)
+	if ProjectHas(prj, "dependencies") then 
+		local dependencies = prj["dependencies"]
+		for i = 1, #dependencies do
+			local dependency = groups[ dependencies[i][1] ] [ dependencies[i][2] ]
+			
+			if ProjectHas(dependency, "dependencyInclude") then includedirs { dependency["dependencyInclude"] }	end
+			if ProjectHas(dependency, "includedirs") then 		includedirs  { dependency["includedirs"] }		end
+			if ProjectHas(dependency, "links") then 			links  { dependency["links"] }					end
+			if ProjectHas(dependency, "libdirs") then 			libdirs  { dependency["libdirs"] }				end
+			
+			links  { GetProjectTargetFullName(config, dependency) }
+			libdirs { GetProjectTargetDir(config, dependency) }
+			
+			ProcessDependencies(config, dependency)
+		end
+	end
+end
 function GenerateProject(config, groupName, projectName)
 	local prj = groups[groupName][projectName]
 	
-	configuration ""
-		if ProjectHas(prj, "name")			then project (prj["name"]) 				end
-		location(c_generateDir)
-	
-	configuration { config }
-		flags("Symbols")
-	
-		if ProjectHas(prj, "kind")			then kind (prj["kind"])					end
-		if ProjectHas(prj, "srcPath")		then files { prj["srcPath"] }			end
-		if ProjectHas(prj, "includedirs")	then includedirs { prj["includedirs"] }	end
-		if ProjectHas(prj, "defines")		then defines{ prj["defines"] }			end
-		if ProjectHas(prj, "links")			then links(prj["links"])				end
-		if ProjectHas(prj, "excludes")		then excludes(prj["excludes"])			end
-		if ProjectHas(prj, "libdirs")		then libdirs(prj["libdirs"])			end
-	
-		targetname (GetProjectTargetName(config, prj))
+	if prj["kind"]~=c_projectKindExternal then
+		configuration ""
+			if ProjectHas(prj, "name")			then project (prj["name"]) 				end
+			location(c_generateDir)
 		
-		-- Fetch depdencies include dirs and lib names to link
-		if ProjectHas(prj, "dependencies") then 
-			local dependencies = prj["dependencies"]
-			for i = 1, #dependencies do
-				local dependency = groups[ dependencies[i][1] ] [ dependencies[i][2] ]
-				
-				if ProjectHas(dependency, "dependencyInclude") then includedirs { dependency["dependencyInclude"] }	end
-				if ProjectHas(dependency, "includedirs") then 		includedirs  { dependency["includedirs"] }		end
-				if ProjectHas(dependency, "links") then 			links  { dependency["links"] }					end
-				if ProjectHas(dependency, "libdirs") then 			libdirs  { dependency["libdirs"] }				end
-				
-				links  { GetProjectTargetFullName(config, dependency) }
-				libdirs { GetProjectTargetDir(config, dependency) }
-			end
-		end
-	
-		targetdir(GetProjectTargetDir(config, prj))
+		configuration { config }
+			flags("Symbols")
+		
+			if ProjectHas(prj, "kind")			then kind (prj["kind"])					end
+			if ProjectHas(prj, "srcPath")		then files { prj["srcPath"] }			end
+			if ProjectHas(prj, "includedirs")	then includedirs { prj["includedirs"] }	end
+			if ProjectHas(prj, "defines")		then defines{ prj["defines"] }			end
+			if ProjectHas(prj, "links")			then links(prj["links"])				end
+			if ProjectHas(prj, "excludes")		then excludes(prj["excludes"])			end
+			if ProjectHas(prj, "libdirs")		then libdirs(prj["libdirs"])			end
+		
+			targetname (GetProjectTargetName(config, prj))
+			ProcessDependencies(config, prj)		
+			targetdir(GetProjectTargetDir(config, prj))
+	end
 end
 
 function GenerateProjects(config)

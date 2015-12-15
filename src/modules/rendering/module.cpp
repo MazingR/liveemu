@@ -37,7 +37,6 @@ namespace FeRendering
 		FeRenderEffect& newEffect = Effects.Add();
 		FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/Tutorial02.fx"));
 
-
 		// DEBUG code 
 		FeGeometryDataId geometryId;
 
@@ -156,91 +155,3 @@ namespace FeRendering
 	}
 
 } // namespace FeRendering
-
-
-/*
-class FeModuleRenderer : public FeModule
-{
-public:
-virtual uint32 Load() override;
-virtual uint32 Unload() override;
-virtual uint32 Update() override;
-
-private:
-SDL_Window* win;
-SDL_Renderer* ren;
-SDL_Texture* tex;
-};
-uint32 FeModuleRenderer::Unload()
-{
-SDL_DestroyTexture(tex);
-SDL_DestroyRenderer(ren);
-SDL_DestroyWindow(win);
-SDL_Quit();
-
-return EFeReturnCode::Success;
-}
-uint32 FeModuleRenderer::Load()
-{
-if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-{
-std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
-return EFeReturnCode::Failed;
-}
-FE_LOG("Resource path is: %s", getResourcePath());
-
-win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
-if (win == nullptr)
-{
-FE_LOG("SDL_CreateWindow Error: %s",SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-
-ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-if (ren == nullptr){
-SDL_DestroyWindow(win);
-FE_LOG("SDL_CreateRenderer Error: %s", SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-std::string imagePath = getResourcePath("Lesson1") + "lena512.bmp";
-SDL_Surface *bmp = SDL_LoadBMP(imagePath.c_str());
-if (bmp == nullptr){
-SDL_DestroyRenderer(ren);
-SDL_DestroyWindow(win);
-FE_LOG("SDL_LoadBMP Error: %s", SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-tex = SDL_CreateTextureFromSurface(ren, bmp);
-SDL_FreeSurface(bmp);
-
-if (tex == nullptr){
-SDL_DestroyRenderer(ren);
-SDL_DestroyWindow(win);
-FE_LOG("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-return EFeReturnCode::Success;
-}
-uint32 FeModuleRenderer::Update()
-{
-//First clear the renderer
-SDL_RenderClear(ren);
-//Draw the texture
-SDL_RenderCopy(ren, tex, NULL, NULL);
-//Update the screen
-SDL_RenderPresent(ren);
-
-//Take a quick break after all that hard work
-//SDL_Delay(1000);
-
-return EFeReturnCode::Success;
-}
-*/
