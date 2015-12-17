@@ -2,6 +2,25 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+#define C_BEGIN extern "C" {
+#else
+#define C_BEGIN
+#endif
+
+#ifdef __cplusplus
+#define C_END }
+#else
+#define C_END
+#endif
+
+#undef DEFAULT_HEAP
+#define DEFAULT_HEAP (unsigned int)-1
+#include <newhook.hpp>
+
+typedef unsigned int THeapId;
+#define INIT_HEAP_ID ((THeapId)-1)
+
 typedef short int uint16;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
@@ -15,6 +34,9 @@ namespace EFeReturnCode
 		Canceled,
 
 		Rendering_CreateShaderFailed,
+
+		Memory_CreateHeapFailed,
+		Memory_AllocationFailedNotEnoughMemory,
 	};
 };
 
@@ -24,20 +46,70 @@ int __cdecl vs_printf(const char *format, ...);
 #define FE_FAILEDRETURN(a) { uint32 ___iResult = (a); { if FE_FAILED(___iResult) return ___iResult; } }
 #define FE_LOG(fmt, ...) vs_printf(fmt, __VA_ARGS__);vs_printf("\n");
 
-#ifdef DEBUG
+#ifdef _DEBUG
 	#define FE_ASSERT(condition, fmt, ...) { if (!(condition)) { FE_LOG(fmt, __VA_ARGS__);__debugbreak();  } }
 #else
 	#define FE_ASSERT(condition, fmt, ...) 
 #endif
 
-#define FE_ALLOCATE_TYPED_ARRAY(type, size) (type*)malloc((size_t)size*sizeof(type))
-#define FE_FREE_ARRAY(ptr) free(ptr)
+//#define FE_NEW_TYPED_ARRAY(type, size, HeapId) \
+//	new (HeapId) type[size]
+//#define FE_DELETE_TYPED_ARRAY(type, ptr, HeapId) delete (HeapId) [] ptr
+//
 
-typedef struct SDL_Rect
+//#define FE_FREE_ARRAY(ptr) free(ptr)
+
+
+#define FE_NEW(type, heap) FeNewA<type>(size, heap)
+#define FE_NEW_ARRAY(type, size, heap) FeNewA<type>(size, heap)
+
+#define FE_NEWD(type) FeNewA<type>(size, DEFAULT_HEAP)
+#define FE_NEW_ARRAYD(type, size) FeNewA<type>(size, DEFAULT_HEAP)
+
+#define FE_DELETE(type, ptr, heap) FeDelete<type>(ptr, heap)
+#define FE_DELETE_ARRAY(type, ptr, size, heap) FeDeleteA<type>(ptr, size, heap)
+
+#define FE_DELETED(ptr) FeDelete<type>(ptr, DEFAULT_HEAP)
+#define FE_DELETE_ARRAYD(ptr, size) FeDeleteA<type>(ptr, size, DEFAULT_HEAP)
+
+typedef struct FeRect
 {
 	int x, y;
 	int w, h;
 } FeRect;
+
+void* FeNewAllocate(size_t size, THeapId iHeapId);
+void* FeNewFree(void* ptr, THeapId iHeapId);
+
+template<typename T>
+inline T* FeNew(THeapId iHeapId = DEFAULT_HEAP)
+{
+	void* ptr = FeNewAllocate(sizeof(T), iHeapId);
+	new (ptr) T;
+
+	return (T*)ptr;
+}
+template<typename T>
+inline T* FeNewA(size_t count, THeapId iHeapId = DEFAULT_HEAP)
+{
+	void* ptr = FeNewAllocate(sizeof(T)*count, iHeapId);
+	new (ptr)T;
+	return (T*)ptr;
+}
+template<typename T>
+void FeDelete(void* ptr, THeapId iHeapId = DEFAULT_HEAP)
+{
+	((T*)(ptr))->~T();
+	FeNewFree(ptr, iHeapId);
+}
+template<typename T>
+void FeDeleteA(void* ptr, size_t count, THeapId iHeapId = DEFAULT_HEAP)
+{
+	for (size_t i = 0; i < count; ++i)
+		(((T*)(ptr))+i)->~T();
+
+	FeNewFree(ptr, iHeapId);
+}
 
 namespace FeCommon
 {

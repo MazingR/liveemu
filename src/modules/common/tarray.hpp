@@ -4,27 +4,29 @@
 
 namespace FeCommon
 {
-	template <class T, class U=uint32>
+	template <class T, class U = uint32>
 	class FeTArray
 	{
 	public:
 		bool 	    IsEmpty()	const 				{ return (Size == 0); }
 		U			GetSize()	const				{ return Size; }
 
-		FeTArray(U _iSize = 0)
+		FeTArray(U _iSize = 0, THeapId iHeapId = DEFAULT_HEAP)
 			: BaseAdress(NULL)
 			, Size(0)
 			, EffectiveSize(0)
+			, HeapId(iHeapId)
 		{
 			if (_iSize>0)
 				Reserve(_iSize);
 		}
-		FeTArray(const FeTArray& _copy)
+		FeTArray(const FeTArray& _copy, THeapId iHeapId = DEFAULT_HEAP)
 			: BaseAdress(NULL)
+			, HeapId(iHeapId)
 		{
 			Size = _copy.Size;
 			EffectiveSize = Size;
-			BaseAdress = FE_ALLOCATE_TYPED_ARRAY(T, Size);
+			BaseAdress = FE_NEW_ARRAY(T, Size, HeapId);
 
 			for (U i = 0; i < Size; i++)
 			{
@@ -36,7 +38,15 @@ namespace FeCommon
 			Free();
 		}
 
-		bool operator ==(const FeTArray& _array) const
+		const T&	operator[](U i) const
+		{
+			return GetAt(i);
+		}
+		T&			operator[](U i)
+		{
+			return GetAt(i);
+		}
+		bool		operator ==(const FeTArray& _array) const
 		{
 			U s = GetSize();
 			if (_array.GetSize() != s)
@@ -50,28 +60,17 @@ namespace FeCommon
 
 			return true;
 		}
-
-		const T& operator[](U i) const
-		{
-			return GetAt(i);
-		}
-		
-		T& operator[](U i)
-		{
-			return GetAt(i);
-		}
-		
-		FeTArray& operator =(const FeTArray& _copy)
+		FeTArray&	operator =(const FeTArray& _copy)
 		{
 			Size = _copy.Size;
 			if (Size>EffectiveSize)
 			{
 				if (BaseAdress != NULL)
 				{
-					FE_FREE_ARRAY(BaseAdress);
+					FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 				}
 				EffectiveSize = Size;
-				BaseAdress = FE_ALLOCATE_TYPED_ARRAY(T, EffectiveSize);
+				BaseAdress = FE_NEW_ARRAY(T, EffectiveSize, HeapId);
 			}
 			if (Size>0)
 			{
@@ -82,22 +81,19 @@ namespace FeCommon
 			}
 			return *this;
 		}
-		
-		const T& GetAt(U i) const
+		const T&	GetAt(U i) const
 		{
 			return BaseAdress[i];
 		}
-		
-		T& GetAt(U i)
+		T&			GetAt(U i)
 		{
 			return BaseAdress[i];
 		}
-
-		void Reserve(U _iSize)
+		void		Reserve(U _iSize)
 		{
 			if (_iSize>EffectiveSize)
 			{
-				T* pNewBase = FE_ALLOCATE_TYPED_ARRAY(T, _iSize);
+				T* pNewBase = FE_NEW_ARRAY(T, _iSize, HeapId);
 				if (Size>0)
 				{
 					for (U i = 0; i < FeMath::Min(_iSize, Size); i++)
@@ -107,19 +103,18 @@ namespace FeCommon
 				}
 				if (BaseAdress != NULL)
 				{
-					FE_FREE_ARRAY(BaseAdress);
+					FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 				}
 				BaseAdress = pNewBase;
 				EffectiveSize = _iSize;
 			}
 		}
-
-		void Resize(U _iSize)
+		void		Resize(U _iSize)
 		{
 			T* pNewBase = NULL;
 			
 			if (_iSize>0)
-				pNewBase = FE_ALLOCATE_TYPED_ARRAY(T, _iSize);
+				pNewBase = FE_NEW_ARRAY(T, _iSize, HeapId);
 
 			if (_iSize>0 && Size>0)
 			{
@@ -130,18 +125,17 @@ namespace FeCommon
 			}
 			if (BaseAdress != NULL)
 			{
-				FE_FREE_ARRAY(BaseAdress);
+				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 			}
 			BaseAdress = pNewBase;
 			EffectiveSize = _iSize;
 			Size = _iSize;
 		}
-
-		void Resize(U _iSize, const T& _kDefaultValue)
+		void		Resize(U _iSize, const T& _kDefaultValue)
 		{
 			T* pNewBase = NULL;
 			if (_iSize>0)
-				pNewBase = FE_ALLOCATE_TYPED_ARRAY(T, _iSize);
+				pNewBase = FE_NEW_ARRAY(T, _iSize, HeapId);
 			if (_iSize>0 && Size>0)
 			{
 				for (U i = 0; i < Math::Min(_iSize, Size); i++)
@@ -155,14 +149,13 @@ namespace FeCommon
 			}
 			if (BaseAdress != NULL)
 			{
-				FE_FREE_ARRAY(BaseAdress);
+				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 			}
 			BaseAdress = pNewBase;
 			EffectiveSize = _iSize;
 			Size = _iSize;
 		}
-
-		T& Add()
+		T&			Add()
 		{
 			const U uiMaxValue = U(~U(0));
 			const U uiUpperLimitMulByTwo = (uiMaxValue >> 1) + 1;
@@ -170,6 +163,7 @@ namespace FeCommon
 			FE_ASSERT(Size<uiMaxValue, "FeTArray capacity is full already");
 
 			Size++;
+			U iPreviousSize = EffectiveSize;
 
 			if (Size > EffectiveSize)
 			{
@@ -194,7 +188,7 @@ namespace FeCommon
 					EffectiveSize = ((EffectiveSize == 0) ? 8 : EffectiveSize) * 2;
 				}
 
-				T* pNewBase = FE_ALLOCATE_TYPED_ARRAY(T, EffectiveSize);
+				T* pNewBase = FE_NEW_ARRAY(T, EffectiveSize, HeapId);
 				for (U i = 0; i < Size - 1; i++)
 				{
 					pNewBase[i] = BaseAdress[i];
@@ -202,20 +196,18 @@ namespace FeCommon
 
 				if (BaseAdress != NULL)
 				{
-					FE_FREE_ARRAY(BaseAdress);
+					FE_DELETE_ARRAY(T, BaseAdress, iPreviousSize, HeapId);
 				}
 				BaseAdress = pNewBase;
 			}
 			return BaseAdress[Size - 1];
 		}
-
-		void Add(const T& element)
+		void		Add(const T& element)
 		{
 			T& baseelem = Add();
 			baseelem = element;
 		}
-
-		void Add(const T* _pElement, U _num)
+		void		Add(const T* _pElement, U _num)
 		{
 			Reserve(Size + _num);
 			for (U i = 0; i <_num; ++i)
@@ -224,17 +216,14 @@ namespace FeCommon
 				baseelem = _pElement[i];
 			}
 		}
-		
-		T    PopBack()
+		T			PopBack()
 		{
 			T& back = BaseAdress[Size - 1];
 			Size--;
 			return back;
 		}
-
-		static U ErrorIndex(){ return U(-1); }
-
-		U Find(const T& element) const
+		static U	ErrorIndex(){ return U(-1); }
+		U			Find(const T& element) const
 		{
 			for (U i = 0; i < Size; i++)
 			{
@@ -243,7 +232,7 @@ namespace FeCommon
 			}
 			return ErrorIndex();
 		}
-		U SortedFind(const T& element) const
+		U			SortedFind(const T& element) const
 		{
 			U _index = ErrorIndex();;
 
@@ -269,8 +258,7 @@ namespace FeCommon
 			}
 			return _index;
 		}
-
-		bool InsertAt(U index, const T& element)
+		bool		InsertAt(U index, const T& element)
 		{
 			if (index<Size)
 			{
@@ -287,8 +275,7 @@ namespace FeCommon
 			}
 			return false;
 		}
-
-		T RemoveAt(U index)
+		T			RemoveAt(U index)
 		{
 			T old = BaseAdress[index];
 			for (U i = index; i < Size - 1; i++)
@@ -300,7 +287,7 @@ namespace FeCommon
 		}
 
 		///< Remove an element by swapping last element : do not preserve order. Fast o(1)
-		T RemoveAtNoOrdering(U index)
+		T			RemoveAtNoOrdering(U index)
 		{
 			T old = BaseAdress[index];
 			Size -= 1;
@@ -310,40 +297,36 @@ namespace FeCommon
 			}
 			return old;
 		}
-
-		T SetAt(U i, const T& element)
+		T			SetAt(U i, const T& element)
 		{
 			T old = BaseAdress[i];
 			BaseAdress[i] = element;
 			return old;
 		}
-
-		void Clear(U _size = 0) //nothing destroyed, capacity is unchanged, only size is 0
+		void		Clear(U _size = 0) //nothing destroyed, capacity is unchanged, only size is 0
 		{
 			Size = _size;
 		}
-		
-		void Free()
+		void		Free()
 		{
 			if (BaseAdress != NULL)
 			{
-				FE_FREE_ARRAY(BaseAdress);
+				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 				BaseAdress = NULL;
 			}
 			Size = 0;
 			EffectiveSize = 0;
 		}
-
-		void SetZeroMemory()
+		void		SetZeroMemory()
 		{
 			memset(BaseAdress, 0, EffectiveSize*sizeof(T));
 		}
-
-		T* GetBaseAdress() { return BaseAdress; }
+		T*			GetBaseAdress() { return BaseAdress; }
 	private:
 		T*	BaseAdress;
 		U	Size;
 		U	EffectiveSize;
+		THeapId HeapId;
 	};
 	
 	template <class TKey, class TValue, class U=uint32>
@@ -428,11 +411,19 @@ namespace FeCommon
 		}
 		void Sort()
 		{
-			SGLIB_ARRAY_SINGLE_QUICK_SORT(KeyEntry, Keys.GetBaseAdress(), Keys.GetSize(), FETASH_COMPARATOR_ENTRY_ENTRY);
+			//SGLIB_ARRAY_SINGLE_QUICK_SORT(KeyEntry, Keys.GetBaseAdress(), Keys.GetSize(), FETASH_COMPARATOR_ENTRY_ENTRY);
 		}
 		TValue& GetValueAt(U idx)
 		{
 			return Values[idx];
+		}
+		TKey& GetKeyAt(U idx)
+		{
+			return Keys[idx];
+		}
+		U GetSize()
+		{
+			return Keys.GetSize();
 		}
 	private:
 		void DoAdd(TKey key, const TValue& value, bool bSort)

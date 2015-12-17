@@ -1,6 +1,4 @@
-#include <common/common.hpp>
-#include <common/string.hpp>
-#include <common/tarray.hpp>
+#include <pch.hpp>
 
 #include <rendering/module.hpp>
 #include <ui/module.hpp>
@@ -42,7 +40,7 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	}
 	FE_LOG("Resource path is: %s", getResourcePath());
 
-	char szWindowName[512] = "Hello World!";
+	static char szWindowName[512] = "Hello World!";
 
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version)
@@ -101,7 +99,7 @@ uint32 FeApplication::Run()
 	{
 		while (SDL_PollEvent(&e))
 		{
-			if (e.type == SDL_QUIT)
+			if (e.type == SDL_QUIT || e.type == SDL_KEYDOWN)
 				bQuit = true;
 		 }
 		
@@ -109,6 +107,8 @@ uint32 FeApplication::Run()
 		{
 			FE_FAILEDRETURN(Modules[i]->Update());
 		}
+		FeCommon::FeMemoryManager::StaticInstance.Defrag();
+		// todo : per thread defrag
 	}
 
 	return EFeReturnCode::Success;
@@ -131,7 +131,6 @@ void test1()
 {
 	srand(time(NULL));
 	std::clock_t time;
-	double duration;
 	
 	uint32 iValuesCount = 2 << 22;
 	FE_LOG("Unit test map with %d elements", iValuesCount);
@@ -168,7 +167,7 @@ void test1()
 		FE_LOG("FeTMap");
 		PERF_PRINT_SET(time, "inject data");
 		uint32 iFoundIdx = 0;
-		for(int i=0;i<iFindTimes;++i)
+		for (uint32 i = 0; i<iFindTimes; ++i)
 			iFoundIdx = map.Find(iKeyToFind);
 		PERF_PRINT_SET(time, "find");
 		FE_LOG("\tFound value '%s' ?= %s ", valueToFind->Name, map.GetValueAt(iFoundIdx)->Name);
@@ -186,7 +185,7 @@ void test1()
 		PERF_PRINT_SET(time, "inject data");
 		std::map<uint32, TestValue*>::iterator it;
 			
-		for (int i = 0; i < iFindTimes; ++i)
+		for (uint32 i = 0; i < iFindTimes; ++i)
 			it = map.find(iKeyToFind);
 		PERF_PRINT_SET(time, "find");
 		FE_LOG("\tFound value '%s' ?= %s ", valueToFind->Name, it->second->Name);
@@ -197,14 +196,19 @@ void test1()
 
 void test2()
 {
+	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(180);
 
+	FeCommon::FeTArray<char> testArray(50 * (1000 * 1000), 0);
+	FeCommon::FeTArray<char> testArray1(10 * (1000 * 1000), 0);
+	testArray.Clear();
+	testArray1.Clear();
+	FeCommon::FeTArray<char> testArray2(20 * (1000 * 1000), 0);
+	testArray2.Clear();
 }
 
 //int _tmain(int argc, _TCHAR* argv[])
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	test2();
-
 	FeApplication app;
 	FeApplicationInit init;
 
@@ -212,6 +216,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	init.WindowsCmdShow			= nCmdShow;
 	init.WindowsInstance		= hInstance;
 	init.WindowsPrevInstance	= hPrevInstance;
+
+	
 
 	FE_FAILEDRETURN(app.Load(init));
 	FE_FAILEDRETURN(app.Run());

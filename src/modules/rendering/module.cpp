@@ -33,7 +33,6 @@ namespace FeRendering
 		auto init = (FeModuleRenderingInit*)initBase;
 
 		FE_FAILEDRETURN(Device.Initialize(init->WindowHandle));
-		
 		FeRenderEffect& newEffect = Effects.Add();
 		FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/Tutorial02.fx"));
 

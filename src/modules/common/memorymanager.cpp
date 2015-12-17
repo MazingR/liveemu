@@ -1,126 +1,191 @@
-#include "memorymanager.hpp"
+#include <pch.hpp>
+
+#include <memorymanager.hpp>
+#include <windows.h>
 
 #define FE_LOCALASSERT(condition, fmt, ...) FE_ASSERT(condition, "[MemoryManager] "fmt, __VA_ARGS__) 
+#define FE_LOCALLOG(fmt, ...) FE_LOG("[MemoryManager] "fmt, __VA_ARGS__) 
+
+#define MEMALIGNEMENT 16
+#define HOOK_MALLOC 1
+
+HANDLE g_initHeapHandle = 0;
+#define DEFAULT_HEAP_SIZE 32
+#define CHECK_OVEWRITES 1
 
 namespace FeCommon
 {
+	FeMemoryManager FeMemoryManager::StaticInstance;
 }
 
+void* FeNewAllocate(size_t size, THeapId iHeapId)
+{
+	return FeCommon::FeMemoryManager::StaticInstance.Allocate(size, 16, iHeapId);
+}
+void* FeNewFree(void* ptr, THeapId iHeapId)
+{
+	return FeCommon::FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+}
+
+C_BEGIN
 void *FeMallocHook(size_t size, int iHeapId)
 {
+#if HOOK_MALLOC
+	return FeCommon::FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+#else
+	return malloc(size);
+#endif
 }
 void *FeCallocHook(size_t nmemb, size_t size, int iHeapId)
 {
+#if HOOK_MALLOC
+	void * outPtr = FeCommon::FeMemoryManager::StaticInstance.Allocate(nmemb*size, MEMALIGNEMENT, iHeapId);
+	memset(outPtr, 0, size);
+	return outPtr;
+#else
+	return calloc(nmemb, size);
+#endif
 }
 void *FeReallocHook(void *ptr, size_t size, int iHeapId)
 {
+#if HOOK_MALLOC
+	if (ptr)
+		FeCommon::FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
 
+	return FeCommon::FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+#else
+	return realloc(ptr,size);
+#endif
 }
 void FeFreeHook(void *ptr, int iHeapId)
 {
+#if HOOK_MALLOC
+	FeCommon::FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+#else
+	free(ptr);
+#endif
 }
+C_END
 
 namespace FeCommon
 {
 FeMemoryManager::FeMemoryManager()
+	: HeapsCount(0)
+{
+	size_t iHeapSize = DEFAULT_HEAP_SIZE*(1024 * 1024);
+
+	g_initHeapHandle = HeapCreate(0, iHeapSize, iHeapSize);
+}
+MemHeap::MemHeap()
 	: LocalBaseAdress(0)
+	, LocalTotalSize(0)
 	, TotalAllocatedSize(0)
 	, PeakAllocatedSize(0)
 {
+	
 }
 
 FeMemoryManager::~FeMemoryManager()
 {
 }
 
-void FeMemoryManager::GetLocalMemoryHeapAddress(uint64** _baseAddress)
+uint32 FeMemoryManager::CreateHeapMBytes(const size_t& _size)
 {
-	*_baseAddress = &LocalBaseAdress;
-};
-
-void FeMemoryManager::Init(const uint64& _baseAddress, const uint64& _localSize)
+	return CreateHeap(_size* (1000 * 1000));
+}
+uint32 FeMemoryManager::CreateHeap(const size_t& _size)
 {
-	memset(&ChunckAllocatedSize[0], 0, sizeof(uint64) * NUM_CHUNK_TYPE);
-	memset(&AllocationStats[0], 0, sizeof(uint64) * NUM_CHUNK_TYPE);
+	FE_ASSERT(HeapsCount < MAX_HEAP_COUNT, "Too many heaps created !");
 
-	FE_LOCALASSERT(LocalBaseAdress == 0, "WARNING ! a local memory has been already set !");
+	MemHeap& newHeap = Heaps[HeapsCount];
+	
+	newHeap.HeapHandle = HeapCreate(0, _size, 0);
+	
+	if (!newHeap.HeapHandle)
+		return EFeReturnCode::Memory_CreateHeapFailed;
 
-	LocalBaseAdress	= _baseAddress;
-	LocalTotalSize	= _localSize;
+	newHeap.LocalBaseAdress = (uint64)HeapAlloc(newHeap.HeapHandle, 0, _size);
+	if (!newHeap.LocalBaseAdress)
+		return EFeReturnCode::Memory_CreateHeapFailed;
+
+	newHeap.LocalTotalSize = _size;
 
 	//	Add first memory chunk
-	FreeMemoryChunk		kChunk;
+	MemHeapFreeChunk& kChunk = newHeap.FreeChunks.Add();;
+	// todo check adresses !
 
-	kChunk.address	= _baseAddress;
-	kChunk.chunkSize= _localSize;
+	kChunk.address	= newHeap.LocalBaseAdress;
+	kChunk.chunkSize= _size;
 
-	AllocationStats[FREE_CHUNK]++;
+	HeapsCount++;
 
-	std::pair<MapFreeChunkIt, bool> bInsertResult;
-	bInsertResult = MapFreeChunks.insert(std::pair<uint64,uint64>(kChunk.address, kChunk.chunkSize));
-	FE_LOCALASSERT(bInsertResult.second == true, "insertion of free memory chunk failed !!!");
+	return EFeReturnCode::Success;
 }
 
-void* FeMemoryManager::Allocate(const uint64& _size, const uint64& _alignmemnt, ChunkType _type)
+void* FeMemoryManager::Allocate(const uint64& _size, const uint64& _alignmemnt, int iHeapId)
 {
-	FE_LOCALASSERT(_type < NUM_CHUNK_TYPE, "Bad Video Memory Chunk Type");
+	if (iHeapId == DEFAULT_HEAP)
+	{
+		void* outputPtr = HeapAlloc(g_initHeapHandle, 0, _size);
+		FE_LOCALASSERT(outputPtr, "Not enough local memory on default heap ! (%d MB)", DEFAULT_HEAP_SIZE);
+		return outputPtr;
+	}
+
+	MemHeap& heap = GetHeap(iHeapId);
 
 	uint64 size = _size;
-	MemoryChunk	kAllocated;
+	MemHeapChunk	kAllocated;
 
 	//	Try to find a free chunk
 	uint64 smallest_chunk = (uint64)-1;
 	uint64 freeChunkAlignOverhead = 0;
-
-	MapFreeChunkIt it = MapFreeChunks.begin();
-	MapFreeChunkIt endIt = MapFreeChunks.end();
-	MapFreeChunkIt foundIt = MapFreeChunks.end();
-
-	while(it != endIt)
+	
+	uint32 iFreeChunksCount = heap.FreeChunks.GetSize();
+	uint32 iFoundChunkIndex = (uint32)-1;
+	
+	for (uint32 i = 0; i < iFreeChunksCount; ++i)
 	{
-		uint64 alignOverhead = ((it->first + _alignmemnt-1) & (~(_alignmemnt-1))) - it->first;
+		const MemHeapFreeChunk& foundChunk = heap.FreeChunks[i];
+
+		uint64 alignOverhead = ((foundChunk.address + _alignmemnt - 1) & (~(_alignmemnt - 1))) - foundChunk.address;
+		
 		//	find the smallest chunk
-		if(it->second >= size + alignOverhead)
+		if (foundChunk.chunkSize >= size + alignOverhead)
 		{
-			if(it->second < smallest_chunk)
+			if (foundChunk.chunkSize < smallest_chunk)
 			{
-				smallest_chunk	= it->second;
-				foundIt = it;
+				smallest_chunk = foundChunk.chunkSize;
+				iFoundChunkIndex = i;
 				freeChunkAlignOverhead = alignOverhead;
-			}				
+			}
 		}
-		++it;
 	}
-	FE_LOCALASSERT(foundIt != endIt, "Not enough local memory");
+	FE_LOCALASSERT(iFoundChunkIndex != (uint32)-1, "Not enough local memory");
 
 	//	Split the chunk
-	FreeMemoryChunk	freeChunk;
-	freeChunk.address = foundIt->first;
-	freeChunk.chunkSize = foundIt->second;
+	MemHeapFreeChunk newFreeChunk = heap.FreeChunks[iFoundChunkIndex];
+	heap.FreeChunks.RemoveAt(iFoundChunkIndex);
+
 	uint64 left_memory;
 
 	uint64 allocated_size = size + freeChunkAlignOverhead;
 
-	TotalAllocatedSize += allocated_size;
-	if(TotalAllocatedSize>PeakAllocatedSize)
+	heap.TotalAllocatedSize += allocated_size;
+	if (heap.TotalAllocatedSize>heap.PeakAllocatedSize)
 	{
-		PeakAllocatedSize=TotalAllocatedSize;
+		heap.PeakAllocatedSize = heap.TotalAllocatedSize;
 	}
-	ChunckAllocatedSize[_type] += allocated_size;
 
-	kAllocated.type		= _type;
-	kAllocated.address	= freeChunk.address;
-	left_memory			= freeChunk.chunkSize - allocated_size;
-
-	AllocationStats[FREE_CHUNK]--;
-	MapFreeChunks.erase(foundIt);
+	kAllocated.address	= newFreeChunk.address;
+	left_memory			= newFreeChunk.chunkSize - allocated_size;
 
 	kAllocated.chunkSize= allocated_size;
 	kAllocated.alignAddress	= (kAllocated.address + _alignmemnt-1) & (~(_alignmemnt-1));
 
-	for(uint64 index = 0; index < AllocatedChunks.GetSize(); index++)
+#if CHECK_OVEWRITES
+	for (uint32 index = 0; index < heap.AllocatedChunks.GetSize(); index++)
 	{
-		MemoryChunk	chunk = AllocatedChunks.GetAt(index);
+		const MemHeapChunk&	chunk = heap.AllocatedChunks.GetAt(index);
 
 		if(!((chunk.address < kAllocated.address && chunk.address + chunk.chunkSize <= kAllocated.address) ||
 				(chunk.address >= kAllocated.address + kAllocated.chunkSize && chunk.address + chunk.chunkSize > kAllocated.address + kAllocated.chunkSize)))
@@ -128,61 +193,63 @@ void* FeMemoryManager::Allocate(const uint64& _size, const uint64& _alignmemnt, 
 			FE_LOCALASSERT(false, "Overwrite");
 		}
 	}
+#endif
 
 	//	Register the allocated chunk
-	AllocatedChunks.Add(kAllocated);
+	heap.AllocatedChunks.Add(kAllocated);
 
 	if(left_memory > 0)
 	{
 		//	Add a new free chunk
-		freeChunk.address	=	kAllocated.address + allocated_size;		//	move heap pointer
-		freeChunk.chunkSize	=	left_memory;
-		AllocationStats[FREE_CHUNK]++;
-
-		std::pair<MapFreeChunkIt, bool> bInsertResult;
-		bInsertResult = MapFreeChunks.insert(std::pair<uint64, uint64>(freeChunk.address, freeChunk.chunkSize));
-		FE_LOCALASSERT(bInsertResult.second == true, "Insertion of free memory chunk failed !!!");
+		newFreeChunk.address = kAllocated.address + allocated_size;		//	move MemHeap pointer
+		newFreeChunk.chunkSize = left_memory;
+		heap.FreeChunks.Add(newFreeChunk);
+		// todo check adresses !
 	}
-
-	AllocationStats[_type]++;
 
 	FE_LOCALASSERT((kAllocated.alignAddress & _alignmemnt-1) == 0, "bad alignement");
 
 	return (void*)kAllocated.alignAddress;
 }
 
-void* FeMemoryManager::Free(void* _ptr)
+void* FeMemoryManager::Free(void* _ptr, int iHeapId)
 {
+	if (iHeapId == DEFAULT_HEAP)
+	{
+		HeapFree(g_initHeapHandle, 0, _ptr);
+		return NULL;
+	}
+
+	MemHeap& heap = GetHeap(iHeapId);
+
 	uint64 addr = (uint64)_ptr;
 
 	if(!_ptr)
 	{
-		FE_LOCALASSERT(false, "resource already freed");
+		FE_LOCALLOG("resource already freed");
 		return NULL;
 	}
 
-	for(uint64 index = 0; index < AllocatedChunks.GetSize(); ++index)
+	for (uint32 index = 0; index < heap.AllocatedChunks.GetSize(); ++index)
 	{
-		if(AllocatedChunks[index].alignAddress == addr)
+		if (heap.AllocatedChunks[index].alignAddress == addr)
 		{
 			//	Return the found chunk to gobal pool
-			const MemoryChunk&	kAllocChunk = AllocatedChunks[index];
+			const MemHeapChunk&	kAllocChunk = heap.AllocatedChunks[index];
 
-			TotalAllocatedSize -= kAllocChunk.chunkSize;
-			ChunckAllocatedSize[kAllocChunk.type] -= kAllocChunk.chunkSize;
-				
-			AllocationStats[kAllocChunk.type]--;
-			AllocationStats[FREE_CHUNK]++;
-
-			FreeMemoryChunk kFreeChunk;
+			heap.TotalAllocatedSize -= kAllocChunk.chunkSize;
+			
+			MemHeapFreeChunk kFreeChunk;
 			kFreeChunk.address = kAllocChunk.address;
 			kFreeChunk.chunkSize = kAllocChunk.chunkSize;
+			
+			heap.AllocatedChunks.RemoveAtNoOrdering(index);
 
-			AllocatedChunks.RemoveAtNoOrdering(index);
-
-			std::pair<MapFreeChunkIt, bool> bInsertResult;
-			bInsertResult = MapFreeChunks.insert(std::pair<uint64, uint64>(kFreeChunk.address, kFreeChunk.chunkSize));
-			FE_LOCALASSERT(bInsertResult.second == true, "Insertion of free memory chunk failed !!!");
+			MemHeapFreeChunk& newFreeChunk = heap.FreeChunks.Add();
+			newFreeChunk.address = kAllocChunk.address;
+			newFreeChunk.chunkSize = kAllocChunk.chunkSize;
+			
+			// todo check adresses
 
 			return NULL;
 		}
@@ -192,58 +259,69 @@ void* FeMemoryManager::Free(void* _ptr)
 	
 	return NULL;
 }
-
 void FeMemoryManager::Defrag()
 {
-	MapFreeChunk mapNewFreeChunk;
-
-	MapFreeChunkIt it = MapFreeChunks.begin();
-	MapFreeChunkIt endIt = MapFreeChunks.end();
-
-	if(it != endIt)
+	for (uint32 i = 0; i < HeapsCount; ++i)
 	{
-		// at least 1 free chunk
-		uint64 uiStartAddress = it->first;
-		uint64 uiChunkSize = it->second;
-		++it;
-
-		while(it != endIt)
-		{
-			if(it->first == (uiStartAddress + uiChunkSize))
-			{
-				// merge possible
-				uiChunkSize += it->second;
-			}
-			else
-			{
-				// merge not possible
-				mapNewFreeChunk.insert(std::pair<uint64, uint64>(uiStartAddress, uiChunkSize));
-				uiStartAddress = it->first;
-				uiChunkSize = it->second;
-			}
-			++it;
-		}
-
-		std::pair<MapFreeChunkIt, bool> bInsertResult;
-		bInsertResult = mapNewFreeChunk.insert(std::pair<uint64, uint64>(uiStartAddress, uiChunkSize));
-		FE_LOCALASSERT(bInsertResult.second == true, "Insertion of free memory defrag chunk failed !!!");
+		Heaps[i].Defrag();
 	}
-
-	AllocationStats[FREE_CHUNK] = mapNewFreeChunk.size();
-	MapFreeChunks.swap(mapNewFreeChunk);
 }
 
-uint64 FeMemoryManager::GetTotalFree() const
+MemHeap& FeMemoryManager::GetHeap(int iHeapId)
+{
+	return Heaps[iHeapId];
+}
+void MemHeap::Defrag()
+{
+	FeTArray<MemHeapFreeChunk> oldFreeChunks(FreeChunks);
+	FreeChunks.Clear();
+
+	uint32 iFreeChunksCount = oldFreeChunks.GetSize();
+	
+	if (iFreeChunksCount < 2)
+		return;
+
+	// at least 1 free chunk
+	uint64 uiStartAddress = oldFreeChunks[0].address;
+	uint64 uiChunkSize = oldFreeChunks[0].chunkSize;
+
+	for (uint32 i = 1; i < iFreeChunksCount; ++i)
+	{
+		const MemHeapFreeChunk& chunk = oldFreeChunks[i];
+
+		if (chunk.address == (uiStartAddress + uiChunkSize))
+		{
+			// merge possible
+			uiChunkSize += chunk.chunkSize;
+		}
+		else
+		{
+			// merge not possible
+			MemHeapFreeChunk& newFreeChunk = FreeChunks.Add();
+			newFreeChunk.address = uiStartAddress;
+			newFreeChunk.chunkSize = uiChunkSize;
+
+			uiStartAddress = chunk.address;
+			uiChunkSize = chunk.chunkSize;
+		}
+	}
+	
+	MemHeapFreeChunk& newFreeChunk = FreeChunks.Add();
+	newFreeChunk.address = uiStartAddress;
+	newFreeChunk.chunkSize = uiChunkSize;
+}
+
+uint64 MemHeap::GetTotalFree() const
 {
 	uint64	size = 0;
 
-	MapFreeChunkConstIt it = MapFreeChunks.begin();
-	MapFreeChunkConstIt endIt = MapFreeChunks.end();
-	while (it != endIt)
-	{
-		size += it->second;
-		++it;
-	}
+	//MapMemFreeChunkConstIt it = MapMemFreeChunks.begin();
+	//MapMemFreeChunkConstIt endIt = MapMemFreeChunks.end();
+	//while (it != endIt)
+	//{
+	//	size += it->second;
+	//	++it;
+	//}
 	return size;
 }
 }

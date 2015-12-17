@@ -1,89 +1,73 @@
 #pragma once
 
+#define MAX_HEAP_COUNT 2
+
 #include <common.hpp>
 #include <tarray.hpp>
-
-#include	<map>
+#include <unordered_map>
+#include <memory>
 
 namespace FeCommon
 {
+	typedef std::unordered_map<uint64, uint64>	MapMemFreeChunk;
+	typedef MapMemFreeChunk::iterator			MapMemFreeChunkIt;
+	typedef MapMemFreeChunk::const_iterator		MapMemFreeChunkConstIt;
+
+	typedef struct MemHeapChunk
+	{
+		uint64		address;
+		uint64		alignAddress;
+		uint64		chunkSize;
+
+		MemHeapChunk()
+			: address(0)
+			, alignAddress(0)
+			, chunkSize(0)
+		{
+
+		}
+	} MemHeapChunk;
+
+	typedef struct MemHeapFreeChunk
+	{
+		uint64		address;
+		uint64		chunkSize;
+	} MemHeapFreeChunk;
+
+	typedef struct MemHeap
+	{
+		void*						HeapHandle;
+		FeTArray<MemHeapFreeChunk>	FreeChunks;
+		FeTArray<MemHeapChunk>		AllocatedChunks;
+		uint64						LocalBaseAdress;
+		uint64						LocalTotalSize;
+		uint64						TotalAllocatedSize;
+		uint64						PeakAllocatedSize;
+
+		uint64		GetTotalFree() const;
+		void		Defrag();
+
+		MemHeap();
+	} MemHeap;
+
 	class FeMemoryManager
 	{
 	public:
-		enum ChunkType
-		{
-			FREE_CHUNK,
-			SHADER_CHUNK,
-			INDEX_CHUNK,
-			VERTEX_CHUNK,
-			TEXTURE_CHUNK,
-			COLORBUFFER_CHUNK,
-			DEPTHBUFFER_CHUNK,
-			RENDERTARGET_CHUNK,
-			EDGE_CHUNK,
-			LOCK_CHUNK,
-			OTHER_CHUNK,
-			UNKNOWN_CHUNK,
-
-			NUM_CHUNK_TYPE
-		};
-
-
 		FeMemoryManager();
 		~FeMemoryManager();
-
-		void*		Allocate(const uint64& _size, const uint64& _alignmemnt, ChunkType _type);
-		void*		Free(void* _ptr);
+		static FeMemoryManager StaticInstance;
 		
-		uint64		GetLocalTotalAllocatedSize() const	{ return TotalAllocatedSize; }
-		uint64		GetLocalPeakAllocatedSize() const	{ return PeakAllocatedSize; }
+		void*		Allocate(const uint64& _size, const uint64& _alignmemnt, int iHeapId);
+		void*		Free(void* _ptr, int iHeapId);
 
-		void		Init(const uint64& _baseAddress, const uint64& _localSize);
-		void		GetLocalMemoryHeapAddress(uint64** _baseAddress);
-
+		uint32		CreateHeapMBytes(const size_t& _size);
+		uint32		CreateHeap(const size_t& _size);
 		void		Defrag();
+		
+		MemHeap& GetHeap(int iHeapId);
 
 	private:
-		uint64		GetTotalFree() const;
-		uint64		GetLocalTotalSize()	const	{ return LocalTotalSize; }
-
-	private:
-		typedef struct MemoryChunk
-		{
-			uint64		address;
-			uint64		alignAddress;
-			uint64		chunkSize;
-			ChunkType	type;
-
-			MemoryChunk()
-				: address(0)
-				, alignAddress(0)
-				, chunkSize(0)
-				, type(FREE_CHUNK)
-			{
-
-			}
-		} MemoryChunk;
-
-		typedef struct FreeMemoryChunk
-		{
-			uint64		address;
-			uint64		chunkSize;
-		} FreeMemoryChunk;
-
-	protected:
-		typedef std::map<uint64, uint64>		MapFreeChunk;
-		typedef MapFreeChunk::iterator			MapFreeChunkIt;
-		typedef MapFreeChunk::const_iterator	MapFreeChunkConstIt;
-
-		MapFreeChunk							MapFreeChunks;
-		FeTArray<MemoryChunk, uint64>			AllocatedChunks;
-		uint64									AllocationStats[NUM_CHUNK_TYPE];
-
-		uint64			LocalBaseAdress;
-		uint64			LocalTotalSize;
-		uint64			TotalAllocatedSize;
-		uint64			PeakAllocatedSize;
-		uint64			ChunckAllocatedSize[NUM_CHUNK_TYPE];
+		uint32		HeapsCount;
+		MemHeap		Heaps[MAX_HEAP_COUNT];
 	};
 }

@@ -74,18 +74,7 @@ namespace FeRendering
 		}
 		if (FAILED(hr))
 			return EFeReturnCode::Failed;
-		/*
-		
 
-		// Set vertex buffer
-		UINT stride = sizeof(SimpleVertex);
-		UINT offset = 0;
-		ImmediateContext->IASetVertexBuffers(0, 1, &VertexBuffer, &stride, &offset);
-		ImmediateContext->IASetIndexBuffer(IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-		// Set primitive topology
-		ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		*/
 		return EFeReturnCode::Success;
 	}
 

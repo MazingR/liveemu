@@ -52,19 +52,19 @@ groups =
 			},
 			links = { "winmm.lib", "imm32.lib", "version.lib" },
 			includedirs = { c_src_root.."externals/sdl/include" },
-			defines = nil,
+			defines = {"HAVE_MALLOC"},
 			targetname = "sdl2"
 		}
 	},
 	externals = 
 	{
-		hoard = 
-		{
-			kind = c_projectKindExternal,
-			dependencyInclude = { c_src_root.."externals/hoard/src/include" },
-			dependencyLibDir = { c_src_root.."externals/hoard/lib" },
-			targetname = "libhoard",
-		},
+		-- hoard = 
+		-- {
+			-- kind = c_projectKindExternal,
+			-- dependencyInclude = { c_src_root.."externals/hoard/src/include" },
+			-- dependencyLibDir = { c_src_root.."externals/hoard/lib" },
+			-- targetname = "libhoard",
+		-- },
 	},
 	modules = 
 	{
@@ -83,7 +83,7 @@ groups =
 			dependencies = 
 			{
 				{"sdk_sdl", "sdl"},
-				{"externals","hoard"}
+				-- {"externals","hoard"}
 			},
 		},
 		renderer = 
