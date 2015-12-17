@@ -16,7 +16,9 @@
 
 #undef DEFAULT_HEAP
 #define DEFAULT_HEAP (unsigned int)-1
+
 #include <newhook.hpp>
+#include <mallochook.hpp>
 
 typedef unsigned int THeapId;
 #define INIT_HEAP_ID ((THeapId)-1)
@@ -32,6 +34,9 @@ namespace EFeReturnCode
 		Success = 0,
 		Failed,
 		Canceled,
+
+		File_OpenFailed,
+		File_ReadFailed,
 
 		Rendering_CreateShaderFailed,
 
@@ -51,14 +56,6 @@ int __cdecl vs_printf(const char *format, ...);
 #else
 	#define FE_ASSERT(condition, fmt, ...) 
 #endif
-
-//#define FE_NEW_TYPED_ARRAY(type, size, HeapId) \
-//	new (HeapId) type[size]
-//#define FE_DELETE_TYPED_ARRAY(type, ptr, HeapId) delete (HeapId) [] ptr
-//
-
-//#define FE_FREE_ARRAY(ptr) free(ptr)
-
 
 #define FE_NEW(type, heap) FeNewA<type>(size, heap)
 #define FE_NEW_ARRAY(type, size, heap) FeNewA<type>(size, heap)

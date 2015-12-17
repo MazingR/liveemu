@@ -1,5 +1,5 @@
 #ifndef DEFAULT_HEAP
-#define DEFAULT_HEAP 0
+#define DEFAULT_HEAP (uint32)-1
 #endif
 
 #include <stdio.h>
@@ -16,15 +16,31 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#define HOOK_MALLOC 1
+
+#if HOOK_MALLOC
+#include <malloc.h>
+
+#define _real_malloc(size)			malloc(size)
+#define _real_calloc(nmemb, size)	calloc(nmemb, size)
+#define _real_realloc(ptr, size)	realloc(ptr, size)
+#define _real_free(ptr)				free(ptr)
 
 #undef malloc
 #undef calloc
 #undef realloc
 #undef free
 
-#define malloc(size) FeMallocHook(size, DEFAULT_HEAP)
-#define calloc(nmemb, size) FeCallocHook(nmemb, size, DEFAULT_HEAP)
-#define realloc(ptr, size) FeReallocHook(ptr, size, DEFAULT_HEAP)
-#define free(ptr) FeFreeHook(ptr, DEFAULT_HEAP)
+#define malloc(size)			FeMallocHook(size, DEFAULT_HEAP)
+#define calloc(nmemb, size)	FeCallocHook(nmemb, size, DEFAULT_HEAP)
+#define realloc(ptr, size)	FeReallocHook(ptr, size, DEFAULT_HEAP)
+#define free(ptr)				FeFreeHook(ptr, DEFAULT_HEAP)
+
+#define FE_ALLOCATE(size, heap) FeMallocHook(size, heap)
+#define FE_FREE(ptr, heap) FeFreeHook(size, heap)
+
+#define FE_ALLOCATED(size) FeMallocHook(size, DEFAULT_HEAP)
+#define FE_FREED(ptr) FeFreeHook(size, DEFAULT_HEAP)
 
 #define _CRT_ALLOCATION_DEFINED // we don't want to bother with crt defines
+#endif

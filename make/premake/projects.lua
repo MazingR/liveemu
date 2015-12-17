@@ -83,7 +83,6 @@ groups =
 			dependencies = 
 			{
 				{"sdk_sdl", "sdl"},
-				-- {"externals","hoard"}
 			},
 		},
 		renderer = 

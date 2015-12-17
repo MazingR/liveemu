@@ -28,6 +28,34 @@ public:
 	uint32 Run();
 };
 
+uint32 file_read(const char* filename, void** outputBuff) {
+	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
+	
+	if (rw == NULL) 
+		return EFeReturnCode::File_OpenFailed;
+
+	Sint64 res_size = SDL_RWsize(rw);
+	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 0);
+
+	Sint64 nb_read_total = 0, nb_read = 1;
+	char* buf = (char*)*outputBuff;
+
+	while (nb_read_total < res_size && nb_read != 0) {
+		nb_read = SDL_RWread(rw, buf, 1, (res_size - nb_read_total));
+		nb_read_total += nb_read;
+		buf += nb_read;
+	}
+	SDL_RWclose(rw);
+	if (nb_read_total != res_size) {
+		free(*outputBuff);
+		return EFeReturnCode::File_ReadFailed;
+	}
+
+	((char*)*outputBuff)[nb_read_total] = '\0';
+
+	return EFeReturnCode::Success;
+}
+
 uint32 FeApplication::Load(const FeApplicationInit& appInit)
 {
 	memset(Modules, 0, MaxModules*sizeof( void*));
@@ -107,8 +135,6 @@ uint32 FeApplication::Run()
 		{
 			FE_FAILEDRETURN(Modules[i]->Update());
 		}
-		FeCommon::FeMemoryManager::StaticInstance.Defrag();
-		// todo : per thread defrag
 	}
 
 	return EFeReturnCode::Success;
@@ -196,8 +222,6 @@ void test1()
 
 void test2()
 {
-	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(180);
-
 	FeCommon::FeTArray<char> testArray(50 * (1000 * 1000), 0);
 	FeCommon::FeTArray<char> testArray1(10 * (1000 * 1000), 0);
 	testArray.Clear();
@@ -209,6 +233,9 @@ void test2()
 //int _tmain(int argc, _TCHAR* argv[])
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
+	const int iCount = 10;
+	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(5 * iCount);
+
 	FeApplication app;
 	FeApplicationInit init;
 
@@ -217,9 +244,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	init.WindowsInstance		= hInstance;
 	init.WindowsPrevInstance	= hPrevInstance;
 
-	
-
 	FE_FAILEDRETURN(app.Load(init));
+
+	//std::string szPaths[4096];
+	char* szBasePath = SDL_GetBasePath();
+
+	void* ptrs[iCount];
+
+	for (int i = 0; i < iCount; ++i)
+	{
+		std::string szPath = getResourcePath() + "image.jpg";
+		file_read(szPath.c_str(), &ptrs[i]);
+	}
+
 	FE_FAILEDRETURN(app.Run());
 	FE_FAILEDRETURN(app.Unload());
 
