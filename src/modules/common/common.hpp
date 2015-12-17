@@ -66,8 +66,8 @@ int __cdecl vs_printf(const char *format, ...);
 #define FE_DELETE(type, ptr, heap) FeDelete<type>(ptr, heap)
 #define FE_DELETE_ARRAY(type, ptr, size, heap) FeDeleteA<type>(ptr, size, heap)
 
-#define FE_DELETED(ptr) FeDelete<type>(ptr, DEFAULT_HEAP)
-#define FE_DELETE_ARRAYD(ptr, size) FeDeleteA<type>(ptr, size, DEFAULT_HEAP)
+#define FE_DELETED(type, ptr) FeDelete<type>(ptr, DEFAULT_HEAP)
+#define FE_DELETE_ARRAYD(type, ptr, size) FeDeleteA<type>(ptr, size, DEFAULT_HEAP)
 
 typedef struct FeRect
 {
@@ -90,7 +90,9 @@ template<typename T>
 inline T* FeNewA(size_t count, THeapId iHeapId = DEFAULT_HEAP)
 {
 	void* ptr = FeNewAllocate(sizeof(T)*count, iHeapId);
-	new (ptr)T;
+
+	for (size_t i = 0; i < count; ++i)
+		new (((T*)(ptr)) + i)T;
 	return (T*)ptr;
 }
 template<typename T>

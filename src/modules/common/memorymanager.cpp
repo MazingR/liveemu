@@ -7,12 +7,10 @@
 #define FE_LOCALLOG(fmt, ...) FE_LOG("[MemoryManager] "fmt, __VA_ARGS__) 
 
 #define MEMALIGNEMENT 16
+#define DEFAULT_HEAP_SIZE 16
+#define MEM_PAGE_SIZE 512*(1000)
 
 HANDLE g_initHeapHandle = 0;
-#define DEFAULT_HEAP_SIZE 16
-
-#define MEM_PAGE_SIZE 512*(1000)
-#define CHECK_OVEWRITES 1
 
 namespace FeCommon
 {
