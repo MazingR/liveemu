@@ -1,9 +1,11 @@
-#include <module.hpp>
+#include <modulerenderer.hpp>
+#include <common/memorymanager.hpp>
 
 #include <windows.h>
 #include <d3dx11.h>
 #include <d3dcompiler.h>
 #include <xnamath.h>
+#include "FW1FontWrapper.h"
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
@@ -52,6 +54,10 @@ namespace FeRendering
 		geomInstance.Effect = 1;
 		geomInstance.Geometry = geometryId;
 
+		HRESULT hResult = FW1CreateFactory(FW1_VERSION, &FW1Factory);
+		hResult = FW1Factory->CreateFontWrapper(Device.GetD3DDevice(), L"Arial", &FontWrapper);
+
+		CurrentDebugTextMode = FeEDebugRenderTextMode::Memory;
 
 		return EFeReturnCode::Success;
 	}
@@ -64,6 +70,9 @@ namespace FeRendering
 
 		FeGeometryHelper::ReleaseGeometryData();
 		FeGeometryHelper::ReleaseStaticGeometryData();
+
+		FontWrapper->Release();
+		FW1Factory->Release();
 
 		return EFeReturnCode::Success;
 	}
@@ -83,7 +92,10 @@ namespace FeRendering
 			}
 			else
 			{
+				BeginRender();
 				RenderBatch(renderBatch);
+				RenderDebugText();
+				EndRender();
 			}
 		}
 
@@ -106,6 +118,15 @@ namespace FeRendering
 		pBackBuffer->Release();
 
 		return EFeReturnCode::Success;
+	}
+	void FeModuleRendering::BeginRender()
+	{
+
+	}
+	void FeModuleRendering::EndRender()
+	{
+		// Present the information rendered to the back buffer to the front buffer (the screen)
+		Device.GetSwapChain()->Present(0, 0);
 	}
 	void FeModuleRendering::RenderBatch(FeRenderBatch& batch)
 	{
@@ -149,8 +170,43 @@ namespace FeRendering
 
 			// todo : Set properties
 		}
-		// Present the information rendered to the back buffer to the front buffer (the screen)
-		Device.GetSwapChain()->Present(0, 0);
+	}
+	void FeModuleRendering::RenderDebugText()
+	{
+		switch (CurrentDebugTextMode)
+		{
+			case FeEDebugRenderTextMode::Memory:
+				FeCommon::FeMemoryManager::StaticInstance.GetDebugInfos(DebugString, DEBUG_STRING_SIZE);
+				break;
+			case FeEDebugRenderTextMode::Rendering:
+			{
+				float fGpuFrameTime = 0.0f;
+				float fCpuFrameTime = 0.0f;
+				uint32 fFramerate = 60;
+
+				sprintf_s(DebugString,
+					"\
+					Mode\t: %s\n\
+					Framerate\t: %d (fps)\n\
+					Cpu Frame\t: %4.2f (ms)\n\
+					Gpu Frame\t: %4.2f (ms)\n\
+					", CONFIGSTR, fFramerate, fCpuFrameTime, fGpuFrameTime);
+			}break;
+		}
+
+		wchar_t wc[DEBUG_STRING_SIZE*2 +1];
+		size_t iWSize;
+		mbstowcs_s(&iWSize, wc, DebugString, DEBUG_STRING_SIZE);
+
+		FontWrapper->DrawString(
+			Device.GetImmediateContext(),
+			wc,// String
+			13.0f,// Font size
+			10.0f,// X position
+			10.0f,// Y position
+			0xff00ffff,// Text color, 0xAaBbGgRr
+			FW1_RESTORESTATE // Flags (for example FW1_RESTORESTATE to keep context states unchanged)
+			);
 	}
 
 } // namespace FeRendering

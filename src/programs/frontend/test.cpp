@@ -1,6 +1,6 @@
 #include <pch.hpp>
 
-#include <rendering/module.hpp>
+#include <rendering/modulerenderer.hpp>
 #include <ui/module.hpp>
 
 #include "common.hpp"
@@ -12,7 +12,7 @@ uint32 file_read(const char* filename, void** outputBuff) {
 		return EFeReturnCode::File_OpenFailed;
 
 	Sint64 res_size = SDL_RWsize(rw);
-	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 0);
+	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 1);
 
 	Sint64 nb_read_total = 0, nb_read = 1;
 	char* buf = (char*)*outputBuff;
@@ -124,20 +124,21 @@ void test1()
 
 void unitTest()
 {
-	TestValue* testV =FE_NEW_ARRAYD(TestValue,3);
-	FE_DELETE_ARRAYD(TestValue, testV, 3);
+	//TestValue* testV =FE_NEW_ARRAYD(TestValue,3);
+	//FE_DELETE_ARRAYD(TestValue, testV, 3);
 
-	const int iCount = 10;
+	//const int iCount = 50;
 
-	//std::string szPaths[4096];
-	char* szBasePath = SDL_GetBasePath();
+	////std::string szPaths[4096];
+	//char* szBasePath = SDL_GetBasePath();
 
-	void* ptrs[iCount];
+	//void* ptrs[iCount];
 
-	for (int i = 0; i < iCount; ++i)
-	{
+	//for (int i = 0; i < iCount; ++i)
+	//{
+		void* ptr;
 		std::string szPath = "../data/image.jpg";
-		file_read(szPath.c_str(), &ptrs[i]);
-	}
+		file_read(szPath.c_str(), &ptr);
+	//}
 
 }

@@ -14,6 +14,16 @@
 #define C_END
 #endif
 
+#define COMMON_STR_SIZE 128
+
+#ifdef DEBUG
+#define CONFIGSTR "Debug"
+#elif defined(MASTER)
+#define CONFIGSTR "Master"
+#else
+#define CONFIGSTR "Release"
+#endif
+
 #undef DEFAULT_HEAP
 #define DEFAULT_HEAP (unsigned int)-1
 
@@ -51,7 +61,7 @@ int __cdecl vs_printf(const char *format, ...);
 #define FE_FAILEDRETURN(a) { uint32 ___iResult = (a); { if FE_FAILED(___iResult) return ___iResult; } }
 #define FE_LOG(fmt, ...) vs_printf(fmt, __VA_ARGS__);vs_printf("\n");
 
-#ifdef _DEBUG
+#ifdef DEBUG
 	#define FE_ASSERT(condition, fmt, ...) { if (!(condition)) { FE_LOG(fmt, __VA_ARGS__);__debugbreak();  } }
 #else
 	#define FE_ASSERT(condition, fmt, ...) 

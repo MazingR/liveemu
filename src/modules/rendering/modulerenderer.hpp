@@ -9,8 +9,22 @@
 #pragma warning( disable : 4005)
 #include <d3d11.h>
 
+#define DEBUG_STRING_SIZE 1024
+
+// forward declares
+interface IFW1Factory;
+interface IFW1FontWrapper;
+
 namespace FeRendering
 {
+	namespace FeEDebugRenderTextMode
+	{
+		enum Type
+		{
+			Rendering,
+			Memory,
+		};
+	};
 	struct FeRenderViewport
 	{
 	public:
@@ -42,13 +56,20 @@ namespace FeRendering
 		static FeRenderDevice& GetDevice() { return Device; }
 
 	private:
-		static FeRenderDevice Device;
+		void BeginRender();
+		void EndRender();
 		void RenderBatch(FeRenderBatch& batch);
-		
+		void RenderDebugText();
+
+		static FeRenderDevice Device;		
 		FeCommon::FeTArray<FeRenderEffect> Effects;
 		FeCommon::FeTArray<FeRenderGeometryData> Geometries;
-
 		FeRenderBatch renderBatch;
+
+		IFW1Factory*					FW1Factory;
+		IFW1FontWrapper*				FontWrapper;
+		char							DebugString[DEBUG_STRING_SIZE];
+		FeEDebugRenderTextMode::Type	CurrentDebugTextMode;
 
 	};
 

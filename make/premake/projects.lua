@@ -58,13 +58,13 @@ groups =
 	},
 	externals = 
 	{
-		-- hoard = 
-		-- {
-			-- kind = c_projectKindExternal,
-			-- dependencyInclude = { c_src_root.."externals/hoard/src/include" },
-			-- dependencyLibDir = { c_src_root.."externals/hoard/lib" },
-			-- targetname = "libhoard",
-		-- },
+		fontwrapper = 
+		{
+			kind = c_projectKindExternal,
+			dependencyInclude = { c_src_root.."externals/windows/FW1FontWrapper/include" },
+			dependencyLibDir = { c_src_root.."externals/windows/FW1FontWrapper/lib/x86" },
+			targetname = "FW1FontWrapper",
+		},
 	},
 	modules = 
 	{
@@ -104,6 +104,7 @@ groups =
 			dependencies = 
 			{	
 				{"modules", "common"},
+				{"externals", "fontwrapper"},
 			},
 		},
 		ui = 

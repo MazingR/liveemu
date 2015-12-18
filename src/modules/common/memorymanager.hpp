@@ -13,12 +13,20 @@ namespace FeCommon
 	typedef MapAllocations::iterator			MapAllocationsIt;
 	typedef MapAllocations::const_iterator		MapAllocationsConstIt;
 
-	typedef struct MemHeap
+	struct MemHeapDebugInfos
 	{
-		void*			HeapHandle;
-		size_t			Size;
-		MapAllocations	Allocations;
-	} MemHeap;
+		char	Name[COMMON_STR_SIZE];
+		size_t	Allocated;
+		size_t	AllocatedPeak;
+		size_t	Size;
+	};
+	struct MemHeap
+	{
+		void*				HeapHandle;
+		size_t				Size;
+		MapAllocations		Allocations;
+		MemHeapDebugInfos	DebugInfos;
+	};
 
 	class FeMemoryManager
 	{
@@ -30,11 +38,11 @@ namespace FeCommon
 		void*		Allocate(const size_t& _size, const size_t& _alignmemnt, int iHeapId);
 		void*		Free(void* _ptr, int iHeapId);
 
-		uint32		CreateHeapMBytes(const size_t& _size);
-		uint32		CreateHeap(const size_t& _size);
+		uint32		CreateHeapMBytes(const size_t& _size, const char* szName = "");
+		uint32		CreateHeap(const size_t& _size, const char* szName = "");
 		
-		MemHeap& GetHeap(int iHeapId);
-
+		MemHeap&	GetHeap(int iHeapId);
+		void		GetDebugInfos(char* outputStr, size_t outputStrSize);
 	private:
 		FeTArray<MemHeap>	Heaps;
 	};

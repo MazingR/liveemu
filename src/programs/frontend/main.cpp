@@ -1,6 +1,6 @@
 #include <pch.hpp>
 
-#include <rendering/module.hpp>
+#include <rendering/modulerenderer.hpp>
 #include <ui/module.hpp>
 #include <SDL_syswm.h>
 
@@ -95,7 +95,11 @@ uint32 FeApplication::Run()
 	{
 		while (SDL_PollEvent(&e))
 		{
-			if (e.type == SDL_QUIT || e.type == SDL_KEYDOWN)
+			
+			if (e.type == SDL_KEYDOWN)
+				unitTest();
+
+			if (e.type == SDL_QUIT)
 				bQuit = true;
 		 }
 		
@@ -111,7 +115,8 @@ uint32 FeApplication::Run()
 //int _tmain(int argc, _TCHAR* argv[])
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(64);
+	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
+	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Test");
 
 	FeApplication app;
 	FeApplicationInit init;
@@ -122,9 +127,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	init.WindowsPrevInstance	= hPrevInstance;
 
 	FE_FAILEDRETURN(app.Load(init));
-
-	unitTest();
-
 	FE_FAILEDRETURN(app.Run());
 	FE_FAILEDRETURN(app.Unload());
 

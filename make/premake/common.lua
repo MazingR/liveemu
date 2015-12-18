@@ -137,6 +137,9 @@ function GenerateProject(config, groupName, projectName)
 	local prj = groups[groupName][projectName]
 	
 	if prj["kind"]~=c_projectKindExternal then
+		configuration "Debug"
+			defines {"DEBUG"}
+		
 		configuration ""
 			if ProjectHas(prj, "name")			then project (prj["name"]) 				end
 			location(c_generateDir)
