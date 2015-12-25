@@ -14,7 +14,7 @@ namespace FeCommon
 	public:
 		virtual uint32 Load(const ::FeCommon::FeModuleInit*) = 0;
 		virtual uint32 Unload() = 0;
-		virtual uint32 Update(float fDt) = 0;
+		virtual uint32 Update(const FeDt& fDt) = 0;
 	};
 
 	struct FeApplicationInit
@@ -59,7 +59,8 @@ namespace FeCommon
 		template<class T>
 		size_t GetModuleId()
 		{
-			return typeid(T).hash_code();
+			static uint32 iTypeHash = typeid(T).hash_code();
+			return iTypeHash;
 		}
 	private:
 		ModulesMap Modules;

@@ -15,7 +15,7 @@ namespace FeUi
 	public:
 		virtual uint32 Load(const ::FeCommon::FeModuleInit*) override;
 		virtual uint32 Unload() override;
-		virtual uint32 Update(float fDt) override;
+		virtual uint32 Update(const FeDt& fDt) override;
 
 	private:
 	};

@@ -138,6 +138,13 @@ typedef gmtl::EulerAngleXYZf FeRotation;
 typedef gmtl::Vec4f FeVector4;
 typedef gmtl::Matrix44f FeMatrix4;
 
+struct FeDt
+{
+	float	TotalSeconds;
+	uint32	TotalMilliseconds;
+	int		TotalCpuWaited;
+};
+
 namespace FeMath
 {
 	template <typename T> static inline T		Min(const T& a, const T& b)

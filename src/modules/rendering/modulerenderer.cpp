@@ -9,6 +9,7 @@
 #include <xnamath.h>
 #include "FW1FontWrapper.h"
 #include <SDL_mutex.h>
+#include <SDL.h>
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
@@ -38,7 +39,7 @@ namespace FeRendering
 	{
 		return EFeReturnCode::Success;
 	}
-	uint32 FeModuleRenderResourcesHandler::Update(float fDt)
+	uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 	{
 		return EFeReturnCode::Success;
 	}
@@ -103,31 +104,43 @@ namespace FeRendering
 		FeRenderEffect& newEffect = Effects.Add();
 		FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/default.fx"));
 
-		// DEBUG code 
-		FeRenderGeometryId geometryId;
+		// Creat geometries
+		Geometries.Reserve(16);
+		Geometries.SetZeroMemory();
+		FeRenderGeometryData& geometryData = Geometries.Add();
 
+		FeRenderGeometryId geometryId;
+		FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Quad, &geometryData, &geometryId);
+
+		// Creat textures
 		auto pResourcesHandler = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 		FeRenderTextureId textureId;
 		pResourcesHandler->LoadTexture("../data/image.jpg", &textureId);
-
-		Geometries.Reserve(16);
-		Geometries.SetZeroMemory();
-
-		FeRenderGeometryData& geometryData = Geometries.Add();
-
-		FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Quad, &geometryData, &geometryId);
-
 		renderBatch.Viewport.CreateFromBackBuffer();
-		FeRenderGeometryInstance& geomInstance = renderBatch.GeometryInstances.Add();
 
-		geomInstance.Effect = 1;
-		geomInstance.Geometry = geometryId;
-		geomInstance.Textures.Add(textureId);
+		for (uint32 i = 0; i < 2048; ++i)
+		{
+			// DEBUG code 
+			
+			FeRenderGeometryInstance& geomInstance = renderBatch.GeometryInstances.Add();
+
+			geomInstance.Effect = 1;
+			geomInstance.Geometry = geometryId;
+			geomInstance.Textures.Add(textureId);
+		}
 		
 		HRESULT hResult = FW1CreateFactory(FW1_VERSION, &FW1Factory);
 		hResult = FW1Factory->CreateFontWrapper(Device.GetD3DDevice(), L"Arial", &FontWrapper);
 
 		CurrentDebugTextMode = FeEDebugRenderTextMode::Memory;
+
+		//D3D11_QUERY_DESC desc;
+		//ZeroMemory(&desc, sizeof(D3D11_QUERY_DESC));
+		//ID3D11Query* pQuery;
+		//desc.Query = D3D11_QUERY_TIMESTAMP;
+		//Device.GetD3DDevice()->CreateQuery(&desc, &pQuery);
+
+		ZeroMemory(&RenderDebugInfos, sizeof(FeRenderDebugInfos));
 
 		return EFeReturnCode::Success;
 	}
@@ -146,7 +159,7 @@ namespace FeRendering
 
 		return EFeReturnCode::Success;
 	}
-	uint32 FeModuleRendering::Update(float fDt)
+	uint32 FeModuleRendering::Update(const FeDt& fDt)
 	{
 		int iProcessedMsg = 0;
 		int iMaxProcessedMsg = 3;
@@ -164,7 +177,7 @@ namespace FeRendering
 			{
 				BeginRender();
 				RenderBatch(renderBatch, fDt);
-				RenderDebugText();
+				RenderDebugText(fDt);
 				EndRender();
 			}
 		}
@@ -178,14 +191,18 @@ namespace FeRendering
 	}
 	void FeModuleRendering::BeginRender()
 	{
-
+		RenderDebugInfos.FrameDrawCallsCount = 0;
+		RenderDebugInfos.FrameBindEffectCount = 0;
+		RenderDebugInfos.FrameBindGeometryCount = 0;
+		
 	}
 	void FeModuleRendering::EndRender()
 	{
+		uint32 iTicks = SDL_GetTicks();
 		// Present the information rendered to the back buffer to the front buffer (the screen)
 		Device.GetSwapChain()->Present(0, 0);
 	}
-	void FeModuleRendering::RenderBatch(FeRenderBatch& batch, float fDt)
+	void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	{
 		// Clear the back buffer
 		batch.Viewport.Clear();
@@ -201,23 +218,37 @@ namespace FeRendering
 		FeRenderCamera camera;
 
 		auto pResourcesHandler = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
+		ID3D11DeviceContext* pContext = GetDevice().GetImmediateContext();
+
 		static float fRotX = 0, fRotY = 0, fRotZ = 0;
-		static FeVector3 translation(0,0,10), scale(1,1,1);
-		static float fDelta = 0.5f;
+		static FeVector3 translation(0,0,0), scale(1,1,1);
+		static float fOffset = 0.0f;
+		float fOffsetBetween = 1.5f;
+		uint32 iColomns = 20;
+		fOffset += 0.001f;
 
-		translation.mData[2] -= fDelta*fDt;
-		scale.mData[0] += fDelta*fDt;
-		scale.mData[1] += fDelta*fDt;
-		fRotZ += fDelta*fDt*2.0f;
+		translation.mData[0] = -iColomns;
+		translation.mData[1] = 0;
+		translation.mData[2] = 50.0f-fOffset;
 
-		for (uint32 i = 0; i < Effects.GetSize(); ++i)
+		scale.mData[0] = 1.0f + fOffset;
+		scale.mData[1] = 1.0f + fOffset;
+
+		fRotZ = fOffset*5.0f;
+		FeRenderTextureId lastBindedTextures[16];
+		ZeroMemory(lastBindedTextures, sizeof(FeRenderTextureId) * 16);
+
+		for (uint32 i = 0; i < Effects.GetSize() ; ++i)
 		{
 			Effects[i].BeginFrame(camera, batch.Viewport);
 		}
+
 		for (uint32 iInstanceIdx = 0; iInstanceIdx < instances.GetSize(); ++iInstanceIdx)
 		{
 			FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
-			
+			translation.mData[0] = -10 + (iInstanceIdx % iColomns) * fOffsetBetween;
+			translation.mData[1] = -20 + (iInstanceIdx / iColomns) * fOffsetBetween;
+
 			FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, translation, FeRotation(fRotX, fRotY, fRotZ), scale);
 
 			if (geomInstance.Effect != iLastEffectId)
@@ -226,9 +257,23 @@ namespace FeRendering
 				pEffect = &Effects[geomInstance.Effect - 1];
 				pEffect->Bind();
 				iLastEffectId = geomInstance.Effect;
+
+				RenderDebugInfos.FrameBindEffectCount++;
 			}
 
 			pEffect->BindGeometryInstance(geomInstance, pResourcesHandler);
+			// Set resources (textures)
+			for (uint32 iTextureIdx = 0; iTextureIdx < geomInstance.Textures.GetSize(); ++iTextureIdx)
+			{
+				const FeRenderTextureId& textureId = geomInstance.Textures[iTextureIdx];
+				if (lastBindedTextures[iTextureIdx] != textureId)
+				{
+					lastBindedTextures[iTextureIdx] = textureId;
+					const FeRenderTexture* pTexture = pResourcesHandler->GetTexture(textureId);
+					if (pTexture)
+						pContext->PSSetShaderResources(iTextureIdx, 1, &pTexture->SRV);
+				}
+			}
 
 			if (geomInstance.Geometry != iLastGeometryId)
 			{
@@ -240,15 +285,40 @@ namespace FeRendering
 				Device.GetImmediateContext()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				Device.GetImmediateContext()->IASetVertexBuffers(0, 1, (ID3D11Buffer**)&pGeometryData->VertexBuffer, &pGeometryData->Stride, &offset);
 				Device.GetImmediateContext()->IASetIndexBuffer((ID3D11Buffer*)pGeometryData->IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+				RenderDebugInfos.FrameBindGeometryCount++;
 			}
-
+			
+			RenderDebugInfos.FrameDrawCallsCount++;
 			Device.GetImmediateContext()->DrawIndexed(pGeometryData->IndexCount, 0, 0);
 
 			// todo : Set properties
 		}
 	}
-	void FeModuleRendering::RenderDebugText()
+	void FeModuleRendering::RenderDebugText(const FeDt& fDt)
 	{
+		static uint32 iFrameCount = 0;
+		if (fDt.TotalMilliseconds == 0)
+			return;
+
+		RenderDebugInfos.Framerate		+= (1000 / fDt.TotalMilliseconds);
+		RenderDebugInfos.CpuFrame		+= fDt.TotalMilliseconds;
+		RenderDebugInfos.GpuFrame		+= 0;
+		RenderDebugInfos.CpuWait		+= fDt.TotalCpuWaited;
+		RenderDebugInfos.DrawCalls		= RenderDebugInfos.FrameDrawCallsCount;
+		RenderDebugInfos.EffectBind		= RenderDebugInfos.FrameBindEffectCount;
+		RenderDebugInfos.GeometryBind	= RenderDebugInfos.FrameBindGeometryCount;
+
+		if (iFrameCount > 0)
+		{
+			RenderDebugInfos.Framerate		/=2;
+			RenderDebugInfos.CpuFrame		/=2;
+			RenderDebugInfos.GpuFrame		/=2;
+			RenderDebugInfos.CpuWait		/=2;
+		}
+		iFrameCount++;
+		if (iFrameCount > 256)
+			iFrameCount = 0;
+
 		switch (CurrentDebugTextMode)
 		{
 			case FeEDebugRenderTextMode::Memory:
@@ -256,17 +326,28 @@ namespace FeRendering
 				break;
 			case FeEDebugRenderTextMode::Rendering:
 			{
-				float fGpuFrameTime = 0.0f;
-				float fCpuFrameTime = 0.0f;
-				uint32 fFramerate = 60;
+				uint32 fGpuFrameTime = 0;
+				uint32 fFramerate = (1000 / fDt.TotalMilliseconds);
 
 				sprintf_s(DebugString,
 					"\
-					Mode\t: %s\n\
-					Framerate\t: %d (fps)\n\
-					Cpu Frame\t: %4.2f (ms)\n\
-					Gpu Frame\t: %4.2f (ms)\n\
-					", CONFIGSTR, fFramerate, fCpuFrameTime, fGpuFrameTime);
+Mode\t: %s\n\
+Framerate\t: %d (fps)\n\
+Cpu Frame\t: %d (ms)\n\
+Gpu Frame\t: %d (ms)\n\
+Cpu wait \t: %d (ms)\n\
+Draw calls\t: %d \n\
+Effect bind\t: %d \n\
+Geometry bind\t: %d \n\
+					", 
+					CONFIGSTR
+					,RenderDebugInfos.Framerate		
+					,RenderDebugInfos.CpuFrame		
+					,RenderDebugInfos.GpuFrame		
+					,RenderDebugInfos.CpuWait		
+					,RenderDebugInfos.DrawCalls		
+					,RenderDebugInfos.EffectBind		
+					,RenderDebugInfos.GeometryBind	);
 			}break;
 		}
 
@@ -285,4 +366,8 @@ namespace FeRendering
 			);
 	}
 
+	void FeModuleRendering::SwitchDebugRenderTextMode()
+	{
+		CurrentDebugTextMode = (FeEDebugRenderTextMode::Type)((CurrentDebugTextMode + 1) % FeEDebugRenderTextMode::Count);
+	}
 } // namespace FeRendering

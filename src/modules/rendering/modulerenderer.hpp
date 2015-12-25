@@ -27,6 +27,7 @@ namespace FeRendering
 		{
 			Rendering,
 			Memory,
+			Count
 		};
 	};
 	namespace FeETextureLoadingState
@@ -63,7 +64,7 @@ namespace FeRendering
 	public:
 		virtual uint32 Load(const ::FeCommon::FeModuleInit*) override;
 		virtual uint32 Unload() override;
-		virtual uint32 Update(float fDt) override;
+		virtual uint32 Update(const FeDt& fDt) override;
 
 		bool IsLoaded(const FeRenderTextureId&);
 		bool IsLoading(const FeRenderTextureId&);
@@ -95,6 +96,20 @@ namespace FeRendering
 		void Unload();
 	};
 
+	struct FeRenderDebugInfos
+	{
+		uint32	FrameDrawCallsCount;
+		uint32	FrameBindEffectCount;
+		uint32	FrameBindGeometryCount;
+
+		uint32 Framerate;
+		uint32 CpuFrame;
+		uint32 GpuFrame;
+		uint32 CpuWait;
+		uint32 DrawCalls;
+		uint32 EffectBind;
+		uint32 GeometryBind;
+	};
 	struct FeRenderBatch
 	{
 		FeCommon::FeTArray<FeRenderGeometryInstance> GeometryInstances;
@@ -110,15 +125,15 @@ namespace FeRendering
 
 		virtual uint32 Load(const ::FeCommon::FeModuleInit*) override;
 		virtual uint32 Unload() override;
-		virtual uint32 Update(float fDt) override;
+		virtual uint32 Update(const FeDt& fDt) override;
 
 		static FeRenderDevice& GetDevice() { return Device; }
-
+		void SwitchDebugRenderTextMode();
 	private:
 		void BeginRender();
 		void EndRender();
-		void RenderBatch(FeRenderBatch& batch,  float fDt);
-		void RenderDebugText();
+		void RenderBatch(FeRenderBatch& batch, const FeDt& fDt);
+		void RenderDebugText(const FeDt& fDt);
 
 		static FeRenderDevice Device;
 		FeCommon::FeTArray<FeRenderEffect> Effects;
@@ -130,7 +145,7 @@ namespace FeRendering
 		IFW1FontWrapper*				FontWrapper;
 		char							DebugString[DEBUG_STRING_SIZE];
 		FeEDebugRenderTextMode::Type	CurrentDebugTextMode;
-
+		FeRenderDebugInfos				RenderDebugInfos;
 	};
 
 	struct FeModuleRenderingInit : public ::FeCommon::FeModuleInit

@@ -13,7 +13,7 @@ namespace FeUi
 	{
 		return EFeReturnCode::Success;
 	}
-	uint32 FeModuleUi::Update(float fDt)
+	uint32 FeModuleUi::Update(const FeDt& fDt)
 	{
 		return EFeReturnCode::Success;
 	}

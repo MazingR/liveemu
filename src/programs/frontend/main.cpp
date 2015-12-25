@@ -66,17 +66,29 @@ uint32 FeApplication::Run()
 	bool bQuit = false;
 	uint32 iTicks = SDL_GetTicks();
 
+	FeDt fDt;
+	ZeroMemory(&fDt, sizeof(fDt));
+
 	while (!bQuit)
 	{
 		uint32 iPreviousTicks = iTicks;
 		iTicks = SDL_GetTicks();
-		float fInterval = (iTicks - iPreviousTicks) / 1000.0f;
+		fDt.TotalMilliseconds = iTicks - iPreviousTicks;
+		fDt.TotalSeconds = fDt.TotalMilliseconds / 1000.0f;
 
 		while (SDL_PollEvent(&e))
 		{
-			
 			if (e.type == SDL_KEYDOWN)
-				unitTest();
+			{
+				switch (e.key.keysym.sym){
+				case SDLK_F1:
+					GetModule<FeRendering::FeModuleRendering>()->SwitchDebugRenderTextMode();
+					break;
+				case SDLK_F2:
+					unitTest();
+					break;
+				}
+			}
 
 			if (e.type == SDL_QUIT)
 				bQuit = true;
@@ -84,8 +96,15 @@ uint32 FeApplication::Run()
 
 		for (ModulesMapIt it = Modules.begin(); it != Modules.end(); ++it)
 		{
-			FE_FAILEDRETURN(it->second->Update(fInterval));
+			FE_FAILEDRETURN(it->second->Update(fDt));
 		}
+		
+		// Limit framerate (60fps)
+		uint32 iFrameTicks = SDL_GetTicks() - iTicks;
+		fDt.TotalCpuWaited = 16 - iFrameTicks;
+
+		if (fDt.TotalCpuWaited>0)
+			SDL_Delay(fDt.TotalCpuWaited);
 	}
 
 	return EFeReturnCode::Success;

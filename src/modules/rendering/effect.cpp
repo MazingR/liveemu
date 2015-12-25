@@ -85,15 +85,7 @@ namespace FeRendering
 		FeCBPerObject data;
 		data.MatrixWorld = XMMatrixTranspose(geometryInstance.Transform.Matrix.getData());
 		pContext->UpdateSubresource(CBPerObject.Buffer, 0, NULL, &data, 0, 0);
-
-		// Set resources (textures)
-		for (uint32 iTextureIdx = 0; iTextureIdx < geometryInstance.Textures.GetSize(); ++iTextureIdx)
-		{
-			const FeRenderTextureId& textureId = geometryInstance.Textures[iTextureIdx];
-			const FeRenderTexture* pTexture = resouresHandler->GetTexture(textureId);
-			if (pTexture)
-				pContext->PSSetShaderResources(iTextureIdx, 1, &pTexture->SRV);
-		}
+		
 		// todo: bind other constants
 	}
 	void FeRenderEffect::Bind()
