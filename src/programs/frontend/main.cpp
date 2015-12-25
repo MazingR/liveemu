@@ -1,36 +1,14 @@
 #include <pch.hpp>
 
 #include <rendering/modulerenderer.hpp>
-#include <ui/module.hpp>
+#include <ui/moduleui.hpp>
 #include <SDL_syswm.h>
+#include <map>
 
-struct FeApplicationInit
-{
-public:
-	HINSTANCE	WindowsInstance;
-	HINSTANCE	WindowsPrevInstance;
-	wchar_t*	WindowsCmdLine;
-	int			WindowsCmdShow;
-};
-class FeApplication
-{
-private:
-
-	static const uint32 MaxModules = 16;
-	uint32				LoadedModules;
-
-	FeCommon::FeModule* Modules[MaxModules];
-public:
-	uint32 Load(const FeApplicationInit&);
-	uint32 Unload();
-	uint32 Run();
-};
+#define HEAP_APPLICATION 0
 
 uint32 FeApplication::Load(const FeApplicationInit& appInit)
 {
-	memset(Modules, 0, MaxModules*sizeof( void*));
-	LoadedModules = 0;
-
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
 		std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
@@ -41,7 +19,7 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version)
 
-	SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
+	SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, 1280, 720, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
 	
 	if (window == nullptr)
 	{
@@ -53,46 +31,47 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	SDL_GetWindowWMInfo(window, &wmInfo);
 	HWND hwnd = wmInfo.info.win.window;
 
+
+	{
+		FeCommon::FeModuleInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeRendering::FeModuleRenderResourcesHandler>(init));
+	}
 	{
 		FeRendering::FeModuleRenderingInit init;
 		
 		init.WindowsCmdShow = appInit.WindowsCmdShow;
-		init.WindowsInstance = appInit.WindowsInstance;
+		init.WindowsInstance = (HINSTANCE)appInit.WindowsInstance;
 		init.WindowHandle = hwnd;
 
-		auto pModuleRendering = new FeRendering::FeModuleRendering();
-		FE_FAILEDRETURN(pModuleRendering->Load(&init));
-		
-		Modules[0] = pModuleRendering;
-		LoadedModules++;
+		auto pModule = CreateModule<FeRendering::FeModuleRendering>();
+		FE_FAILEDRETURN(pModule->Load(&init));
 	}
 	{
 		FeUi::FeModuleUiInit init;
-
-		auto pModuleUi = new FeUi::FeModuleUi();
-		FE_FAILEDRETURN(pModuleUi->Load(&init));
-
-		Modules[1] = pModuleUi;
-		LoadedModules++;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeUi::FeModuleUi>(init));
 	}
 
 	return EFeReturnCode::Success;
 }
 uint32 FeApplication::Unload()
 {
-	for (uint32 i = 0; i < LoadedModules; ++i)
-	{
-		FE_FAILEDRETURN(Modules[i]->Unload());
-	}
+	for (ModulesMapIt it = Modules.begin(); it != Modules.end(); ++it)
+		FE_FAILEDRETURN(it->second->Unload());
+
 	return EFeReturnCode::Success;
 }	  
 uint32 FeApplication::Run()
 {
 	SDL_Event e;
 	bool bQuit = false;
-	
+	uint32 iTicks = SDL_GetTicks();
+
 	while (!bQuit)
 	{
+		uint32 iPreviousTicks = iTicks;
+		iTicks = SDL_GetTicks();
+		float fInterval = (iTicks - iPreviousTicks) / 1000.0f;
+
 		while (SDL_PollEvent(&e))
 		{
 			
@@ -102,10 +81,10 @@ uint32 FeApplication::Run()
 			if (e.type == SDL_QUIT)
 				bQuit = true;
 		 }
-		
-		for (uint32 i = 0; i < LoadedModules; ++i)
+
+		for (ModulesMapIt it = Modules.begin(); it != Modules.end(); ++it)
 		{
-			FE_FAILEDRETURN(Modules[i]->Update());
+			FE_FAILEDRETURN(it->second->Update(fInterval));
 		}
 	}
 
@@ -116,9 +95,9 @@ uint32 FeApplication::Run()
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
 	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
-	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Test");
+	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Renderer");
 
-	FeApplication app;
+	FeApplication& app = FeApplication::StaticInstance;
 	FeApplicationInit init;
 
 	init.WindowsCmdLine			= lpCmdLine;

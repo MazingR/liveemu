@@ -8,6 +8,17 @@
 
 namespace FeRendering
 {
+	struct FeCBPerFrame
+	{
+		XMMATRIX MatrixView;
+		XMMATRIX MatrixProj;
+	};
+
+	struct FeCBPerObject
+	{
+		XMMATRIX MatrixWorld;
+	};
+
 	uint32 FeRenderEffect::CompileShaderFromFile(const char* szFileName, const char* szEntryPoint, const char* szShaderModel, void** ppBlobOut)
 	{
 		DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -35,16 +46,67 @@ namespace FeRendering
 	}
 	void FeRenderEffect::Release()
 	{
-		if (VertexLayout) VertexLayout->Release();
-		if (VertexShader) VertexShader->Release();
-		if (PixelShader) PixelShader->Release();
+		SafeRelease(VertexLayout);
+		SafeRelease(VertexShader);
+		SafeRelease(PixelShader);
+
+		SafeRelease(CBPerFrame.Buffer);
+		SafeRelease(CBPerObject.Buffer);
+	}
+	void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderViewport& viewport)
+	{
+		ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
+
+		XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, -8.0f, 0.0f);
+		XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+		XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+		FeCBPerFrame cbPerFrame;
+
+		cbPerFrame.MatrixProj = XMMatrixPerspectiveFovLH(XM_PIDIV4, ((float)viewport.Width / (float)viewport.Height), 0.01f, 100.0f);
+		cbPerFrame.MatrixView = XMMatrixLookAtLH(Eye, At, Up);
+
+		cbPerFrame.MatrixProj = XMMatrixTranspose(cbPerFrame.MatrixProj);
+		cbPerFrame.MatrixView = XMMatrixTranspose(cbPerFrame.MatrixView);
+
+		FeMatrix4 matViewPorj;
+		mult(matViewPorj, camera.MatrixProjection, camera.MatrixView);
+		
+		pContext->UpdateSubresource(CBPerFrame.Buffer, 0, NULL, &cbPerFrame, 0, 0);
+	}
+	void FeRenderEffect::EndFrame()
+	{
+
+	}
+	void FeRenderEffect::BindGeometryInstance(const FeRenderGeometryInstance geometryInstance, const FeModuleRenderResourcesHandler* resouresHandler)
+	{
+		ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
+
+		FeCBPerObject data;
+		data.MatrixWorld = XMMatrixTranspose(geometryInstance.Transform.Matrix.getData());
+		pContext->UpdateSubresource(CBPerObject.Buffer, 0, NULL, &data, 0, 0);
+
+		// Set resources (textures)
+		for (uint32 iTextureIdx = 0; iTextureIdx < geometryInstance.Textures.GetSize(); ++iTextureIdx)
+		{
+			const FeRenderTextureId& textureId = geometryInstance.Textures[iTextureIdx];
+			const FeRenderTexture* pTexture = resouresHandler->GetTexture(textureId);
+			if (pTexture)
+				pContext->PSSetShaderResources(iTextureIdx, 1, &pTexture->SRV);
+		}
+		// todo: bind other constants
 	}
 	void FeRenderEffect::Bind()
 	{
-		FeModuleRendering::GetDevice().GetImmediateContext()->IASetInputLayout((ID3D11InputLayout*)VertexLayout);
-		FeModuleRendering::GetDevice().GetImmediateContext()->VSSetShader(VertexShader, NULL, 0);
-		FeModuleRendering::GetDevice().GetImmediateContext()->PSSetShader(PixelShader, NULL, 0);
+		ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
+		pContext->IASetInputLayout((ID3D11InputLayout*)VertexLayout);
+		pContext->VSSetShader(VertexShader, NULL, 0);
+		pContext->PSSetShader(PixelShader, NULL, 0);
+
+		pContext->VSSetConstantBuffers(0, 1, &CBPerFrame.Buffer);
+		pContext->VSSetConstantBuffers(1, 1, &CBPerObject.Buffer);
+		pContext->PSSetSamplers(0, 1, &Samplers[0].State);
 	}
 	uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	{
@@ -67,8 +129,8 @@ namespace FeRendering
 		// Define the input layout
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,	0, 0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,			0, 4*3,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,	0, 0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,		0, 3*4,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 		UINT numElements = ARRAYSIZE(layout);
 
@@ -91,95 +153,46 @@ namespace FeRendering
 		hr = pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, (ID3D11PixelShader**)&PixelShader);
 		pPSBlob->Release();
 		if (FAILED(hr)) return EFeReturnCode::Rendering_CreateShaderFailed;
+		
+		// Create the constant buffers
+		D3D11_BUFFER_DESC bd;
+		ZeroMemory(&bd, sizeof(bd));
+
+		ZeroMemory(&CBPerFrame, sizeof(FeCBPerFrame));
+		ZeroMemory(&CBPerObject, sizeof(FeCBPerObject));
+
+		bd.Usage = D3D11_USAGE_DEFAULT;
+		bd.ByteWidth = sizeof(FeCBPerFrame);
+		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		bd.CPUAccessFlags = 0;
+		hr = pD3DDevice->CreateBuffer(&bd, NULL, &CBPerFrame.Buffer);
+		if (FAILED(hr))
+			return EFeReturnCode::Failed;
+
+		bd.ByteWidth = sizeof(FeCBPerObject);
+		hr = pD3DDevice->CreateBuffer(&bd, NULL, &CBPerObject.Buffer);
+		if (FAILED(hr))
+			return EFeReturnCode::Failed;
+
+		// Create the sample state
+		Samplers.Reserve(1);
+		FeRenderSampler& sampler = Samplers.Add();
+
+		D3D11_SAMPLER_DESC sampDesc;
+		ZeroMemory(&sampDesc, sizeof(sampDesc));
+		sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		sampDesc.MinLOD = 0;
+		sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+		hr = pD3DDevice->CreateSamplerState(&sampDesc, &sampler.State);
+
+		if (FAILED(hr))
+			return EFeReturnCode::Failed;
+
 
 		return EFeReturnCode::Success;
 	}
 } // namespace FeRendering
-
-
-/*
-class FeModuleRenderer : public FeModule
-{
-public:
-virtual uint32 Load() override;
-virtual uint32 Unload() override;
-virtual uint32 Update() override;
-
-private:
-SDL_Window* win;
-SDL_Renderer* ren;
-SDL_Texture* tex;
-};
-uint32 FeModuleRenderer::Unload()
-{
-SDL_DestroyTexture(tex);
-SDL_DestroyRenderer(ren);
-SDL_DestroyWindow(win);
-SDL_Quit();
-
-return EFeReturnCode::Success;
-}
-uint32 FeModuleRenderer::Load()
-{
-if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-{
-std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
-return EFeReturnCode::Failed;
-}
-FE_LOG("Resource path is: %s", getResourcePath());
-
-win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
-if (win == nullptr)
-{
-FE_LOG("SDL_CreateWindow Error: %s",SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-
-ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-if (ren == nullptr){
-SDL_DestroyWindow(win);
-FE_LOG("SDL_CreateRenderer Error: %s", SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-std::string imagePath = getResourcePath("Lesson1") + "lena512.bmp";
-SDL_Surface *bmp = SDL_LoadBMP(imagePath.c_str());
-if (bmp == nullptr){
-SDL_DestroyRenderer(ren);
-SDL_DestroyWindow(win);
-FE_LOG("SDL_LoadBMP Error: %s", SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-tex = SDL_CreateTextureFromSurface(ren, bmp);
-SDL_FreeSurface(bmp);
-
-if (tex == nullptr){
-SDL_DestroyRenderer(ren);
-SDL_DestroyWindow(win);
-FE_LOG("SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-SDL_Quit();
-return EFeReturnCode::Failed;
-}
-
-return EFeReturnCode::Success;
-}
-uint32 FeModuleRenderer::Update()
-{
-//First clear the renderer
-SDL_RenderClear(ren);
-//Draw the texture
-SDL_RenderCopy(ren, tex, NULL, NULL);
-//Update the screen
-SDL_RenderPresent(ren);
-
-//Take a quick break after all that hard work
-//SDL_Delay(1000);
-
-return EFeReturnCode::Success;
-}
-*/

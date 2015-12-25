@@ -7,8 +7,10 @@
 
 namespace FeCommon
 {
-	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2, unsigned int  _crc);
+	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2=NULL, unsigned int  _crc=0);
 	unsigned int GenerateIntIdFromBuffer(const void * key, int len, unsigned int seed);
+	void ToLower(char* szStr);
+	void ToUpper(char* szStr);
 
 	//struct FeStringP
 	//{

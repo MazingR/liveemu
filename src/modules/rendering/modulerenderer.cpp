@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include <modulerenderer.hpp>
 #include <common/memorymanager.hpp>
 
@@ -6,28 +8,90 @@
 #include <d3dcompiler.h>
 #include <xnamath.h>
 #include "FW1FontWrapper.h"
+#include <SDL_mutex.h>
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
 namespace FeRendering
 {
-	void FeRenderViewport::Bind()  const
+	struct CBNeverChanges
 	{
-		// Setup the viewport
-		D3D11_VIEWPORT vp;
-		ZeroMemory(&vp, sizeof(D3D11_VIEWPORT));
+		XMMATRIX mView;
+	};
 
-		vp.Width = (FLOAT)FeModuleRendering::GetDevice().GetNativeResolution().w;
-		vp.Height = (FLOAT)FeModuleRendering::GetDevice().GetNativeResolution().h;
-		vp.MaxDepth = 1.0f;
+	struct CBChangeOnResize
+	{
+		XMMATRIX mProjection;
+	};
 
-		FeModuleRendering::GetDevice().GetImmediateContext()->OMSetRenderTargets(1, &RenderTargetView, NULL);
-		FeModuleRendering::GetDevice().GetImmediateContext()->RSSetViewports(1, &vp);
+	struct CBChangesEveryFrame
+	{
+		XMMATRIX mWorld;
+		XMFLOAT4 vMeshColor;
+	};
+
+	uint32 FeModuleRenderResourcesHandler::Load(const ::FeCommon::FeModuleInit*)
+	{
+		return EFeReturnCode::Success;
 	}
-	void FeRenderViewport::Clear()  const
+	uint32 FeModuleRenderResourcesHandler::Unload()
 	{
-		const float ClearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
-		FeModuleRendering::GetDevice().GetImmediateContext()->ClearRenderTargetView(RenderTargetView, ClearColor);
+		return EFeReturnCode::Success;
+	}
+	uint32 FeModuleRenderResourcesHandler::Update(float fDt)
+	{
+		return EFeReturnCode::Success;
+	}
+	const FeRenderTexture* FeModuleRenderResourcesHandler::GetTexture(const FeRenderTextureId& textureId) const
+	{
+		TexturesMap::const_iterator it = Textures.find(textureId);
+		return it != Textures.end() ? &it->second : NULL;
+
+	}
+	bool FeModuleRenderResourcesHandler::IsLoaded(const FeRenderTextureId& textureId)
+	{
+		const FeRenderTexture* pTexture = GetTexture(textureId);
+		return pTexture ? pTexture->LoadingState == FeETextureLoadingState::Loaded : false ;
+	}
+	bool FeModuleRenderResourcesHandler::IsLoading(const FeRenderTextureId& textureId)
+	{
+		const FeRenderTexture* pTexture = GetTexture(textureId);
+		return pTexture ? pTexture->LoadingState == FeETextureLoadingState::Loading : false;
+	}
+	uint32 FeModuleRenderResourcesHandler::LoadTexture(const char* szTexturePath, FeRenderTextureId* pTextureId)
+	{
+		char szPath[COMMON_PATH_SIZE];
+		sprintf_s(szPath, szTexturePath);
+		FeCommon::ToLower(szPath);
+
+		*pTextureId = FeCommon::GenerateUIntIdFromString(szPath);
+		
+		if (!GetTexture(*pTextureId))
+		{
+			// todo: make all of it asynchone & thread safe
+			Textures[*pTextureId] = FeRenderTexture(); // add texture to map
+			FeRenderTexture& texture = Textures[*pTextureId];
+			ZeroMemory(&texture, sizeof(FeRenderTexture));
+			sprintf_s(texture.Path.Str, szPath);
+
+			ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
+			HRESULT hr;
+			D3DX11CreateTextureFromFile(pD3DDevice, szPath, NULL, NULL, &texture.Resource, &hr);
+
+			if (!FAILED(hr))
+			{
+				hr = pD3DDevice->CreateShaderResourceView(texture.Resource, NULL, &texture.SRV);
+			}
+			texture.LoadingState = (FAILED(hr)) ? FeETextureLoadingState::LoadFailed : FeETextureLoadingState::Loaded;
+
+			
+		}
+		return EFeReturnCode::Success;
+	}
+	uint32 FeModuleRenderResourcesHandler::UnloadTexture(const FeRenderTextureId&)
+	{
+		// todo
+		return EFeReturnCode::Success;
 	}
 
 	uint32 FeModuleRendering::Load(const ::FeCommon::FeModuleInit* initBase)
@@ -35,11 +99,16 @@ namespace FeRendering
 		auto init = (FeModuleRenderingInit*)initBase;
 
 		FE_FAILEDRETURN(Device.Initialize(init->WindowHandle));
+
 		FeRenderEffect& newEffect = Effects.Add();
-		FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/Tutorial02.fx"));
+		FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/default.fx"));
 
 		// DEBUG code 
-		FeGeometryDataId geometryId;
+		FeRenderGeometryId geometryId;
+
+		auto pResourcesHandler = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
+		FeRenderTextureId textureId;
+		pResourcesHandler->LoadTexture("../data/image.jpg", &textureId);
 
 		Geometries.Reserve(16);
 		Geometries.SetZeroMemory();
@@ -53,7 +122,8 @@ namespace FeRendering
 
 		geomInstance.Effect = 1;
 		geomInstance.Geometry = geometryId;
-
+		geomInstance.Textures.Add(textureId);
+		
 		HRESULT hResult = FW1CreateFactory(FW1_VERSION, &FW1Factory);
 		hResult = FW1Factory->CreateFontWrapper(Device.GetD3DDevice(), L"Arial", &FontWrapper);
 
@@ -71,12 +141,12 @@ namespace FeRendering
 		FeGeometryHelper::ReleaseGeometryData();
 		FeGeometryHelper::ReleaseStaticGeometryData();
 
-		FontWrapper->Release();
-		FW1Factory->Release();
+		SafeRelease(FontWrapper);
+		SafeRelease(FW1Factory);
 
 		return EFeReturnCode::Success;
 	}
-	uint32 FeModuleRendering::Update()
+	uint32 FeModuleRendering::Update(float fDt)
 	{
 		int iProcessedMsg = 0;
 		int iMaxProcessedMsg = 3;
@@ -93,7 +163,7 @@ namespace FeRendering
 			else
 			{
 				BeginRender();
-				RenderBatch(renderBatch);
+				RenderBatch(renderBatch, fDt);
 				RenderDebugText();
 				EndRender();
 			}
@@ -106,19 +176,6 @@ namespace FeRendering
 
 		return EFeReturnCode::Success;
 	}
-
-	uint32 FeRenderViewport::CreateFromBackBuffer()
-	{
-		// Create a render target view
-		ID3D11Texture2D* pBackBuffer = NULL;
-		
-		D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetSwapChain()->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer));
-		D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateRenderTargetView(pBackBuffer, NULL, &RenderTargetView));
-
-		pBackBuffer->Release();
-
-		return EFeReturnCode::Success;
-	}
 	void FeModuleRendering::BeginRender()
 	{
 
@@ -128,7 +185,7 @@ namespace FeRendering
 		// Present the information rendered to the back buffer to the front buffer (the screen)
 		Device.GetSwapChain()->Present(0, 0);
 	}
-	void FeModuleRendering::RenderBatch(FeRenderBatch& batch)
+	void FeModuleRendering::RenderBatch(FeRenderBatch& batch, float fDt)
 	{
 		// Clear the back buffer
 		batch.Viewport.Clear();
@@ -136,24 +193,43 @@ namespace FeRendering
 
 		FeCommon::FeTArray<FeRenderGeometryInstance>& instances = batch.GeometryInstances;
 
-		FeEffectId iLastEffectId = 0;
-		FeGeometryDataId iLastGeometryId = 0;
+		FeRenderEffectId iLastEffectId = 0;
+		FeRenderGeometryId iLastGeometryId = 0;
 		
 		FeRenderGeometryData* pGeometryData = NULL;
 		FeRenderEffect* pEffect = NULL;
+		FeRenderCamera camera;
 
+		auto pResourcesHandler = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
+		static float fRotX = 0, fRotY = 0, fRotZ = 0;
+		static FeVector3 translation(0,0,10), scale(1,1,1);
+		static float fDelta = 0.5f;
+
+		translation.mData[2] -= fDelta*fDt;
+		scale.mData[0] += fDelta*fDt;
+		scale.mData[1] += fDelta*fDt;
+		fRotZ += fDelta*fDt*2.0f;
+
+		for (uint32 i = 0; i < Effects.GetSize(); ++i)
+		{
+			Effects[i].BeginFrame(camera, batch.Viewport);
+		}
 		for (uint32 iInstanceIdx = 0; iInstanceIdx < instances.GetSize(); ++iInstanceIdx)
 		{
 			FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
+			
+			FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, translation, FeRotation(fRotX, fRotY, fRotZ), scale);
 
 			if (geomInstance.Effect != iLastEffectId)
 			{
 				FE_ASSERT(Effects.GetSize() >= geomInstance.Effect, "Invalid effect Id !");
 				pEffect = &Effects[geomInstance.Effect - 1];
 				pEffect->Bind();
-
 				iLastEffectId = geomInstance.Effect;
 			}
+
+			pEffect->BindGeometryInstance(geomInstance, pResourcesHandler);
+
 			if (geomInstance.Geometry != iLastGeometryId)
 			{
 				FE_ASSERT(Geometries.GetSize() >= geomInstance.Geometry, "Invalid geometry Id !");

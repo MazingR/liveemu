@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common/common.hpp>
+#include <common/application.hpp>
 
 namespace FeUi
 {
@@ -14,7 +15,7 @@ namespace FeUi
 	public:
 		virtual uint32 Load(const ::FeCommon::FeModuleInit*) override;
 		virtual uint32 Unload() override;
-		virtual uint32 Update() override;
+		virtual uint32 Update(float fDt) override;
 
 	private:
 	};

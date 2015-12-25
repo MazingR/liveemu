@@ -37,10 +37,10 @@ extern "C" {
 #define free(ptr)				FeFreeHook(ptr, DEFAULT_HEAP)
 
 #define FE_ALLOCATE(size, heap) FeMallocHook(size, heap)
-#define FE_FREE(ptr, heap) FeFreeHook(size, heap)
+#define FE_FREE(ptr, heap) FeFreeHook(ptr, heap)
 
 #define FE_ALLOCATED(size) FeMallocHook(size, DEFAULT_HEAP)
-#define FE_FREED(ptr) FeFreeHook(size, DEFAULT_HEAP)
+#define FE_FREED(ptr) FeFreeHook(ptr, DEFAULT_HEAP)
 
 #define _CRT_ALLOCATION_DEFINED // we don't want to bother with crt defines
 #endif

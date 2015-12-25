@@ -1,7 +1,7 @@
 #include <pch.hpp>
 
 #include <rendering/modulerenderer.hpp>
-#include <ui/module.hpp>
+#include <ui/moduleui.hpp>
 
 #include "common.hpp"
 
@@ -11,10 +11,10 @@ uint32 file_read(const char* filename, void** outputBuff) {
 	if (rw == NULL) 
 		return EFeReturnCode::File_OpenFailed;
 
-	Sint64 res_size = SDL_RWsize(rw);
+	size_t res_size = (size_t)SDL_RWsize(rw);
 	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 1);
 
-	Sint64 nb_read_total = 0, nb_read = 1;
+	size_t nb_read_total = 0, nb_read = 1;
 	char* buf = (char*)*outputBuff;
 
 	while (nb_read_total < res_size && nb_read != 0) {

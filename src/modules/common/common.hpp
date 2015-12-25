@@ -14,7 +14,9 @@
 #define C_END
 #endif
 
+#define SafeRelease(a) {if (a) a->Release();}
 #define COMMON_STR_SIZE 128
+#define COMMON_PATH_SIZE 512
 
 #ifdef DEBUG
 #define CONFIGSTR "Debug"
@@ -67,7 +69,7 @@ int __cdecl vs_printf(const char *format, ...);
 	#define FE_ASSERT(condition, fmt, ...) 
 #endif
 
-#define FE_NEW(type, heap) FeNewA<type>(size, heap)
+#define FE_NEW(type, heap) FeNew<type>(heap)
 #define FE_NEW_ARRAY(type, size, heap) FeNewA<type>(size, heap)
 
 #define FE_NEWD(type) FeNewA<type>(size, DEFAULT_HEAP)
@@ -122,45 +124,47 @@ void FeDeleteA(void* ptr, size_t count, THeapId iHeapId = DEFAULT_HEAP)
 
 namespace FeCommon
 {
-	struct FeModuleInit
-	{};
-
-	namespace FeMath
-	{
-		template <typename T> static inline T		Min(const T& a, const T& b)
-		{
-			return(a < b ? a : b);
-		}
-		template <typename T> static inline T		Max(const T& a, const T& b)
-		{
-			return(a > b ? a : b);
-		}
-		template <typename T> static inline T       Clamp(const T& a, const T& min, const T& max)
-		{
-			return Min<T>(max, Max<T>(min, a));
-		}
-		template <typename T> static inline T		Abs(const T& val)
-		{
-			return(val < 0 ? -val : val);
-		}
-		template <typename T> static inline T		Range(const T& min, const T& max, const T& val)
-		{
-			return (max > val ? (min < val ? val : min) : max);
-		}
-		template <typename T> static inline float	Ratio(const T& min, const T& max, const T& val)
-		{
-			if (val <= min) return 0.0f;
-			if (val >= max) return 1.0f;
-
-			return float(val - min) * (1.0f / float(max - min));
-		}
-	};
-	class FeModule
-	{
-	public:
-		virtual uint32 Load(const ::FeCommon::FeModuleInit*) = 0;
-		virtual uint32 Unload() = 0;
-		virtual uint32 Update() = 0;
-	};
-
 }
+
+#include <gmtl/Matrix.h>
+#include <gmtl/MatrixOps.h>
+#include <gmtl/Vec.h>
+#include <gmtl/VecOps.h>
+#include <gmtl/Generate.h>
+
+typedef gmtl::Vec3f FeVector3;
+typedef gmtl::Matrix33f FeMatrix3;
+typedef gmtl::EulerAngleXYZf FeRotation;
+typedef gmtl::Vec4f FeVector4;
+typedef gmtl::Matrix44f FeMatrix4;
+
+namespace FeMath
+{
+	template <typename T> static inline T		Min(const T& a, const T& b)
+	{
+		return(a < b ? a : b);
+	}
+	template <typename T> static inline T		Max(const T& a, const T& b)
+	{
+		return(a > b ? a : b);
+	}
+	template <typename T> static inline T       Clamp(const T& a, const T& min, const T& max)
+	{
+		return Min<T>(max, Max<T>(min, a));
+	}
+	template <typename T> static inline T		Abs(const T& val)
+	{
+		return(val < 0 ? -val : val);
+	}
+	template <typename T> static inline T		Range(const T& min, const T& max, const T& val)
+	{
+		return (max > val ? (min < val ? val : min) : max);
+	}
+	template <typename T> static inline float	Ratio(const T& min, const T& max, const T& val)
+	{
+		if (val <= min) return 0.0f;
+		if (val >= max) return 1.0f;
+
+		return float(val - min) * (1.0f / float(max - min));
+	}	
+};

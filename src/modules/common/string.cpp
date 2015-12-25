@@ -4,7 +4,23 @@
 
 namespace FeCommon
 {
-	uint32 GenerateUIntIdFromString(const char* cptr, unsigned int  _crc)
+	void ToLower(char* szStr)
+	{
+		size_t iLen = strlen(szStr);
+		for (size_t i = 0; i < iLen; ++i)
+		{
+			szStr[i] = tolower(szStr[i]);
+		}
+	}
+	void ToUpper(char* szStr)
+	{
+		size_t iLen = strlen(szStr);
+		for (size_t i = 0; i < iLen; ++i)
+		{
+			szStr[i] = toupper(szStr[i]);
+		}
+	}
+	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2, unsigned int  _crc)
 	{
 		if (!cptr)
 			return 0;

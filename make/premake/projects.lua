@@ -78,7 +78,9 @@ groups =
 				c_src_root.."modules/common/**.hpp",
 				c_src_root.."modules/common/**.cpp",
 			},
-			includedirs = { c_src_root.."modules/common"},
+			includedirs = { 
+				c_src_root.."modules/common",
+				c_src_root.."externals/gmtl/include"},
 			targetname = "common",
 			dependencies = 
 			{

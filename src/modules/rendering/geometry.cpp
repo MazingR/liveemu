@@ -19,6 +19,10 @@ namespace FeRendering
 	FeCommon::FeTArray<FeRenderGeometryData> FeGeometryHelper::GeometryData;
 	bool FeGeometryHelper::ComputedGeometry = false;
 
+	const FeMatrix4& FeGeometryTransform::IdentityMatrix()
+	{
+		return gmtl::MAT_IDENTITY44F;
+	}
 	void FeRenderGeometryData::Release()
 	{
 		if (VertexBuffer) ((ID3D11Buffer*)VertexBuffer)->Release();
@@ -58,13 +62,15 @@ namespace FeRendering
 		StaticGeometryData.SetZeroMemory();
 		
 		{
+			float fOffset = 0.5f;
+
 			// Create vertex buffer
 			Vertex_T0 vertexData[] =
 			{
-				{ XMFLOAT3(0.0f, 0.0f, 0.f)		, XMFLOAT2(0.f, 0.f) },
-				{ XMFLOAT3(1.0f, 0.0f, 0.f)		, XMFLOAT2(1.f, 0.f) },
-				{ XMFLOAT3(1.0f, -1.0f, 0.f)	, XMFLOAT2(1.f, 1.f) },
-				{ XMFLOAT3(0.0f, -1.0f, 0.f)	, XMFLOAT2(0.f, 1.f) },
+				{ XMFLOAT3(0.0f - fOffset	, 0.0f + fOffset, 0.f), XMFLOAT2(0.f, 0.f) },
+				{ XMFLOAT3(1.0f - fOffset	, 0.0f + fOffset, 0.f), XMFLOAT2(1.f, 0.f) },
+				{ XMFLOAT3(1.0f - fOffset	,-1.0f + fOffset, 0.f), XMFLOAT2(1.f, 1.f) },
+				{ XMFLOAT3(0.0f - fOffset	,-1.0f + fOffset, 0.f), XMFLOAT2(0.f, 1.f) },
 			};
 			uint16 indexData[] =
 			{
@@ -81,7 +87,7 @@ namespace FeRendering
 
 		return EFeReturnCode::Success;
 	}
-	uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, FeRenderGeometryData* geometryData, FeGeometryDataId* geometryId)
+	uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, FeRenderGeometryData* geometryData, FeRenderGeometryId* geometryId)
 	{
 		if (!ComputedGeometry)
 		{
@@ -89,17 +95,23 @@ namespace FeRendering
 			ComputedGeometry = true;
 		}
 		*geometryData = StaticGeometryData[eType];
-		*geometryId = (FeGeometryDataId)eType + 1;
+		*geometryId = (FeRenderGeometryId)eType + 1;
 
 		return EFeReturnCode::Success;
 	}
-	uint32 FeGeometryHelper::CreateGeometry(void* vertexBuffer, uint32 iVertexCount, void* indexBuffer, uint32 iIndexCount, FeRenderGeometryData* geometryData, FeGeometryDataId* geometryId)
+	uint32 FeGeometryHelper::CreateGeometry(void* vertexBuffer, uint32 iVertexCount, void* indexBuffer, uint32 iIndexCount, FeRenderGeometryData* geometryData, FeRenderGeometryId* geometryId)
 	{
 		FeRenderGeometryData& newGeometryData = GeometryData.Add();
 		*geometryId = GeometryData.GetSize();
 		return EFeReturnCode::Success;
 	}
-	
+	void FeGeometryHelper::ComputeAffineTransform(FeGeometryTransform& output, FeVector3 vTranslate, FeRotation vRotate, FeVector3 vScale)
+	{
+		output.Matrix = gmtl::makeTrans< gmtl::Matrix44f >(vTranslate);
+		output.Matrix = output.Matrix*gmtl::make< gmtl::Matrix44f >(vRotate);
+		output.Matrix = output.Matrix*gmtl::makeScale<FeMatrix4>(vScale);
+		
+	}
 	void FeGeometryHelper::ReleaseGeometryData()
 	{
 		for (uint32 i = 0; i < GeometryData.GetSize(); ++i)

@@ -9,7 +9,7 @@
 
 namespace FeCommon
 {
-	typedef std::unordered_map<uint64, uint64>	MapAllocations;
+	typedef std::unordered_map<size_t, size_t>	MapAllocations;
 	typedef MapAllocations::iterator			MapAllocationsIt;
 	typedef MapAllocations::const_iterator		MapAllocationsConstIt;
 
@@ -41,8 +41,11 @@ namespace FeCommon
 		uint32		CreateHeapMBytes(const size_t& _size, const char* szName = "");
 		uint32		CreateHeap(const size_t& _size, const char* szName = "");
 		
-		MemHeap&	GetHeap(int iHeapId);
+		MemHeap&	GetHeap(uint32 iHeapId);
 		void		GetDebugInfos(char* outputStr, size_t outputStrSize);
+
+		void OnAllocate(MemHeap& heap, void* _ptr, const size_t& _size);
+		void OnFree(MemHeap& heap, void* _ptr);
 	private:
 		FeTArray<MemHeap>	Heaps;
 	};

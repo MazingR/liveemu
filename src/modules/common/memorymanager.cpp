@@ -118,14 +118,7 @@ void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, 
 
 	void* ptr = HeapAlloc(heap.HeapHandle, 0, _size);
 	FE_LOCALASSERT(ptr, "Not enought memory !");
-
-	heap.DebugInfos.Allocated += _size;
-	if (heap.DebugInfos.Allocated > heap.DebugInfos.AllocatedPeak)
-		heap.DebugInfos.AllocatedPeak = heap.DebugInfos.Allocated;
-
-	std::pair<MapAllocationsIt, bool> bInsertResult;
-	bInsertResult = heap.Allocations.insert(std::pair<size_t, size_t>((size_t)ptr, _size));
-	FE_LOCALASSERT(bInsertResult.second == true, "Insert allocation failed !");
+	OnAllocate(heap, ptr, _size);
 
 	return ptr;
 }
@@ -143,16 +136,11 @@ void* FeMemoryManager::Free(void* _ptr, int iHeapId)
 
 	MemHeap& heap = GetHeap(iHeapId);
 	HeapFree(heap.HeapHandle, 0, _ptr);
+	OnFree(heap, _ptr);
 
-	MapAllocationsIt it = heap.Allocations.find((size_t)_ptr);
-	FE_LOCALASSERT(it != heap.Allocations.end(), "Allocation not found !?");
-
-	heap.DebugInfos.Allocated -= it->second;
-	heap.Allocations.erase(it);
-	
 	return NULL;
 }
-MemHeap& FeMemoryManager::GetHeap(int iHeapId)
+MemHeap& FeMemoryManager::GetHeap(uint32 iHeapId)
 {
 	FE_LOCALASSERT(iHeapId < Heaps.GetSize(), "Invalid heap id !");
 	return Heaps[iHeapId];
@@ -194,8 +182,24 @@ void FeMemoryManager::GetDebugInfos(char* outputStr, size_t outputStrSize)
 		iOutputSize -= iLineSize;
 		outputPtr += iLineSize;
 	}
-	sprintf_s(outputPtr, iOutputSize, "Total %4.2f%%    %4.2f / %4.2f(MB)\n", (fTotalAllocated / fTotalSize) * 100.0f, fTotalAllocated, fTotalSize + DEFAULT_HEAP_SIZE);
-	
-	
+	sprintf_s(outputPtr, iOutputSize, "Total %4.2f%%    %4.2f / %4.2f(MB)\n", (fTotalAllocated / fTotalSize) * 100.0f, fTotalAllocated, fTotalSize + DEFAULT_HEAP_SIZE);	
+}
+void FeMemoryManager::OnAllocate(MemHeap& heap, void* _ptr, const size_t& _size)
+{
+	heap.DebugInfos.Allocated += _size;
+	if (heap.DebugInfos.Allocated > heap.DebugInfos.AllocatedPeak)
+		heap.DebugInfos.AllocatedPeak = heap.DebugInfos.Allocated;
+
+	std::pair<MapAllocationsIt, bool> bInsertResult;
+	bInsertResult = heap.Allocations.insert(std::pair<size_t, size_t>((size_t)_ptr, _size));
+	FE_LOCALASSERT(bInsertResult.second == true, "Insert allocation failed !");
+
+}
+void FeMemoryManager::OnFree(MemHeap& heap, void* _ptr)
+{
+	MapAllocationsIt it = heap.Allocations.find((size_t)_ptr);
+	FE_LOCALASSERT(it != heap.Allocations.end(), "Allocation not found !?");
+	heap.DebugInfos.Allocated -= it->second;
+	heap.Allocations.erase(it);
 }
 }
