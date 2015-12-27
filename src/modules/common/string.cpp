@@ -2,7 +2,7 @@
 
 #include <string.hpp>
 
-namespace FeCommon
+namespace FeStringTools
 {
 	void ToLower(char* szStr)
 	{

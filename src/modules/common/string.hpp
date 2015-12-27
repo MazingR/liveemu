@@ -5,7 +5,7 @@
 
 #include <unordered_set>
 
-namespace FeCommon
+namespace FeStringTools
 {
 	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2=NULL, unsigned int  _crc=0);
 	unsigned int GenerateIntIdFromBuffer(const void * key, int len, unsigned int seed);

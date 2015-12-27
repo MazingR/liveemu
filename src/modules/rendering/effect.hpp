@@ -1,38 +1,19 @@
 #pragma once
 
-#include <common/common.hpp>
-
-#pragma warning( disable : 4005)
-#include <d3d11.h>
+#include <commonrenderer.hpp>
 #include <map>
 
+// forward declares
 namespace FeRendering
 {
 	struct FeRenderGeometryInstance;
 	struct FeRenderViewport;
 	struct FeRenderGeometryInstance;
 	class FeModuleRenderResourcesHandler;
+};
 
-	typedef uint32 FeShaderId;
-	
-	struct FeRenderCamera
-	{
-		FeVector3	VecPosition;
-		FeVector3	VecLookAt;
-		FeVector3	VecUp;
-		
-		FeMatrix4	MatrixProjection;
-		FeMatrix4	MatrixView;
-	};
-	struct FeRenderConstantBuffer
-	{
-		ID3D11Buffer*	Buffer;
-	};
-	struct FeRenderSampler
-	{
-		ID3D11SamplerState*	State;
-	};
-
+namespace FeRendering
+{
 	class FeRenderEffect
 	{
 	public:

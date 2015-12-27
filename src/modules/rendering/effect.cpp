@@ -1,8 +1,7 @@
+#include <effect.hpp>
 #include <modulerenderer.hpp>
-#include <device.hpp>
 
-#include <windows.h>
-#include <d3dx11.h>
+#include <d3dx11include.hpp>
 #include <d3dcompiler.h>
 #include <xnamath.h>
 

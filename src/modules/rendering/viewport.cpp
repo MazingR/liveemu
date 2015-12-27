@@ -1,13 +1,6 @@
-#include <pch.hpp>
-
 #include <modulerenderer.hpp>
-#include <common/memorymanager.hpp>
 
-#include <windows.h>
-#include <d3dx11.h>
-#include <d3dcompiler.h>
-#include <xnamath.h>
-#include "FW1FontWrapper.h"
+#include <d3dx11include.hpp>
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 

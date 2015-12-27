@@ -1,8 +1,7 @@
+#include <geometry.hpp>
 #include <modulerenderer.hpp>
 
-#include <windows.h>
-#include <d3dx11.h>
-#include <d3dcompiler.h>
+#include <d3dx11include.hpp>
 #include <xnamath.h>
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
@@ -25,10 +24,10 @@ namespace FeRendering
 	}
 	void FeRenderGeometryData::Release()
 	{
-		if (VertexBuffer) ((ID3D11Buffer*)VertexBuffer)->Release();
-		if (VertexBuffer) ((ID3D11Buffer*)IndexBuffer)->Release();
+		if (VertexBuffer) (VertexBuffer)->Release();
+		if (VertexBuffer) (IndexBuffer)->Release();
 	}
-	uint32 FeGeometryHelper::CreateVertexAndIndexBuffer(void** pVertexBuffer, void** pIndexBuffer, void* vertexData, uint32 vertexCount, void* indexData, uint32 indexCount)
+	uint32 FeGeometryHelper::CreateVertexAndIndexBuffer(ID3D11Buffer** pVertexBuffer, ID3D11Buffer** pIndexBuffer, void* vertexData, uint32 vertexCount, void* indexData, uint32 indexCount)
 	{
 		D3D11_BUFFER_DESC bd;
 		D3D11_SUBRESOURCE_DATA InitData;
@@ -41,7 +40,7 @@ namespace FeRendering
 			bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 			InitData.pSysMem = vertexData;
 
-			D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateBuffer(&bd, &InitData, (ID3D11Buffer**)pVertexBuffer));
+			D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateBuffer(&bd, &InitData, pVertexBuffer));
 		}
 		{
 			ZeroMemory(&bd, sizeof(bd));
@@ -52,7 +51,7 @@ namespace FeRendering
 			bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 			InitData.pSysMem = indexData;
 
-			D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateBuffer(&bd, &InitData, (ID3D11Buffer**)pIndexBuffer));
+			D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateBuffer(&bd, &InitData, pIndexBuffer));
 		}
 		return EFeReturnCode::Success;
 	}

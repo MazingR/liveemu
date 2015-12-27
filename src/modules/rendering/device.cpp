@@ -1,9 +1,7 @@
+#include <device.hpp>
 #include <modulerenderer.hpp>
 
-#include <windows.h>
-#include <d3dx11.h>
-#include <d3dcompiler.h>
-#include <xnamath.h>
+#include <d3dx11include.hpp>
 
 namespace FeRendering
 {
@@ -16,12 +14,14 @@ namespace FeRendering
 		if (SwapChain) SwapChain->Release();
 		if (D3dDevice) D3dDevice->Release();
 	}
-	uint32 FeRenderDevice::Initialize(HWND hwnd)
+	uint32 FeRenderDevice::Initialize(void* hwnd)
 	{
 		HRESULT hr = S_OK;
+		D3D_DRIVER_TYPE         DriverType = D3D_DRIVER_TYPE_NULL;
+		D3D_FEATURE_LEVEL       FeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
 		RECT rc;
-		GetClientRect(hwnd, &rc);
+		GetClientRect((HWND)hwnd, &rc);
 
 		// Save up window resolution
 		NativeResolution.w = rc.right - rc.left;
@@ -59,7 +59,7 @@ namespace FeRendering
 		sd.BufferDesc.RefreshRate.Numerator = 60;
 		sd.BufferDesc.RefreshRate.Denominator = 1;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		sd.OutputWindow = hwnd;
+		sd.OutputWindow = (HWND)hwnd;
 		sd.SampleDesc.Count = 1;
 		sd.SampleDesc.Quality = 0;
 		sd.Windowed = TRUE;
