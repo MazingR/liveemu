@@ -8,7 +8,7 @@
 
 #define MEMALIGNEMENT 16
 #define DEFAULT_HEAP_SIZE 16
-#define MEM_PAGE_SIZE 512*(1000)
+#define MEM_PAGE_SIZE_KB 512
 
 HANDLE g_initHeapHandle = 0;
 
@@ -107,6 +107,8 @@ uint32 FeMemoryManager::CreateHeap(const size_t& _size, const char* szName)
 
 void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, int iHeapId)
 {
+	FE_LOCALASSERT(MEM_PAGE_SIZE_KB>(_size / 1024), "can't allocate more than %d (KB) contiguous memory !", MEM_PAGE_SIZE_KB)
+
 	if (iHeapId == DEFAULT_HEAP)
 	{
 		void* outputPtr = HeapAlloc(g_initHeapHandle, 0, _size);

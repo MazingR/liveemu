@@ -19,6 +19,6 @@ namespace FeUi
 		virtual uint32 Update(const FeDt& fDt) override;
 
 	private:
-		FeTArray<FeRendering::FeRenderGeometryInstance> GeometryInstances;
+		FeTArray<FeRendering::FeRenderGeometryInstance*> GeometryInstances;
 	};
 }

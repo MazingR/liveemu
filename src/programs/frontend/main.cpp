@@ -66,6 +66,7 @@ uint32 FeApplication::Run()
 	SDL_Event e;
 	bool bQuit = false;
 	uint32 iTicks = SDL_GetTicks();
+	uint32 iMaxPolledEvents = 1;
 
 	FeDt fDt;
 	ZeroMemory(&fDt, sizeof(fDt));
@@ -73,11 +74,13 @@ uint32 FeApplication::Run()
 	while (!bQuit)
 	{
 		uint32 iPreviousTicks = iTicks;
+		uint32 iPolledEvents = 0;
+
 		iTicks = SDL_GetTicks();
 		fDt.TotalMilliseconds = iTicks - iPreviousTicks;
 		fDt.TotalSeconds = fDt.TotalMilliseconds / 1000.0f;
 
-		while (SDL_PollEvent(&e))
+		while (iPolledEvents++<iMaxPolledEvents && SDL_PollEvent(&e))
 		{
 			if (e.type == SDL_KEYDOWN)
 			{

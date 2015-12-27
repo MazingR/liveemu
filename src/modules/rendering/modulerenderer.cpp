@@ -335,14 +335,14 @@ namespace FeRendering
 		MSG msg = { 0 };
 
 		// Process iMaxProcessedMsg at maximum
-		while (WM_QUIT != msg.message && iProcessedMsg++<iMaxProcessedMsg)
-		{
-			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-		}
+		//while (WM_QUIT != msg.message && iProcessedMsg++<iMaxProcessedMsg)
+		//{
+		//	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		//	{
+		//		TranslateMessage(&msg);
+		//		DispatchMessage(&msg);
+		//	}
+		//}
 
 		// Render frame
 		BeginRender();
@@ -370,6 +370,9 @@ namespace FeRendering
 		RenderDebugInfos.FrameBindEffectCount = 0;
 		RenderDebugInfos.FrameBindGeometryCount = 0;
 		RenderDebugInfos.FrameBindTextureCount = 0;
+
+		for (uint32 i = 0; i < RegisteredRenderBatches.GetSize(); ++i)
+			RegisteredRenderBatches[i].Viewport->Clear();
 		
 	}
 	void FeModuleRendering::EndRender()
@@ -383,7 +386,6 @@ namespace FeRendering
 	void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	{
 		// Clear the back buffer
-		batch.Viewport->Clear();
 		batch.Viewport->Bind();
 
 		FeCommon::FeTArray<FeRenderGeometryInstance>& instances = batch.GeometryInstances;
