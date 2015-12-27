@@ -2,6 +2,7 @@
 
 #include <common/common.hpp>
 #include <common/application.hpp>
+#include <rendering/geometry.hpp>
 
 namespace FeUi
 {
@@ -18,5 +19,6 @@ namespace FeUi
 		virtual uint32 Update(const FeDt& fDt) override;
 
 	private:
+		FeTArray<FeRendering::FeRenderGeometryInstance> GeometryInstances;
 	};
 }

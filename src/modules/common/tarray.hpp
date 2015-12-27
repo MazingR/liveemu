@@ -322,6 +322,21 @@ namespace FeCommon
 			memset(BaseAdress, 0, EffectiveSize*sizeof(T));
 		}
 		T*			GetBaseAdress() { return BaseAdress; }
+		void		SetHeapId(THeapId iHeapId)
+		{
+			if (iHeapId != HeapId)
+			{
+				T* newBaseAdress = FE_NEW_ARRAY(T, EffectiveSize, iHeapId);
+				
+				for (U i = 0; i < Size; i++)
+				{
+					newBaseAdress[i] = BaseAdress[i];
+				}
+				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
+				BaseAdress = newBaseAdress;
+				HeapId = iHeapId;
+			}
+		}
 	private:
 		T*	BaseAdress;
 		U	Size;

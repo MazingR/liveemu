@@ -5,6 +5,7 @@
 #include <SDL_syswm.h>
 #include <map>
 
+#define USE_LIMIT_FPS 0
 #define HEAP_APPLICATION 0
 
 uint32 FeApplication::Load(const FeApplicationInit& appInit)
@@ -98,13 +99,14 @@ uint32 FeApplication::Run()
 		{
 			FE_FAILEDRETURN(it->second->Update(fDt));
 		}
-		
+#if USE_LIMIT_FPS
 		// Limit framerate (60fps)
 		uint32 iFrameTicks = SDL_GetTicks() - iTicks;
 		fDt.TotalCpuWaited = 16 - iFrameTicks;
 
 		if (fDt.TotalCpuWaited>0)
 			SDL_Delay(fDt.TotalCpuWaited);
+#endif
 	}
 
 	return EFeReturnCode::Success;
@@ -114,7 +116,7 @@ uint32 FeApplication::Run()
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
 	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
-	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Renderer");
+	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Render");
 
 	FeApplication& app = FeApplication::StaticInstance;
 	FeApplicationInit init;

@@ -87,6 +87,10 @@ namespace FeRendering
 
 		return EFeReturnCode::Success;
 	}
+	FeRenderGeometryId FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Type eType)
+	{
+		return (FeRenderGeometryId)eType + 1;
+	}
 	uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, FeRenderGeometryData* geometryData, FeRenderGeometryId* geometryId)
 	{
 		if (!ComputedGeometry)

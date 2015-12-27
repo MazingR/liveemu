@@ -13,7 +13,8 @@
 struct SDL_mutex;
 
 #define DEBUG_STRING_SIZE 1024
-#define RENDERER_HEAP 2
+#define RENDERER_HEAP 1
+#define RENDERER_DEFAULT_EFFECT_ID 1
 
 // forward declares
 interface IFW1Factory;
@@ -52,6 +53,8 @@ namespace FeRendering
 		FeETextureLoadingState::Type	LoadingState;
 		ID3D11Resource*					Resource;
 		ID3D11ShaderResourceView*		SRV;
+
+		uint32							SizeInMemory;
 	};
 
 	struct FeTextureLoadingQueryResult
@@ -59,6 +62,11 @@ namespace FeRendering
 		FeRenderTextureId TextureId;
 	};
 
+	struct FeModuleRenderResourcesHandlerDebugInfos
+	{
+		uint32 LoadedTexturesCount;
+		uint32 LoadedTexturesCountSizeInMemory;
+	};
 	class FeModuleRenderResourcesHandler : public ::FeCommon::FeModule
 	{
 	public:
@@ -73,8 +81,11 @@ namespace FeRendering
 		uint32 LoadTexture(const char*, FeRenderTextureId*);
 		uint32 UnloadTexture(const FeRenderTextureId&);
 
+		void ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos);
 	private:
+		static uint32 ComputeTextureSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iTextureFormat, bool bHasAlpha);
 		typedef std::map<FeRenderTextureId, FeRenderTexture> TexturesMap;
+		typedef TexturesMap::iterator TexturesMapIt;
 
 		TexturesMap		Textures;
 		SDL_mutex*		TexturesMapMutex;
@@ -101,6 +112,7 @@ namespace FeRendering
 		uint32	FrameDrawCallsCount;
 		uint32	FrameBindEffectCount;
 		uint32	FrameBindGeometryCount;
+		uint32	FrameBindTextureCount;
 
 		uint32 Framerate;
 		uint32 CpuFrame;
@@ -113,7 +125,13 @@ namespace FeRendering
 	struct FeRenderBatch
 	{
 		FeCommon::FeTArray<FeRenderGeometryInstance> GeometryInstances;
-		FeRenderViewport Viewport;
+		FeRenderViewport* Viewport;
+
+		FeRenderBatch()
+		{
+			GeometryInstances.Clear();
+			GeometryInstances.SetHeapId(RENDERER_HEAP);
+		}
 	};
 
 	/// <summary>
@@ -129,6 +147,8 @@ namespace FeRendering
 
 		static FeRenderDevice& GetDevice() { return Device; }
 		void SwitchDebugRenderTextMode();
+		FeRenderBatch& CreateRenderBatch();
+
 	private:
 		void BeginRender();
 		void EndRender();
@@ -139,13 +159,15 @@ namespace FeRendering
 		FeCommon::FeTArray<FeRenderEffect> Effects;
 		FeCommon::FeTArray<FeRenderGeometryData> Geometries;
 		
-		FeRenderBatch renderBatch;
+		FeTArray<FeRenderBatch>			RegisteredRenderBatches;
 
 		IFW1Factory*					FW1Factory;
 		IFW1FontWrapper*				FontWrapper;
+
 		char							DebugString[DEBUG_STRING_SIZE];
 		FeEDebugRenderTextMode::Type	CurrentDebugTextMode;
 		FeRenderDebugInfos				RenderDebugInfos;
+		FeRenderViewport				DefaultViewport;
 	};
 
 	struct FeModuleRenderingInit : public ::FeCommon::FeModuleInit
