@@ -4,8 +4,6 @@
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
-namespace FeRendering
-{
 	void FeRenderViewport::Bind()  const
 	{
 		// Setup the viewport
@@ -79,4 +77,3 @@ namespace FeRendering
 
 		return EFeReturnCode::Success;
 	}
-} // namespace FeRendering

@@ -6,17 +6,15 @@
 // forward declares
 struct SDL_mutex;
 
-namespace FeRendering
-{
 	struct FeModuleRenderResourcesHandlerDebugInfos
 	{
 		uint32 LoadedTexturesCount;
 		uint32 LoadedTexturesCountSizeInMemory;
 	};
-	class FeModuleRenderResourcesHandler : public ::FeCommon::FeModule
+	class FeModuleRenderResourcesHandler : public FeModule
 	{
 	public:
-		virtual uint32 Load(const ::FeCommon::FeModuleInit*) override;
+		virtual uint32 Load(const FeModuleInit*) override;
 		virtual uint32 Unload() override;
 		virtual uint32 Update(const FeDt& fDt) override;
 
@@ -36,4 +34,3 @@ namespace FeRendering
 		TexturesMap		Textures;
 		SDL_mutex*		TexturesMapMutex;
 	};
-}

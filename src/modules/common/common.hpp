@@ -126,10 +126,6 @@ void FeDeleteA(void* ptr, size_t count, THeapId iHeapId = DEFAULT_HEAP)
 	FeNewFree(ptr, iHeapId);
 }
 
-namespace FeCommon
-{
-}
-
 #include <gmtl/Matrix.h>
 #include <gmtl/MatrixOps.h>
 #include <gmtl/Vec.h>

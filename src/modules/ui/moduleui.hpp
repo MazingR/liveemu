@@ -4,26 +4,20 @@
 #include <common/tarray.hpp>
 #include <common/application.hpp>
 
-namespace FeRendering
+struct FeRenderGeometryInstance;
+
+struct FeModuleUiInit : public FeModuleInit
 {
-	struct FeRenderGeometryInstance;
-}
+public:
+};
 
-namespace FeUi
+class FeModuleUi : public FeModule
 {
-	struct FeModuleUiInit : public ::FeCommon::FeModuleInit
-	{
-	public:
-	};
+public:
+	virtual uint32 Load(const FeModuleInit*) override;
+	virtual uint32 Unload() override;
+	virtual uint32 Update(const FeDt& fDt) override;
 
-	class FeModuleUi : public ::FeCommon::FeModule
-	{
-	public:
-		virtual uint32 Load(const ::FeCommon::FeModuleInit*) override;
-		virtual uint32 Unload() override;
-		virtual uint32 Update(const FeDt& fDt) override;
-
-	private:
-		FeCommon::FeTArray<FeRendering::FeRenderGeometryInstance*> GeometryInstances;
-	};
-}
+private:
+	FeTArray<FeRenderGeometryInstance*> GeometryInstances;
+};

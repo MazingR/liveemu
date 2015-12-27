@@ -11,25 +11,22 @@
 
 HANDLE g_initHeapHandle = 0;
 
-namespace FeCommon
-{
-	FeMemoryManager FeMemoryManager::StaticInstance;
-}
+FeMemoryManager FeMemoryManager::StaticInstance;
 
 void* FeNewAllocate(size_t size, THeapId iHeapId)
 {
-	return FeCommon::FeMemoryManager::StaticInstance.Allocate(size, 16, iHeapId);
+	return FeMemoryManager::StaticInstance.Allocate(size, 16, iHeapId);
 }
 void* FeNewFree(void* ptr, THeapId iHeapId)
 {
-	return FeCommon::FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+	return FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
 }
 
 C_BEGIN
 void *FeMallocHook(size_t size, int iHeapId)
 {
 #if HOOK_MALLOC
-	return FeCommon::FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+	return FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
 #else
 	return malloc(size);
 #endif
@@ -37,7 +34,7 @@ void *FeMallocHook(size_t size, int iHeapId)
 void *FeCallocHook(size_t nmemb, size_t size, int iHeapId)
 {
 #if HOOK_MALLOC
-	void * outPtr = FeCommon::FeMemoryManager::StaticInstance.Allocate(nmemb*size, MEMALIGNEMENT, iHeapId);
+	void * outPtr = FeMemoryManager::StaticInstance.Allocate(nmemb*size, MEMALIGNEMENT, iHeapId);
 	memset(outPtr, 0, nmemb*size);
 	return outPtr;
 #else
@@ -47,12 +44,12 @@ void *FeCallocHook(size_t nmemb, size_t size, int iHeapId)
 void *FeReallocHook(void *ptr, size_t size, int iHeapId)
 {
 #if HOOK_MALLOC
-	void* output = FeCommon::FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+	void* output = FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
 
 	if (ptr)
 	{
 		memcpy(output, ptr, size);
-		FeCommon::FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+		FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
 	}
 	return output;
 #else
@@ -62,15 +59,13 @@ void *FeReallocHook(void *ptr, size_t size, int iHeapId)
 void FeFreeHook(void *ptr, int iHeapId)
 {
 #if HOOK_MALLOC
-	FeCommon::FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+	FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
 #else
 	free(ptr);
 #endif
 }
 C_END
 
-namespace FeCommon
-{
 FeMemoryManager::FeMemoryManager()
 {
 	size_t iHeapSize = DEFAULT_HEAP_SIZE*(1024 * 1024);
@@ -202,5 +197,4 @@ void FeMemoryManager::OnFree(MemHeap& heap, void* _ptr)
 	FE_LOCALASSERT(it != heap.Allocations.end(), "Allocation not found !?");
 	heap.DebugInfos.Allocated -= it->second;
 	heap.Allocations.erase(it);
-}
 }

@@ -2,7 +2,5 @@
 
 #include <application.hpp>
 
-namespace FeCommon
-{
-	FeApplication FeApplication::StaticInstance;
-}
+
+FeApplication FeApplication::StaticInstance;

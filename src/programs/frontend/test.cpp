@@ -79,7 +79,7 @@ void test1()
 	PERF_PRINT_SET(time, "Generate data");
 
 	{
-		FeCommon::FeTMap<uint32, TestValue*> map;
+		FeTMap<uint32, TestValue*> map;
 
 		map.Reserve(iValuesCount);
 		for (uint32 i = 0; i < iValuesCount; ++i)

@@ -29,22 +29,22 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 
 
 	{
-		FeCommon::FeModuleInit init;
-		FE_FAILEDRETURN(CreateAndLoadModule<FeRendering::FeModuleRenderResourcesHandler>(init));
+		FeModuleInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleRenderResourcesHandler>(init));
 	}
 	{
-		FeRendering::FeModuleRenderingInit init;
+		FeModuleRenderingInit init;
 		
 		init.WindowsCmdShow = appInit.WindowsCmdShow;
 		init.WindowsInstance = (HINSTANCE)appInit.WindowsInstance;
 		init.WindowHandle = hwnd;
 
-		auto pModule = CreateModule<FeRendering::FeModuleRendering>();
+		auto pModule = CreateModule<FeModuleRendering>();
 		FE_FAILEDRETURN(pModule->Load(&init));
 	}
 	{
-		FeUi::FeModuleUiInit init;
-		FE_FAILEDRETURN(CreateAndLoadModule<FeUi::FeModuleUi>(init));
+		FeModuleUiInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleUi>(init));
 	}
 
 	return EFeReturnCode::Success;
@@ -81,7 +81,7 @@ uint32 FeApplication::Run()
 			{
 				switch (e.key.keysym.sym){
 				case SDLK_F1:
-					GetModule<FeRendering::FeModuleRendering>()->SwitchDebugRenderTextMode();
+					GetModule<FeModuleRendering>()->SwitchDebugRenderTextMode();
 					break;
 				case SDLK_F2:
 					unitTest();
@@ -113,8 +113,8 @@ uint32 FeApplication::Run()
 //int _tmain(int argc, _TCHAR* argv[])
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
-	FeCommon::FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Render");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Render");
 
 	FeApplication& app = FeApplication::StaticInstance;
 	FeApplicationInit init;

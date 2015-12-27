@@ -2,7 +2,6 @@
 #include <rendering/modulerenderer.hpp>
 #include <rendering/modulerenderresourceshandler.hpp>
 
-using namespace FeRendering;
 const char imagesPath[][COMMON_PATH_SIZE] =
 {
 	//"../data/image.jpg",
@@ -178,17 +177,13 @@ const char imagesPath[][COMMON_PATH_SIZE] =
 };
 const int iTexturesCount = (sizeof(imagesPath) / COMMON_PATH_SIZE);
 
-
-namespace FeUi
-{
-
-	uint32 FeModuleUi::Load(const ::FeCommon::FeModuleInit* initBase)
+	uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 	{
 		auto init = (FeModuleUiInit*)initBase;
 		srand(1564);
 
 		// Creat textures
-		auto pResourcesHandler = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
+		auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 		GeometryInstances.SetHeapId(RENDERER_HEAP);
 		const int InstancesCount = 1024*16;
 
@@ -241,7 +236,7 @@ namespace FeUi
 
 		fRotZ = fOffset;
 
-		auto pRenderingModule = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRendering>();
+		auto pRenderingModule = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
 		const int iBatchMaxSize = 2048;
 		uint32 iBatchesCount = (uint32)ceil(GeometryInstances.GetSize() / (float)iBatchMaxSize);
@@ -267,5 +262,3 @@ namespace FeUi
 		}
 		return EFeReturnCode::Success;
 	}
-
-} // namespace FeUi
