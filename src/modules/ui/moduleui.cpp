@@ -193,7 +193,7 @@ namespace FeUi
 		const int InstancesCount = 1024*16;
 
 		GeometryInstances.Reserve(InstancesCount);
-		FE_ASSERT(iTexturesCount < (sizeof(imagesPath) / COMMON_PATH_SIZE), "");
+		FE_ASSERT(iTexturesCount <= (sizeof(imagesPath) / COMMON_PATH_SIZE), "");
 
 		for (uint32 i = 0; i < InstancesCount; ++i)
 		{
