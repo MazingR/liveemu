@@ -1,10 +1,5 @@
 #include <pch.hpp>
 
-#include <rendering/modulerenderer.hpp>
-#include <ui/moduleui.hpp>
-
-#include "common.hpp"
-
 uint32 file_read(const char* filename, void** outputBuff) {
 	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
 	

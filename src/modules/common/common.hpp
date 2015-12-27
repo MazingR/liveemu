@@ -35,9 +35,13 @@
 typedef unsigned int THeapId;
 #define INIT_HEAP_ID ((THeapId)-1)
 
-typedef short int uint16;
+typedef short unsigned int uint16;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
+
+typedef short int int16;
+typedef int int32;
+typedef long long int64;
 
 namespace EFeReturnCode
 {

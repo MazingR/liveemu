@@ -1,11 +1,20 @@
 #pragma once
 
-#include <common/pch.hpp>
+#include <common/common.hpp>
+#include <rendering/modulerenderer.hpp>
+#include <rendering/modulerenderresourceshandler.hpp>
 
+#include <common/memorymanager.hpp>
+
+#include <ui/moduleui.hpp>
+
+#include <map>
 #include <iostream>
 #include <string>
+#include <ctime>
 
 #define SDL_MAIN_HANDLED
+#include <SDL_syswm.h>
 #include <SDL.h>
 
 void unitTest();

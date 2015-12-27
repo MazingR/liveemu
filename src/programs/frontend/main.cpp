@@ -1,10 +1,5 @@
 #include <pch.hpp>
 
-#include <rendering/modulerenderer.hpp>
-#include <ui/moduleui.hpp>
-#include <SDL_syswm.h>
-#include <map>
-
 #define USE_LIMIT_FPS 0
 #define HEAP_APPLICATION 0
 

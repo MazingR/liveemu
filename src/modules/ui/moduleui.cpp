@@ -1,5 +1,6 @@
 #include <moduleui.hpp>
 #include <rendering/modulerenderer.hpp>
+#include <rendering/modulerenderresourceshandler.hpp>
 
 using namespace FeRendering;
 const char imagesPath[][COMMON_PATH_SIZE] =
@@ -223,7 +224,7 @@ namespace FeUi
 		static FeVector3 translation(0, 0, 0), scale(1, 1, 1);
 		static float fIncrement = 0.0f;
 		
-		uint32 iColomns = 60;
+		int32 iColomns = 60;
 		fIncrement += 0.15f*fDt.TotalSeconds;
 
 		float fOffset = (1.01f-abs(sin(fIncrement)))*30.0f;
@@ -243,7 +244,7 @@ namespace FeUi
 		auto pRenderingModule = FeCommon::FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
 		const int iBatchMaxSize = 2048;
-		uint32 iBatchesCount = ceil(GeometryInstances.GetSize() / (float)iBatchMaxSize);
+		uint32 iBatchesCount = (uint32)ceil(GeometryInstances.GetSize() / (float)iBatchMaxSize);
 		FeTArray<FeRenderBatch*> batches;
 
 		for (uint32 i = 0; i < iBatchesCount; ++i)
