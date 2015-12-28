@@ -21,17 +21,20 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 
 	for (uint32 i = 0; i < InstancesCount; ++i)
 	{
-		FeRenderTextureId textureId;
-		uint32 iTexIdx = rand() % iTexturesCount;
-
-		pResourcesHandler->LoadTexture(files[iTexIdx].Path, &textureId);
-
 		FeRenderGeometryInstance* pGeomInstance = FE_NEW(FeRenderGeometryInstance, RENDERER_HEAP);
 		GeometryInstances.Add(pGeomInstance);
 
 		pGeomInstance->Effect = RENDERER_DEFAULT_EFFECT_ID;
 		pGeomInstance->Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-		pGeomInstance->Textures.Add(textureId);
+		
+		if (iTexturesCount>0)
+		{
+			// bind texture
+			FeRenderTextureId textureId;
+			uint32 iTexIdx = rand() % iTexturesCount;
+			pResourcesHandler->LoadTexture(files[iTexIdx].Path, &textureId);
+			pGeomInstance->Textures.Add(textureId);
+		}
 	}
 
 		
