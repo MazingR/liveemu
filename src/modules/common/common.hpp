@@ -43,7 +43,7 @@ typedef short int int16;
 typedef int int32;
 typedef long long int64;
 
-namespace EFeReturnCode
+namespace FeEReturnCode
 {
 	enum Type
 	{
@@ -58,12 +58,14 @@ namespace EFeReturnCode
 
 		Memory_CreateHeapFailed,
 		Memory_AllocationFailedNotEnoughMemory,
+
+		FileSystem_Error,
 	};
 };
 
 int __cdecl vs_printf(const char *format, ...);
 
-#define FE_FAILED(a) (a!=EFeReturnCode::Success)
+#define FE_FAILED(a) (a!=FeEReturnCode::Success)
 #define FE_FAILEDRETURN(a) { uint32 ___iResult = (a); { if FE_FAILED(___iResult) return ___iResult; } }
 #define FE_LOG(fmt, ...) vs_printf(fmt, __VA_ARGS__);vs_printf("\n");
 
@@ -126,52 +128,9 @@ void FeDeleteA(void* ptr, size_t count, THeapId iHeapId = DEFAULT_HEAP)
 	FeNewFree(ptr, iHeapId);
 }
 
-#include <gmtl/Matrix.h>
-#include <gmtl/MatrixOps.h>
-#include <gmtl/Vec.h>
-#include <gmtl/VecOps.h>
-#include <gmtl/Generate.h>
-
-typedef gmtl::Vec3f FeVector3;
-typedef gmtl::Matrix33f FeMatrix3;
-typedef gmtl::EulerAngleXYZf FeRotation;
-typedef gmtl::Vec4f FeVector4;
-typedef gmtl::Matrix44f FeMatrix4;
-
 struct FeDt
 {
 	float	TotalSeconds;
 	uint32	TotalMilliseconds;
 	int		TotalCpuWaited;
-};
-
-namespace FeMath
-{
-	template <typename T> static inline T		Min(const T& a, const T& b)
-	{
-		return(a < b ? a : b);
-	}
-	template <typename T> static inline T		Max(const T& a, const T& b)
-	{
-		return(a > b ? a : b);
-	}
-	template <typename T> static inline T       Clamp(const T& a, const T& min, const T& max)
-	{
-		return Min<T>(max, Max<T>(min, a));
-	}
-	template <typename T> static inline T		Abs(const T& val)
-	{
-		return(val < 0 ? -val : val);
-	}
-	template <typename T> static inline T		Range(const T& min, const T& max, const T& val)
-	{
-		return (max > val ? (min < val ? val : min) : max);
-	}
-	template <typename T> static inline float	Ratio(const T& min, const T& max, const T& val)
-	{
-		if (val <= min) return 0.0f;
-		if (val >= max) return 1.0f;
-
-		return float(val - min) * (1.0f / float(max - min));
-	}	
 };

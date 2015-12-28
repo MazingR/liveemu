@@ -57,7 +57,7 @@
 
 		HRESULT hr = FeModuleRendering::GetDevice().GetD3DDevice()->CreateTexture2D(&descDepth, NULL, &DepthStencil);
 		if (FAILED(hr))
-			return EFeReturnCode::Failed;
+			return FeEReturnCode::Failed;
 
 		// Create the depth stencil view
 		D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
@@ -73,7 +73,7 @@
 		hr = FeModuleRendering::GetDevice().GetD3DDevice()->CreateDepthStencilView(DepthStencil, &descDSV, &DepthStencilView);
 		
 		if (FAILED(hr))
-			return EFeReturnCode::Failed;
+			return FeEReturnCode::Failed;
 
-		return EFeReturnCode::Success;
+		return FeEReturnCode::Success;
 	}

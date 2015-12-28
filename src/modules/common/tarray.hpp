@@ -94,7 +94,7 @@ public:
 			T* pNewBase = FE_NEW_ARRAY(T, _iSize, HeapId);
 			if (Size>0)
 			{
-				for (U i = 0; i < FeMath::Min(_iSize, Size); i++)
+				for (U i = 0; i < (_iSize<Size ? _iSize : Size); i++)
 				{
 					pNewBase[i] = BaseAdress[i];
 				}

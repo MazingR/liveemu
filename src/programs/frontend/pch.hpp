@@ -10,7 +10,6 @@
 
 #include <map>
 #include <iostream>
-#include <string>
 #include <ctime>
 
 #define SDL_MAIN_HANDLED

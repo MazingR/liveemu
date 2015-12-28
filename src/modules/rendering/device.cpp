@@ -71,7 +71,7 @@ uint32 FeRenderDevice::Initialize(void* hwnd)
 			break;
 	}
 	if (FAILED(hr))
-		return EFeReturnCode::Failed;
+		return FeEReturnCode::Failed;
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }

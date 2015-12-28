@@ -2,6 +2,7 @@
 
 #include <common/common.hpp>
 #include <common/tarray.hpp>
+#include <common/maths.hpp>
 
 #define DEBUG_STRING_SIZE 1024
 #define RENDERER_HEAP 1

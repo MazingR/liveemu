@@ -4,7 +4,7 @@ uint32 file_read(const char* filename, void** outputBuff) {
 	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
 	
 	if (rw == NULL) 
-		return EFeReturnCode::File_OpenFailed;
+		return FeEReturnCode::File_OpenFailed;
 
 	size_t res_size = (size_t)SDL_RWsize(rw);
 	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 1);
@@ -20,12 +20,12 @@ uint32 file_read(const char* filename, void** outputBuff) {
 	SDL_RWclose(rw);
 	if (nb_read_total != res_size) {
 		free(*outputBuff);
-		return EFeReturnCode::File_ReadFailed;
+		return FeEReturnCode::File_ReadFailed;
 	}
 
 	((char*)*outputBuff)[nb_read_total] = '\0';
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 
 struct TestValue

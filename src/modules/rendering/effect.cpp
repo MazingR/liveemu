@@ -33,13 +33,13 @@ uint32 FeRenderEffect::CompileShaderFromFile(const char* szFileName, const char*
 		if (pErrorBlob) 
 			pErrorBlob->Release();
 
-		return EFeReturnCode::Rendering_CreateShaderFailed;
+		return FeEReturnCode::Rendering_CreateShaderFailed;
 	}
 
 	if (pErrorBlob)
 		pErrorBlob->Release();
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 void FeRenderEffect::Release()
 {
@@ -112,7 +112,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	if (FAILED(hr))
 	{
 		pVSBlob->Release();
-		return EFeReturnCode::Rendering_CreateShaderFailed;
+		return FeEReturnCode::Rendering_CreateShaderFailed;
 	}
 
 	// Define the input layout
@@ -126,7 +126,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	// Create the input layout
 	hr = pD3DDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), (ID3D11InputLayout**)&VertexLayout);
 	pVSBlob->Release();
-	if (FAILED(hr)) return EFeReturnCode::Rendering_CreateShaderFailed;
+	if (FAILED(hr)) return FeEReturnCode::Rendering_CreateShaderFailed;
 
 	// Compile the pixel shader
 	ID3DBlob* pPSBlob = NULL;
@@ -141,7 +141,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	// Create the pixel shader
 	hr = pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, (ID3D11PixelShader**)&PixelShader);
 	pPSBlob->Release();
-	if (FAILED(hr)) return EFeReturnCode::Rendering_CreateShaderFailed;
+	if (FAILED(hr)) return FeEReturnCode::Rendering_CreateShaderFailed;
 		
 	// Create the constant buffers
 	D3D11_BUFFER_DESC bd;
@@ -156,12 +156,12 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	bd.CPUAccessFlags = 0;
 	hr = pD3DDevice->CreateBuffer(&bd, NULL, &CBPerFrame.Buffer);
 	if (FAILED(hr))
-		return EFeReturnCode::Failed;
+		return FeEReturnCode::Failed;
 
 	bd.ByteWidth = sizeof(FeCBPerObject);
 	hr = pD3DDevice->CreateBuffer(&bd, NULL, &CBPerObject.Buffer);
 	if (FAILED(hr))
-		return EFeReturnCode::Failed;
+		return FeEReturnCode::Failed;
 
 	// Create the sample state
 	Samplers.Reserve(1);
@@ -179,8 +179,8 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	hr = pD3DDevice->CreateSamplerState(&sampDesc, &sampler.State);
 
 	if (FAILED(hr))
-		return EFeReturnCode::Failed;
+		return FeEReturnCode::Failed;
 
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }

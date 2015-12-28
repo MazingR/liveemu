@@ -18,7 +18,7 @@ bool FeGeometryHelper::ComputedGeometry = false;
 
 const FeMatrix4& FeGeometryTransform::IdentityMatrix()
 {
-	return gmtl::MAT_IDENTITY44F;
+	return FeMatrix4Identity;
 }
 void FeRenderGeometryData::Release()
 {
@@ -51,7 +51,7 @@ uint32 FeGeometryHelper::CreateVertexAndIndexBuffer(ID3D11Buffer** pVertexBuffer
 
 		D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateBuffer(&bd, &InitData, pIndexBuffer));
 	}
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeGeometryHelper::ComputeStaticGeometry()
 {
@@ -82,7 +82,7 @@ uint32 FeGeometryHelper::ComputeStaticGeometry()
 			&StaticGeometryData[FeEGemetryDataType::Quad].IndexBuffer, vertexData, 4, indexData, 6);
 	}
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 FeRenderGeometryId FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Type eType)
 {
@@ -98,19 +98,19 @@ uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, Fe
 	*geometryData = StaticGeometryData[eType];
 	*geometryId = (FeRenderGeometryId)eType + 1;
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeGeometryHelper::CreateGeometry(void* vertexBuffer, uint32 iVertexCount, void* indexBuffer, uint32 iIndexCount, FeRenderGeometryData* geometryData, FeRenderGeometryId* geometryId)
 {
 	FeRenderGeometryData& newGeometryData = GeometryData.Add();
 	*geometryId = GeometryData.GetSize();
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 void FeGeometryHelper::ComputeAffineTransform(FeGeometryTransform& output, FeVector3 vTranslate, FeRotation vRotate, FeVector3 vScale)
 {
-	output.Matrix = gmtl::makeTrans< gmtl::Matrix44f >(vTranslate);
-	output.Matrix = output.Matrix*gmtl::make< gmtl::Matrix44f >(vRotate);
-	output.Matrix = output.Matrix*gmtl::makeScale<FeMatrix4>(vScale);
+	output.Matrix = FeMatrix::FromTranslation(vTranslate);
+	output.Matrix = output.Matrix*FeMatrix::FromRotation(vRotate);
+	output.Matrix = output.Matrix*FeMatrix::FromScale(vScale);
 		
 }
 void FeGeometryHelper::ReleaseGeometryData()

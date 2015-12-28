@@ -35,7 +35,7 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 
 	DefaultViewport.CreateFromBackBuffer();
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeModuleRendering::Unload()
 {
@@ -50,7 +50,7 @@ uint32 FeModuleRendering::Unload()
 	SafeRelease(FontWrapper);
 	SafeRelease(FW1Factory);
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeModuleRendering::Update(const FeDt& fDt)
 {
@@ -84,10 +84,10 @@ uint32 FeModuleRendering::Update(const FeDt& fDt)
 
 	if (WM_QUIT == msg.message)
 	{
-		return EFeReturnCode::Canceled;
+		return FeEReturnCode::Canceled;
 	}
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 void FeModuleRendering::BeginRender()
 {

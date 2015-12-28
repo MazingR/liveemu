@@ -182,11 +182,14 @@ const int iTexturesCount = (sizeof(imagesPath) / COMMON_PATH_SIZE);
 		auto init = (FeModuleUiInit*)initBase;
 		srand(1564);
 
+		FeTArray<FeFile> files;
+		FeFileSystem::ListFilesRecursive("../data/test/textures/big/*", files);
+
 		// Creat textures
 		auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 		GeometryInstances.SetHeapId(RENDERER_HEAP);
 		const int InstancesCount = 1024*16;
-
+		
 		GeometryInstances.Reserve(InstancesCount);
 		FE_ASSERT(iTexturesCount <= (sizeof(imagesPath) / COMMON_PATH_SIZE), "");
 
@@ -207,11 +210,11 @@ const int iTexturesCount = (sizeof(imagesPath) / COMMON_PATH_SIZE);
 		}
 
 		
-		return EFeReturnCode::Success;
+		return FeEReturnCode::Success;
 	}
 	uint32 FeModuleUi::Unload()
 	{
-		return EFeReturnCode::Success;
+		return FeEReturnCode::Success;
 	}
 	uint32 FeModuleUi::Update(const FeDt& fDt)
 	{
@@ -260,5 +263,5 @@ const int iTexturesCount = (sizeof(imagesPath) / COMMON_PATH_SIZE);
 
 			batches[iInstanceIdx/iBatchMaxSize]->GeometryInstances.Add(geomInstance);
 		}
-		return EFeReturnCode::Success;
+		return FeEReturnCode::Success;
 	}

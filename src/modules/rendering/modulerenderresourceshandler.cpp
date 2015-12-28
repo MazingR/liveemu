@@ -179,15 +179,15 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 }
 uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 {
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::Unload()
 {
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 {
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 const FeRenderTexture* FeModuleRenderResourcesHandler::GetTexture(const FeRenderTextureId& textureId) const
 {
@@ -267,10 +267,10 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(const char* szTexturePath, Fe
 			texture.LoadingState = FeETextureLoadingState::LoadFailed;
 		}
 	}
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::UnloadTexture(const FeRenderTextureId&)
 {
 	// todo
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }

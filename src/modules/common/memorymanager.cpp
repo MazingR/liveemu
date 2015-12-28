@@ -89,14 +89,14 @@ uint32 FeMemoryManager::CreateHeap(const size_t& _size, const char* szName)
 	if (!newHeap.HeapHandle)
 	{
 		FE_LOCALASSERT(newHeap.HeapHandle, "Heap creation failed !")
-		return EFeReturnCode::Memory_CreateHeapFailed;
+		return FeEReturnCode::Memory_CreateHeapFailed;
 	}
 
 	sprintf_s(newHeap.DebugInfos.Name, "%s", szName);
 	newHeap.DebugInfos.Size = _size;
 	newHeap.Size = _size;
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 
 void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, int iHeapId)

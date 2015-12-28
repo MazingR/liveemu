@@ -8,7 +8,7 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
 	{
 		std::cerr << "SDL_Init error: " << SDL_GetError() << std::endl;
-		return EFeReturnCode::Failed;
+		return FeEReturnCode::Failed;
 	}
 	static char szWindowName[512] = "Hello World!";
 
@@ -21,7 +21,7 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	{
 		FE_LOG("SDL_CreateWindow Error: %s", SDL_GetError());
 		SDL_Quit();
-		return EFeReturnCode::Failed;
+		return FeEReturnCode::Failed;
 	}
 	
 	SDL_GetWindowWMInfo(window, &wmInfo);
@@ -47,14 +47,14 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleUi>(init));
 	}
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 uint32 FeApplication::Unload()
 {
 	for (ModulesMapIt it = Modules.begin(); it != Modules.end(); ++it)
 		FE_FAILEDRETURN(it->second->Unload());
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }	  
 uint32 FeApplication::Run()
 {
@@ -107,7 +107,7 @@ uint32 FeApplication::Run()
 #endif
 	}
 
-	return EFeReturnCode::Success;
+	return FeEReturnCode::Success;
 }
 
 //int _tmain(int argc, _TCHAR* argv[])

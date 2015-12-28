@@ -3,6 +3,7 @@
 #include <common/common.hpp>
 #include <common/tarray.hpp>
 #include <common/application.hpp>
+#include <common/filesystem.hpp>
 
 struct FeRenderGeometryInstance;
 
