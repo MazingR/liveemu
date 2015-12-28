@@ -29,7 +29,8 @@ uint32 FeRenderEffect::CompileShaderFromFile(const char* szFileName, const char*
 
 	if (FAILED(hr))
 	{
-		FE_LOG("Shader compile error '%s' : %d \n %s ", szFileName, hr, pErrorBlob ? (char*)pErrorBlob->GetBufferPointer() : "");
+		FE_LOG("Shader compile error '%s' (HR=%d) : %s ", szFileName, hr, pErrorBlob ? (char*)pErrorBlob->GetBufferPointer() : "Unknown error");
+
 		if (pErrorBlob) 
 			pErrorBlob->Release();
 

@@ -13,8 +13,8 @@ struct FeFile
 
 namespace FeFileSystem
 {
-	uint32 ListFiles(const char* szPath, FeTArray<FeFile>& files);
-	uint32 ListFilesRecursive(const char* szPath, FeTArray<FeFile>& files);
+	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FeFile>& files);
+	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FeFile>& files);
 	
 	uint32 ReadTextFile(const FeFile& file, char** ppOutput);
 	uint32 ReadTextFile(const char* szPath, char** ppOutput);

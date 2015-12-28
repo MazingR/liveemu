@@ -244,8 +244,6 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(const char* szTexturePath, Fe
 		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
 		loadinfos.pSrcInfo = &imgInfos;
 
-			
-
 		D3DX11CreateTextureFromFile(pD3DDevice, szPath, &loadinfos, NULL, &texture.Resource, &hr);
 
 		if (SUCCEEDED(hr))

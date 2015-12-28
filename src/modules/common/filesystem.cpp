@@ -9,60 +9,65 @@
 
 namespace FeFileSystem
 {
-	uint32 DoListFiles(const char* szPath, FeTArray<FeFile>& files, bool bRecusrive)
+	uint32 DoListFiles(const char* szPath, const char* szFilter, FeTArray<FeFile>& files, bool bRecusrive)
 	{
-		WIN32_FIND_DATA FindFileData;
-		HANDLE hFind;
-
-		hFind = FindFirstFileEx(szPath, FindExInfoStandard, &FindFileData, FindExSearchNameMatch, NULL, 0);
-
-		if (hFind == INVALID_HANDLE_VALUE)
+		struct HandledDir
 		{
-			FE_LOG("FindFirstFileEx failed (%d)\n", GetLastError());
-			return FeEReturnCode::FileSystem_Error;
-		}
-		else
+			HANDLE	Handle;
+			char	Path[COMMON_PATH_SIZE];
+		};
+		
+
+		FeTArray<HandledDir> dirs;
+		HandledDir& rootDir = dirs.Add();
+		sprintf_s(rootDir.Path, szPath);
+
+		while (dirs.GetSize() > 0)
 		{
+			WIN32_FIND_DATA findData;
+			HANDLE hFind;
+			char szTmpPath[COMMON_PATH_SIZE];
 
-			std::queue<HANDLE> handlesQueue;
-			handlesQueue.push(hFind);
+			HandledDir& dir = dirs.Back();
+			dirs.PopBack();
 
-			while (handlesQueue.size() > 0)
+			sprintf_s(szTmpPath, "%s/%s", dir.Path, szFilter);
+			hFind = FindFirstFileEx(szTmpPath, FindExInfoStandard, &findData, FindExSearchNameMatch, NULL, 0);
+			dir.Handle = hFind;
+
+			while (FindNextFile(dir.Handle, &findData))
 			{
-				WIN32_FIND_DATA findData;
-				HANDLE handle = handlesQueue.front();
-				handlesQueue.pop();
-
-				if (FindNextFile(handle, &findData))
+				const char* szFilePath = findData.cFileName;
+					
+				if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 				{
-					if (findData.dwFileAttributes & FILE_ATTRIBUTE_NORMAL)
+					bool bIsVirtual = strcmp(szFilePath, ".") == 0 || strcmp(szFilePath, "..") == 0;
+
+					if (!bIsVirtual)
 					{
-						FeFile& addedFiles = files.Add();
-						sprintf_s(addedFiles.Path, findData.cFileName);
+						HandledDir& subDir = dirs.Add();
+						sprintf_s(subDir.Path, "%s/%s", dir.Path, findData.cFileName);
 					}
-					else if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-					{
-						char szRecursiveSearchPath[COMMON_PATH_SIZE];
-						sprintf_s(szRecursiveSearchPath, "%s/*", findData.cFileName);
-						hFind = FindFirstFileEx(szRecursiveSearchPath, FindExInfoStandard, &FindFileData, FindExSearchNameMatch, NULL, 0);
-						handlesQueue.push(hFind);
-					}
+				}
+				else
+				{
+					FeFile& addedFiles = files.Add();
+					sprintf_s(addedFiles.Path, "%s/%s", dir.Path, findData.cFileName);
 				}
 			}
 
-			FE_LOG(TEXT("The first file found is %s\n"), FindFileData.cFileName);
 			FindClose(hFind);
 		}
 		return FeEReturnCode::Success;
 	}
 
-	uint32 ListFiles(const char* szPath, FeTArray<FeFile>& files)
+	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FeFile>& files)
 	{
-		return DoListFiles(szPath, files, false);
+		return DoListFiles(szPath, szFilter, files, false);
 	}
-	uint32 ListFilesRecursive(const char* szPath, FeTArray<FeFile>& files)
+	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FeFile>& files)
 	{
-		return DoListFiles(szPath, files, true);
+		return DoListFiles(szPath, szFilter, files, true);
 	}
 
 	uint32 ReadTextFile(const FeFile& file, char** ppOutput)

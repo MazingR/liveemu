@@ -66,7 +66,7 @@ float4 PS(PS_INPUT input) : SV_Target
 	//float fTy = (input.Tex.	y - 0.5f) / 0.5f;
 	//float fPow = 8;
 
-	//clip(fColor.a < 0.5f ? -1 : 1);
+	clip(fColor.a < 0.5f ? -1 : 1);
 	//fColor *= (1 - pow(fTx, fPow)) * (1 - pow(fTy, fPow));
 
 	return fColor;

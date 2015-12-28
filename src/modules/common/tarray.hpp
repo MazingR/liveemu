@@ -220,6 +220,10 @@ public:
 		Size--;
 		return back;
 	}
+	T&			Back()
+	{
+		return BaseAdress[Size - 1];
+	}
 	static U	ErrorIndex(){ return U(-1); }
 	U			Find(const T& element) const
 	{
