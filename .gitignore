@@ -196,7 +196,6 @@ $RECYCLE.BIN/
 *.egg
 *.egg-info
 dist/
-build/
 eggs/
 parts/
 var/
@@ -217,3 +216,9 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 *.filters
+
+
+#############
+## data
+#############
+test/
