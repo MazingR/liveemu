@@ -15,7 +15,6 @@ namespace FeFileSystem
 		HANDLE hFind;
 
 		hFind = FindFirstFileEx(szPath, FindExInfoStandard, &FindFileData, FindExSearchNameMatch, NULL, 0);
-		
 
 		if (hFind == INVALID_HANDLE_VALUE)
 		{
