@@ -42,4 +42,7 @@ struct SDL_Thread;
 
 		TexturesLoadingMap	TexturesLoaded;
 		SDL_mutex*			TexturesLoadedMutex;
+
+		size_t				TexturePoolAllocated;
+		size_t				TexturePoolLimit;
 	};

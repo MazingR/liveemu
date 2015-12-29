@@ -1,7 +1,7 @@
 #include <pch.hpp>
 
 #define USE_LIMIT_FPS 1
-#define FPS_LIMIT 500
+#define FPS_LIMIT 60
 #define HEAP_APPLICATION 0
 
 uint32 FeApplication::Load(const FeApplicationInit& appInit)

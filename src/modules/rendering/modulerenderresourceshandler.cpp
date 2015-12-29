@@ -48,7 +48,6 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 	{
 		SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
 		pTexturesToLoad = new TexturesLoadingMap(TexturesLoading);
-		TexturesLoading.clear();
 	}
 
 	TexturesLoadingMap& texturesToLoad = *pTexturesToLoad;
@@ -79,7 +78,14 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
 		loadinfos.pSrcInfo = &imgInfos;
 
-		D3DX11CreateTextureFromFile(pD3DDevice, texture.Path, NULL/*&loadinfos*/, NULL, &texture.Resource, &hr);
+		size_t iTextureMemSize = ComputeTextureSizeInMemoryFromFormat(imgInfos.Width, imgInfos.Height, DXGI_FORMAT_BC1_UNORM, true);
+
+		if (iTextureMemSize + TexturePoolAllocated > TexturePoolLimit)
+		{
+			break;
+		}
+
+		D3DX11CreateTextureFromFile(pD3DDevice, texture.Path, &loadinfos, NULL, &texture.Resource, &hr);
 
 		if (SUCCEEDED(hr))
 		{
@@ -90,14 +96,18 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 			D3D11_TEXTURE2D_DESC desc;
 			pTextureInterface->GetDesc(&desc);
 
-			texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(desc.Width, desc.Height, desc.Format, true);
-
+			texture.SizeInMemory = iTextureMemSize;
 			texture.LoadingState = FeETextureLoadingState::Loaded;
 		}
 		else
 		{
 			FE_ASSERT(false, "texture  loading failed");
 			texture.LoadingState = FeETextureLoadingState::LoadFailed;
+		}
+		
+		{
+			SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
+			TexturesLoading.erase(it->first);
 		}
 
 		{
@@ -280,6 +290,9 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 }
 uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 {
+	TexturePoolLimit = 2048*(1024*1024);
+	TexturePoolAllocated = 0;
+
 	TexturesLoadingMutex = SDL_CreateMutex();
 	TexturesLoadedMutex = SDL_CreateMutex();
 
@@ -314,6 +327,8 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 			loadedTexture.SRV			= texture.SRV;
 			
 			Textures[it->first] = loadedTexture;
+
+			TexturePoolAllocated += loadedTexture.SizeInMemory;
 		}
 
 		TexturesLoaded.clear();

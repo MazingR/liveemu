@@ -51,8 +51,10 @@ namespace FeFileSystem
 				}
 				else
 				{
-					FeFile& addedFiles = files.Add();
-					sprintf_s(addedFiles.Path, "%s/%s", dir.Path, findData.cFileName);
+					FeFile& addedFile = files.Add();
+					size_t iPathLen = strlen(dir.Path) + strlen(findData.cFileName) + 2;
+					addedFile.Path = FE_NEW_ARRAY(char, iPathLen, 0);
+					sprintf_s(addedFile.Path, iPathLen, "%s/%s", dir.Path, findData.cFileName);
 				}
 			}
 

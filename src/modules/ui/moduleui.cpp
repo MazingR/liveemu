@@ -8,14 +8,14 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 	srand(1564);
 
 	FeTArray<FeFile> files;
-	FeFileSystem::ListFilesRecursive("../data/test/textures/big", "*", files);
+	FeFileSystem::ListFilesRecursive("../data/test/textures/boxfronts", "*", files);
 	uint32 iTexturesCount = files.GetSize();
 	//iTexturesCount = 5;
 
 	// Creat textures
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	GeometryInstances.SetHeapId(RENDERER_HEAP);
-	const int InstancesCount = 1024*1;
+	const int InstancesCount = 1024*16;
 		
 	GeometryInstances.Reserve(InstancesCount);
 
@@ -31,7 +31,7 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 		{
 			// bind texture
 			FeRenderTextureId textureId;
-			uint32 iTexIdx = i % iTexturesCount;
+			uint32 iTexIdx = rand() % iTexturesCount;
 			pResourcesHandler->LoadTexture(files[iTexIdx].Path, &textureId);
 			pGeomInstance->Textures.Add(textureId);
 		}
