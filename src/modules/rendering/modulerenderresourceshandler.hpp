@@ -5,6 +5,7 @@
 
 // forward declares
 struct SDL_mutex;
+struct SDL_Thread;
 
 	struct FeModuleRenderResourcesHandlerDebugInfos
 	{
@@ -18,19 +19,27 @@ struct SDL_mutex;
 		virtual uint32 Unload() override;
 		virtual uint32 Update(const FeDt& fDt) override;
 
-		bool IsLoaded(const FeRenderTextureId&);
-		bool IsLoading(const FeRenderTextureId&);
 		const FeRenderTexture* GetTexture(const FeRenderTextureId&) const;
 		
 		uint32 LoadTexture(const char*, FeRenderTextureId*);
 		uint32 UnloadTexture(const FeRenderTextureId&);
 
 		void ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos);
+		uint32 ProcessThreadedTexturesLoading();
 	private:
 		static uint32 ComputeTextureSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iTextureFormat, bool bHasAlpha);
 		typedef std::map<FeRenderTextureId, FeRenderTexture> TexturesMap;
 		typedef TexturesMap::iterator TexturesMapIt;
 
-		TexturesMap		Textures;
-		SDL_mutex*		TexturesMapMutex;
+		typedef std::map<FeRenderTextureId, FeRenderLoadingTexture> TexturesLoadingMap;
+		typedef TexturesLoadingMap::iterator TexturesLoadingMapIt;
+
+		SDL_Thread*			LoadingThread;
+		TexturesMap			Textures;
+		
+		TexturesLoadingMap	TexturesLoading;
+		SDL_mutex*			TexturesLoadingMutex;
+
+		TexturesLoadingMap	TexturesLoaded;
+		SDL_mutex*			TexturesLoadedMutex;
 	};

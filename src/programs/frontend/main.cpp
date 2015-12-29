@@ -1,6 +1,7 @@
 #include <pch.hpp>
 
-#define USE_LIMIT_FPS 0
+#define USE_LIMIT_FPS 1
+#define FPS_LIMIT 500
 #define HEAP_APPLICATION 0
 
 uint32 FeApplication::Load(const FeApplicationInit& appInit)
@@ -100,7 +101,7 @@ uint32 FeApplication::Run()
 #if USE_LIMIT_FPS
 		// Limit framerate (60fps)
 		uint32 iFrameTicks = SDL_GetTicks() - iTicks;
-		fDt.TotalCpuWaited = 16 - iFrameTicks;
+		fDt.TotalCpuWaited = (1000 / FPS_LIMIT) - iFrameTicks;
 
 		if (fDt.TotalCpuWaited>0)
 			SDL_Delay(fDt.TotalCpuWaited);

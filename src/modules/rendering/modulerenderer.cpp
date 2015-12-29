@@ -157,10 +157,16 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 			{
 				lastBindedTextures[iTextureIdx] = textureId;
 				const FeRenderTexture* pTexture = pResourcesHandler->GetTexture(textureId);
+
 				if (pTexture && pTexture->LoadingState == FeETextureLoadingState::Loaded)
 				{
 					pContext->PSSetShaderResources(iTextureIdx, 1, &pTexture->SRV);
 					RenderDebugInfos.FrameBindTextureCount++;
+				}
+				else
+				{
+					ID3D11ShaderResourceView* pNull = NULL;
+					pContext->PSSetShaderResources(iTextureIdx, 1, &pNull);
 				}
 			}
 		}

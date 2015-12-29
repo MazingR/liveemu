@@ -5,9 +5,111 @@
 #include <common/string.hpp>
 
 #include <d3dx11include.hpp>
+#include <SDL.h>
 
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
+class FeScopeLockedMutex
+{
+public:
+	SDL_mutex* Mutex;
+	
+	FeScopeLockedMutex(SDL_mutex* pMutex)
+	{
+		Mutex = pMutex;
+		FE_ASSERT(Mutex, "FeScopeLockedMutex null mutex");
+		SDL_LockMutex(Mutex);
+	}
+	~FeScopeLockedMutex()
+	{
+		SDL_UnlockMutex(Mutex);
+	}
+};
+#define SCOPELOCK(mutex, name) FeScopeLockedMutex name(mutex);
+#define SCOPELOCK(mutex) FeScopeLockedMutex __name__(mutex);
+
+bool		StopThread = false;
+
+int ResourcesHandlerThreadFunction(void* pData)
+{
+	auto pThis = (FeModuleRenderResourcesHandler*)pData;
+
+	while (!StopThread)
+	{
+		pThis->ProcessThreadedTexturesLoading();
+		SDL_Delay(100);
+	}
+	
+	return 0;
+}
+uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
+{
+	TexturesLoadingMap* pTexturesToLoad = NULL;
+	{
+		SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
+		pTexturesToLoad = new TexturesLoadingMap(TexturesLoading);
+		TexturesLoading.clear();
+	}
+
+	TexturesLoadingMap& texturesToLoad = *pTexturesToLoad;
+
+	for (TexturesLoadingMapIt it = texturesToLoad.begin(); it != texturesToLoad.end(); ++it)
+	{
+		FeRenderLoadingTexture& texture = it->second;
+
+		ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
+		HRESULT hr;
+		D3DX11_IMAGE_LOAD_INFO loadinfos;
+		D3DX11_IMAGE_INFO imgInfos;
+		ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
+
+		D3DX11GetImageInfoFromFile(texture.Path, NULL, &imgInfos, &hr);
+
+		loadinfos.Width = imgInfos.Width;
+		loadinfos.Height = imgInfos.Height;
+		loadinfos.Depth = imgInfos.Depth;
+		loadinfos.FirstMipLevel = 0;
+		loadinfos.MipLevels = 1;
+		loadinfos.Usage = D3D11_USAGE_DEFAULT;
+		loadinfos.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		loadinfos.CpuAccessFlags = 0;
+		loadinfos.MiscFlags = 0;
+		loadinfos.Format = DXGI_FORMAT_BC1_UNORM;// imgInfos.Format;
+		loadinfos.Filter = D3DX11_FILTER_LINEAR;
+		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
+		loadinfos.pSrcInfo = &imgInfos;
+
+		D3DX11CreateTextureFromFile(pD3DDevice, texture.Path, NULL/*&loadinfos*/, NULL, &texture.Resource, &hr);
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pD3DDevice->CreateShaderResourceView(texture.Resource, NULL, &texture.SRV);
+			// compute size in memory
+			ID3D11Texture2D *pTextureInterface = 0;
+			texture.Resource->QueryInterface<ID3D11Texture2D>(&pTextureInterface);
+			D3D11_TEXTURE2D_DESC desc;
+			pTextureInterface->GetDesc(&desc);
+
+			texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(desc.Width, desc.Height, desc.Format, true);
+
+			texture.LoadingState = FeETextureLoadingState::Loaded;
+		}
+		else
+		{
+			FE_ASSERT(false, "texture  loading failed");
+			texture.LoadingState = FeETextureLoadingState::LoadFailed;
+		}
+
+		{
+			SCOPELOCK(TexturesLoadedMutex); // <------ Lock Mutex
+			TexturesLoaded[it->first] = texture;
+		}
+	}
+
+	delete pTexturesToLoad;
+
+	return FeEReturnCode::Success;
+}
 uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iTextureFormat, bool bHasAlpha)
 {
 	uint32 iTextureSize = 0;
@@ -164,7 +266,7 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 {
 	infos.LoadedTexturesCount = 0;
 	infos.LoadedTexturesCountSizeInMemory = 0;
-
+	
 	for (TexturesMapIt it = Textures.begin(); it != Textures.end(); ++it)
 	{
 		FeRenderTexture& texture = it->second;
@@ -175,35 +277,53 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 			infos.LoadedTexturesCountSizeInMemory += texture.SizeInMemory;
 		}
 	}
-			
 }
 uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 {
+	TexturesLoadingMutex = SDL_CreateMutex();
+	TexturesLoadedMutex = SDL_CreateMutex();
+
+	LoadingThread = SDL_CreateThread(ResourcesHandlerThreadFunction, "ModuleRenderResourcesHandler", this);
+	
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::Unload()
 {
+	StopThread = true;
+	int iReturned;
+	SDL_WaitThread(LoadingThread, &iReturned);
+
+	SDL_DestroyMutex(TexturesLoadingMutex);
+	SDL_DestroyMutex(TexturesLoadedMutex);
+
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 {
+	{
+		SCOPELOCK(TexturesLoadedMutex); // <------ Lock Mutex
+
+		for (TexturesLoadingMapIt it = TexturesLoaded.begin(); it != TexturesLoaded.end(); ++it)
+		{
+			FeRenderLoadingTexture& texture = it->second;
+
+			FeRenderTexture loadedTexture;
+			loadedTexture.LoadingState	= texture.LoadingState;
+			loadedTexture.Resource		= texture.Resource;
+			loadedTexture.SizeInMemory	= texture.SizeInMemory;
+			loadedTexture.SRV			= texture.SRV;
+			
+			Textures[it->first] = loadedTexture;
+		}
+
+		TexturesLoaded.clear();
+	}
 	return FeEReturnCode::Success;
 }
 const FeRenderTexture* FeModuleRenderResourcesHandler::GetTexture(const FeRenderTextureId& textureId) const
 {
 	TexturesMap::const_iterator it = Textures.find(textureId);
-	return it != Textures.end() ? &it->second : NULL;
-
-}
-bool FeModuleRenderResourcesHandler::IsLoaded(const FeRenderTextureId& textureId)
-{
-	const FeRenderTexture* pTexture = GetTexture(textureId);
-	return pTexture ? pTexture->LoadingState == FeETextureLoadingState::Loaded : false ;
-}
-bool FeModuleRenderResourcesHandler::IsLoading(const FeRenderTextureId& textureId)
-{
-	const FeRenderTexture* pTexture = GetTexture(textureId);
-	return pTexture ? pTexture->LoadingState == FeETextureLoadingState::Loading : false;
+	return (it != Textures.end()) ? &it->second : NULL;
 }
 uint32 FeModuleRenderResourcesHandler::LoadTexture(const char* szTexturePath, FeRenderTextureId* pTextureId)
 {
@@ -212,57 +332,23 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(const char* szTexturePath, Fe
 	FeStringTools::ToLower(szPath);
 
 	*pTextureId = FeStringTools::GenerateUIntIdFromString(szPath);
-		
-	if (!GetTexture(*pTextureId))
+	FeRenderTextureId iTexId = *pTextureId;
+
+	if (!GetTexture(iTexId))
 	{
-		// todo: make all of it asynchone & thread safe
-		Textures[*pTextureId] = FeRenderTexture(); // add texture to map
-		FeRenderTexture& texture = Textures[*pTextureId];
-		ZeroMemory(&texture, sizeof(FeRenderTexture));
+		SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
 
-		sprintf_s(texture.Path.Str, szPath);
-
-		ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
-		HRESULT hr;
-		D3DX11_IMAGE_LOAD_INFO loadinfos;
-		D3DX11_IMAGE_INFO imgInfos;
-		ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
-
-		D3DX11GetImageInfoFromFile(szPath, NULL, &imgInfos, &hr);
-			
-		loadinfos.Width = imgInfos.Width;
-		loadinfos.Height = imgInfos.Height;
-		loadinfos.Depth = imgInfos.Depth;
-		loadinfos.FirstMipLevel = 0;
-		loadinfos.MipLevels = 1;
-		loadinfos.Usage = D3D11_USAGE_DEFAULT;
-		loadinfos.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-		loadinfos.CpuAccessFlags = 0;
-		loadinfos.MiscFlags = 0;
-		loadinfos.Format = DXGI_FORMAT_BC1_UNORM;// imgInfos.Format;
-		loadinfos.Filter = D3DX11_FILTER_LINEAR;
-		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
-		loadinfos.pSrcInfo = &imgInfos;
-
-		D3DX11CreateTextureFromFile(pD3DDevice, szPath, &loadinfos, NULL, &texture.Resource, &hr);
-
-		if (SUCCEEDED(hr))
+		TexturesLoadingMap::const_iterator it = TexturesLoading.find(iTexId);
+		
+		if (it == TexturesLoading.end())
 		{
-			hr = pD3DDevice->CreateShaderResourceView(texture.Resource, NULL, &texture.SRV);
-			// compute size in memory
-			ID3D11Texture2D *pTextureInterface = 0;
-			texture.Resource->QueryInterface<ID3D11Texture2D>(&pTextureInterface);
-			D3D11_TEXTURE2D_DESC desc;
-			pTextureInterface->GetDesc(&desc);
+			// todo: make all of it asynchone & thread safe
+			TexturesLoading[iTexId] = FeRenderLoadingTexture(); // add texture to map
 
-			texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(desc.Width, desc.Height, desc.Format, true);
-
-			texture.LoadingState = FeETextureLoadingState::Loaded;
-		}
-		else
-		{
-			FE_ASSERT(false, "texture  loading failed");
-			texture.LoadingState = FeETextureLoadingState::LoadFailed;
+			FeRenderLoadingTexture& texture = TexturesLoading[iTexId];
+			ZeroMemory(&texture, sizeof(FeRenderLoadingTexture));
+			sprintf_s(texture.Path, COMMON_PATH_SIZE, szPath);
+			texture.LoadingState = FeETextureLoadingState::Idle;
 		}
 	}
 	return FeEReturnCode::Success;

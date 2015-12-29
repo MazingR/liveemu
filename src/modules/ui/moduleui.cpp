@@ -8,14 +8,14 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 	srand(1564);
 
 	FeTArray<FeFile> files;
-	FeFileSystem::ListFilesRecursive("../data/test/textures/bb2logos", "*", files);
+	FeFileSystem::ListFilesRecursive("../data/test/textures/big", "*", files);
 	uint32 iTexturesCount = files.GetSize();
-	//iTexturesCount = 50;
+	//iTexturesCount = 5;
 
 	// Creat textures
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	GeometryInstances.SetHeapId(RENDERER_HEAP);
-	const int InstancesCount = 1024*8;
+	const int InstancesCount = 1024*1;
 		
 	GeometryInstances.Reserve(InstancesCount);
 
@@ -31,7 +31,7 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 		{
 			// bind texture
 			FeRenderTextureId textureId;
-			uint32 iTexIdx = rand() % iTexturesCount;
+			uint32 iTexIdx = i % iTexturesCount;
 			pResourcesHandler->LoadTexture(files[iTexIdx].Path, &textureId);
 			pGeomInstance->Textures.Add(textureId);
 		}
@@ -53,7 +53,7 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 	int32 iColomns = 60;
 	fIncrement += 0.15f*fDt.TotalSeconds;
 
-	float fOffset = (1.01f-abs(sin(fIncrement)))*30.0f;
+	float fOffset = (1.01f-abs(sin(fIncrement)))*3.0f;
 
 	float fOffsetBetweenX = 1.f*fOffset;
 	float fOffsetBetweenY = 1.0f*fOffset;

@@ -71,11 +71,6 @@ namespace FeETextureLoadingState
 }
 typedef uint32 FeRenderTextureId;
 
-struct FeTexturePath
-{
-	char Str[COMMON_PATH_SIZE];
-};
-
 struct FeTextureLoadingQueryResult
 {
 	FeRenderTextureId TextureId;
@@ -83,14 +78,15 @@ struct FeTextureLoadingQueryResult
 
 struct FeRenderTexture
 {
-	FeTexturePath					Path;
 	FeETextureLoadingState::Type	LoadingState;
 	ID3D11Resource*					Resource;
 	ID3D11ShaderResourceView*		SRV;
-
 	uint32							SizeInMemory;
 };
-
+struct FeRenderLoadingTexture : public FeRenderTexture
+{
+	char Path[COMMON_PATH_SIZE];
+};
 struct FeRenderViewport
 {
 	uint32					Width;
