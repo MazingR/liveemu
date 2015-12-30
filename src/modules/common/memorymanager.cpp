@@ -84,7 +84,7 @@ uint32 FeMemoryManager::CreateHeap(const size_t& _size, const char* szName)
 	MemHeap& newHeap = Heaps.Add();
 	memset(&newHeap.DebugInfos, 0, sizeof(MemHeapDebugInfos));
 	
-	newHeap.HeapHandle = HeapCreate(0, _size, _size);
+	newHeap.HeapHandle = HeapCreate(0, _size, 0/*_size*/);
 
 	if (!newHeap.HeapHandle)
 	{
@@ -170,7 +170,7 @@ void FeMemoryManager::GetDebugInfos(char* outputStr, size_t outputStrSize)
 		fTotalAllocated += fAllocatedMB;
 		fTotalSize += fSizeMB;
 
-		sprintf_s(szTmpStr, "Heap %s\t%4.2f%%    %4.2f / %4.2f (MB)\n", infos.Name, fAllPercentMB, fAllocatedMB, fSizeMB);
+		sprintf_s(szTmpStr, "Heap %s\t%4.2f%%    %4.2f / %4.0f (MB)\n", infos.Name, fAllPercentMB, fAllocatedMB, fSizeMB);
 
 		sprintf_s(outputPtr, iOutputSize, "%s", szTmpStr);
 		iLineSize = strlen(szTmpStr);
@@ -178,7 +178,7 @@ void FeMemoryManager::GetDebugInfos(char* outputStr, size_t outputStrSize)
 		iOutputSize -= iLineSize;
 		outputPtr += iLineSize;
 	}
-	sprintf_s(outputPtr, iOutputSize, "Total \t%4.2f%%    %4.2f / %4.2f (MB)\n", (fTotalAllocated / fTotalSize) * 100.0f, fTotalAllocated, fTotalSize + DEFAULT_HEAP_SIZE);	
+	sprintf_s(outputPtr, iOutputSize, "Total \t%4.2f%%    %4.2f / %4.0f (MB)\n", (fTotalAllocated / fTotalSize) * 100.0f, fTotalAllocated, fTotalSize + DEFAULT_HEAP_SIZE);	
 }
 void FeMemoryManager::OnAllocate(MemHeap& heap, void* _ptr, const size_t& _size)
 {

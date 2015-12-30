@@ -20,5 +20,5 @@ public:
 	virtual uint32 Update(const FeDt& fDt) override;
 
 private:
-	FeTArray<FeRenderGeometryInstance*> GeometryInstances;
+	FeTArray<FeRenderGeometryInstance> GeometryInstances;
 };

@@ -57,6 +57,8 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 		FeRenderLoadingTexture& texture = it->second;
 
 		ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
+		ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetLoadingThreadContext();
+
 		HRESULT hr;
 		D3DX11_IMAGE_LOAD_INFO loadinfos;
 		D3DX11_IMAGE_INFO imgInfos;
@@ -64,23 +66,25 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 
 		D3DX11GetImageInfoFromFile(texture.Path, NULL, &imgInfos, &hr);
 
+		uint32 iForcedFormat = DXGI_FORMAT_BC3_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM
+
 		loadinfos.Width = imgInfos.Width;
 		loadinfos.Height = imgInfos.Height;
 		loadinfos.Depth = imgInfos.Depth;
 		loadinfos.FirstMipLevel = 0;
 		loadinfos.MipLevels = 1;
-		loadinfos.Usage = D3D11_USAGE_DEFAULT;
+		loadinfos.Usage = D3D11_USAGE_DEFAULT;//D3D11_USAGE_DYNAMIC
 		loadinfos.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-		loadinfos.CpuAccessFlags = 0;
+		loadinfos.CpuAccessFlags = 0;//D3D11_CPU_ACCESS_WRITE
 		loadinfos.MiscFlags = 0;
-		loadinfos.Format = DXGI_FORMAT_BC1_UNORM;// imgInfos.Format;
+		loadinfos.Format = iForcedFormat ? (DXGI_FORMAT)iForcedFormat : imgInfos.Format;
 		loadinfos.Filter = D3DX11_FILTER_LINEAR;
 		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
 		loadinfos.pSrcInfo = &imgInfos;
 
-		size_t iTextureMemSize = ComputeTextureSizeInMemoryFromFormat(imgInfos.Width, imgInfos.Height, DXGI_FORMAT_BC1_UNORM, true);
-
-		if (iTextureMemSize + TexturePoolAllocated > TexturePoolLimit)
+		texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(imgInfos.Width, imgInfos.Height, loadinfos.Format, true);
+		
+		if (texture.SizeInMemory + TexturePoolAllocated > TexturePoolLimit)
 		{
 			break;
 		}
@@ -90,16 +94,10 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 		if (SUCCEEDED(hr))
 		{
 			hr = pD3DDevice->CreateShaderResourceView(texture.Resource, NULL, &texture.SRV);
-			// compute size in memory
-			ID3D11Texture2D *pTextureInterface = 0;
-			texture.Resource->QueryInterface<ID3D11Texture2D>(&pTextureInterface);
-			D3D11_TEXTURE2D_DESC desc;
-			pTextureInterface->GetDesc(&desc);
-
-			texture.SizeInMemory = iTextureMemSize;
 			texture.LoadingState = FeETextureLoadingState::Loaded;
 		}
-		else
+		
+		if (FAILED(hr))
 		{
 			FE_ASSERT(false, "texture  loading failed");
 			texture.LoadingState = FeETextureLoadingState::LoadFailed;
@@ -164,7 +162,7 @@ uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint
 
 	if (iPixelBitSize != 0) // texture format is compressed
 	{
-		iTextureSize = ((iWidth*iHeight) / 16)*(iPixelBitSize / 4);
+		iTextureSize = ((iWidth*iHeight) / 2)*(iPixelBitSize / 8);
 	}
 	else
 	{
@@ -267,8 +265,9 @@ uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint
 			default:
 				iPixelBitSize = 0;
 		};
+
+		iTextureSize = (iWidth*iHeight)*(iPixelBitSize / 8);
 	}
-	iTextureSize = (iWidth*iHeight)*(iPixelBitSize / 4);
 
 	return iTextureSize;
 }
@@ -276,6 +275,7 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 {
 	infos.LoadedTexturesCount = 0;
 	infos.LoadedTexturesCountSizeInMemory = 0;
+	infos.TexturesPoolSize = TexturePoolLimit;
 	
 	for (TexturesMapIt it = Textures.begin(); it != Textures.end(); ++it)
 	{
@@ -290,7 +290,7 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 }
 uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 {
-	TexturePoolLimit = 2048*(1024*1024);
+	TexturePoolLimit = 256*(1024*1024);
 	TexturePoolAllocated = 0;
 
 	TexturesLoadingMutex = SDL_CreateMutex();

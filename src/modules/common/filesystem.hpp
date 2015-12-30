@@ -8,7 +8,7 @@
 
 struct FeFile
 {
-	char* Path;
+	char Path[COMMON_PATH_SIZE];
 };
 
 namespace FeFileSystem

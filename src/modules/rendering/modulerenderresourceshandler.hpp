@@ -10,6 +10,7 @@ struct SDL_Thread;
 	struct FeModuleRenderResourcesHandlerDebugInfos
 	{
 		uint32 LoadedTexturesCount;
+		uint32 TexturesPoolSize;
 		uint32 LoadedTexturesCountSizeInMemory;
 	};
 	class FeModuleRenderResourcesHandler : public FeModule

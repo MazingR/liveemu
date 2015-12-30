@@ -9,23 +9,23 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 
 	FeTArray<FeFile> files;
 	FeFileSystem::ListFilesRecursive("../data/test/textures/boxfronts", "*", files);
+	FeFileSystem::ListFilesRecursive("../data/test/textures/bb2VFX", "*", files);
 	uint32 iTexturesCount = files.GetSize();
 	//iTexturesCount = 5;
 
 	// Creat textures
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	GeometryInstances.SetHeapId(RENDERER_HEAP);
-	const int InstancesCount = 1024*16;
+	const int InstancesCount = 1024*1;
 		
 	GeometryInstances.Reserve(InstancesCount);
 
 	for (uint32 i = 0; i < InstancesCount; ++i)
 	{
-		FeRenderGeometryInstance* pGeomInstance = FE_NEW(FeRenderGeometryInstance, RENDERER_HEAP);
-		GeometryInstances.Add(pGeomInstance);
+		 FeRenderGeometryInstance& geomInstance = GeometryInstances.Add();
 
-		pGeomInstance->Effect = RENDERER_DEFAULT_EFFECT_ID;
-		pGeomInstance->Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		geomInstance.Effect = RENDERER_DEFAULT_EFFECT_ID;
+		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
 		
 		if (iTexturesCount>0)
 		{
@@ -33,7 +33,7 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 			FeRenderTextureId textureId;
 			uint32 iTexIdx = rand() % iTexturesCount;
 			pResourcesHandler->LoadTexture(files[iTexIdx].Path, &textureId);
-			pGeomInstance->Textures.Add(textureId);
+			geomInstance.Textures.Add(textureId);
 		}
 	}
 
@@ -69,27 +69,19 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 
 	auto pRenderingModule = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	const int iBatchMaxSize = 2048;
-	uint32 iBatchesCount = (uint32)ceil(GeometryInstances.GetSize() / (float)iBatchMaxSize);
-	FeTArray<FeRenderBatch*> batches;
-
-	for (uint32 i = 0; i < iBatchesCount; ++i)
-	{
-		FeRenderBatch& renderBatch = pRenderingModule->CreateRenderBatch();
-		renderBatch.GeometryInstances.Reserve(2048);
-		batches.Add(&renderBatch);
-	}
+	FeRenderBatch& renderBatch = pRenderingModule->CreateRenderBatch();
+	renderBatch.GeometryInstances.Reserve(GeometryInstances.GetSize());
 
 	for (uint32 iInstanceIdx = 0; iInstanceIdx < GeometryInstances.GetSize(); ++iInstanceIdx)
 	{
-		FeRenderGeometryInstance& geomInstance = *GeometryInstances[iInstanceIdx];
+		FeRenderGeometryInstance& geomInstance = GeometryInstances[iInstanceIdx];
 
 		translation.mData[0] = -40 + (iInstanceIdx % iColomns) * fOffsetBetweenX;
 		translation.mData[1] = -20 + (iInstanceIdx / iColomns) * fOffsetBetweenY;
 
 		FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, translation, FeRotation(fRotX, fRotY, fRotZ), scale);
 
-		batches[iInstanceIdx/iBatchMaxSize]->GeometryInstances.Add(geomInstance);
+		renderBatch.GeometryInstances.Add(geomInstance);
 	}
 	return FeEReturnCode::Success;
 }

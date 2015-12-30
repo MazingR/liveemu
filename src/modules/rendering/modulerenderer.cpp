@@ -6,6 +6,7 @@
 #include "FW1FontWrapper.h"
 #include <SDL.h>
 
+#define UPDATE_RENDER_INFOS_FREQUENCY 30
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
 uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
@@ -198,24 +199,18 @@ void FeModuleRendering::RenderDebugText(const FeDt& fDt)
 	if (fDt.TotalMilliseconds == 0)
 		return;
 
-	RenderDebugInfos.Framerate		+= (1000 / fDt.TotalMilliseconds);
-	RenderDebugInfos.CpuFrame		+= fDt.TotalMilliseconds;
-	RenderDebugInfos.GpuFrame		+= 0;
-	RenderDebugInfos.CpuWait		+= fDt.TotalCpuWaited;
-	RenderDebugInfos.DrawCalls		= RenderDebugInfos.FrameDrawCallsCount;
-	RenderDebugInfos.EffectBind		= RenderDebugInfos.FrameBindEffectCount;
-	RenderDebugInfos.GeometryBind	= RenderDebugInfos.FrameBindGeometryCount;
-		
-	if (iFrameCount > 0)
+	if (++iFrameCount == UPDATE_RENDER_INFOS_FREQUENCY)
 	{
-		RenderDebugInfos.Framerate		/=2;
-		RenderDebugInfos.CpuFrame		/=2;
-		RenderDebugInfos.GpuFrame		/=2;
-		RenderDebugInfos.CpuWait		/=2;
-	}
-	iFrameCount++;
-	if (iFrameCount > 32)
 		iFrameCount = 0;
+		 
+		RenderDebugInfos.Framerate = (1000 / fDt.TotalMilliseconds);
+		RenderDebugInfos.CpuFrame = fDt.TotalMilliseconds;
+		RenderDebugInfos.GpuFrame = 0;
+		RenderDebugInfos.CpuWait = fDt.TotalCpuWaited;
+		RenderDebugInfos.DrawCalls = RenderDebugInfos.FrameDrawCallsCount;
+		RenderDebugInfos.EffectBind = RenderDebugInfos.FrameBindEffectCount;
+		RenderDebugInfos.GeometryBind = RenderDebugInfos.FrameBindGeometryCount;
+	}
 
 	switch (CurrentDebugTextMode)
 	{
@@ -228,10 +223,11 @@ void FeModuleRendering::RenderDebugText(const FeDt& fDt)
 			pResourcesHandler->ComputeDebugInfos(resourcesDebugInfos);
 			sprintf_s(&DebugString[iTxtLength], DEBUG_STRING_SIZE - iTxtLength, "\
 Texture Count\t%d \n\
-Texture Mem.\t%4.2f (MB) \n\
+Texture Mem.\t%4.1f / %4.0f (MB) \n\
 				",
 				resourcesDebugInfos.LoadedTexturesCount, 
-				(resourcesDebugInfos.LoadedTexturesCountSizeInMemory) / (1024.0f*1024.0f));
+				(resourcesDebugInfos.LoadedTexturesCountSizeInMemory) / (1024.0f*1024.0f),
+				(resourcesDebugInfos.TexturesPoolSize) / (1024.0f*1024.0f));
 			}
 			break;
 		case FeEDebugRenderTextMode::Rendering:

@@ -53,8 +53,8 @@ namespace FeFileSystem
 				{
 					FeFile& addedFile = files.Add();
 					size_t iPathLen = strlen(dir.Path) + strlen(findData.cFileName) + 2;
-					addedFile.Path = FE_NEW_ARRAY(char, iPathLen, 0);
-					sprintf_s(addedFile.Path, iPathLen, "%s/%s", dir.Path, findData.cFileName);
+					FE_ASSERT(iPathLen < COMMON_PATH_SIZE, "file path is too long ! : '%s'", findData.cFileName);
+					sprintf_s(addedFile.Path, "%s/%s", dir.Path, findData.cFileName);
 				}
 			}
 

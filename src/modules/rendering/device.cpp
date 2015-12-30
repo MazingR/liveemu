@@ -9,6 +9,10 @@ void FeRenderDevice::Release()
 {
 	if (ImmediateContext) ImmediateContext->ClearState();
 	if (ImmediateContext) ImmediateContext->Release();
+
+	if (LoadingThreadContext) LoadingThreadContext->ClearState();
+	if (LoadingThreadContext) LoadingThreadContext->Release();
+	
 	if (SwapChain) SwapChain->Release();
 	if (D3dDevice) D3dDevice->Release();
 }
@@ -65,13 +69,19 @@ uint32 FeRenderDevice::Initialize(void* hwnd)
 	for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
 	{
 		DriverType = driverTypes[driverTypeIndex];
+		
 		hr = D3D11CreateDeviceAndSwapChain(NULL, DriverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
 			D3D11_SDK_VERSION, &sd, &SwapChain, &D3dDevice, &FeatureLevel, &ImmediateContext);
+		
 		if (SUCCEEDED(hr))
 			break;
 	}
+	
 	if (FAILED(hr))
 		return FeEReturnCode::Failed;
+
+	// create deferred contexts
+	D3dDevice->CreateDeferredContext(0, &LoadingThreadContext);
 
 	return FeEReturnCode::Success;
 }
