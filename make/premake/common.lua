@@ -76,6 +76,51 @@ c_targetDir			="../../bin/"
 	-- scripts/toolchain.lua \
 	-- scripts/src/osd/modules.lua \
 	
+	
+
+function __genOrderedIndex( t )
+    local orderedIndex = {}
+    for key in pairs(t) do
+        table.insert( orderedIndex, key )
+    end
+    table.sort( orderedIndex )
+    return orderedIndex
+end
+
+function orderedNext(t, state)
+    -- Equivalent of the next function, but returns the keys in the alphabetic
+    -- order. We use a temporary ordered key table that is stored in the
+    -- table being iterated.
+
+    key = nil
+    --print("orderedNext: state = "..tostring(state) )
+    if state == nil then
+        -- the first time, generate the index
+        t.__orderedIndex = __genOrderedIndex( t )
+        key = t.__orderedIndex[1]
+    else
+        -- fetch the next value
+        for i = 1,table.getn(t.__orderedIndex) do
+            if t.__orderedIndex[i] == state then
+                key = t.__orderedIndex[i+1]
+            end
+        end
+    end
+
+    if key then
+        return key, t[key]
+    end
+
+    -- no more value to return, cleanup
+    t.__orderedIndex = nil
+    return
+end
+
+function orderedPairs(t)
+    -- Equivalent of the pairs() function on tables. Allows to iterate
+    -- in order
+    return orderedNext, t, nil
+end
 
 function GetProjectTargetDir(config, prj)
 	if prj["kind"] == c_projectKindConsoleApp or prj["kind"] == c_projectKindWindowedApp then
@@ -126,7 +171,7 @@ function ProcessDependencies(config, prj)
 			if ProjectHas(dependency, "links") then 			links  { dependency["links"] }					end
 			if ProjectHas(dependency, "libdirs") then 			libdirs  { dependency["libdirs"] }				end
 			
-			links  { GetProjectTargetFullName(config, dependency) }
+			links  {dependency["name"], GetProjectTargetFullName(config, dependency) }
 			libdirs { GetProjectTargetDir(config, dependency) }
 			
 			ProcessDependencies(config, dependency)
@@ -165,8 +210,10 @@ function GenerateProject(config, groupName, projectName)
 end
 
 function GenerateProjects(config)
-	for groupName,groupData in pairs(groups) do
-		for projectName,projectData in pairs(groupData) do
+	
+	for groupName,groupData in orderedPairs(groups) do
+		for projectName,projectData in orderedPairs(groupData) do
+			print ("["..config.."] : "..projectName)
 			GenerateProject(config, groupName, projectName)
 		end
 	end
