@@ -26,7 +26,7 @@ struct SDL_Thread;
 		uint32 UnloadTexture(const FeRenderTextureId&);
 
 		void ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos);
-		uint32 ProcessThreadedTexturesLoading();
+		uint32 ProcessThreadedTexturesLoading(bool& bThreadSopped);
 	private:
 		static uint32 ComputeTextureSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iTextureFormat, bool bHasAlpha);
 		typedef std::map<FeRenderTextureId, FeRenderTexture> TexturesMap;
@@ -36,7 +36,9 @@ struct SDL_Thread;
 		typedef TexturesLoadingMap::iterator TexturesLoadingMapIt;
 
 		SDL_Thread*			LoadingThread;
+		
 		TexturesMap			Textures;
+		TexturesLoadingMap	TexturesToSave;
 		
 		TexturesLoadingMap	TexturesLoading;
 		SDL_mutex*			TexturesLoadingMutex;

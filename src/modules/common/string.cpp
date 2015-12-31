@@ -97,4 +97,43 @@ namespace FeStringTools
 
 		return h;
 	}
+
+
+	size_t DoIndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd, bool bReverse)
+	{
+		size_t iLen = strlen(szString);
+		iLen = iLen > iEnd ? iEnd : iLen;
+
+		for (size_t i = bReverse ? iLen - 1 : iStart; bReverse ? (i < iLen) : (i >= iStart); bReverse ? (--i) : (++i))
+		{
+			if (szString[i] == szChar)
+				return  i;
+		}
+
+		return (size_t)-1;
+	}
+	size_t IndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd)
+	{
+		return DoIndexOf(szString, szChar, iStart, iEnd, false);
+	}
+
+	size_t LastIndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd)
+	{
+		return DoIndexOf(szString, szChar, iStart, iEnd, true);
+	}
+	size_t Replace(char* szString, char szFind, char szReplace)
+	{
+		size_t iLen = strlen(szString);
+		size_t iFound = 0;
+
+		for (size_t i = 0; i < iLen; ++i)
+		{
+			if (szString[i] == szFind)
+			{
+				szString[i] = szReplace;
+			}
+		}
+
+		return iFound;
+	}
 }

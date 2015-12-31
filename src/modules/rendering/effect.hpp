@@ -12,7 +12,7 @@ class FeModuleRenderResourcesHandler;
 class FeRenderEffect
 {
 public:
-	void BeginFrame(const FeRenderCamera& camera, const FeRenderViewport& viewport);
+	void BeginFrame(const FeRenderCamera& camera, const FeRenderViewport& viewport, float fDt);
 	void EndFrame();
 
 	void BindGeometryInstance(const FeRenderGeometryInstance geometry, const FeModuleRenderResourcesHandler* resouresHandler);

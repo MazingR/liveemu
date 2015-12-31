@@ -9,11 +9,14 @@ struct FeCBPerFrame
 {
 	XMMATRIX MatrixView;
 	XMMATRIX MatrixProj;
+	float Time;
+	XMVECTOR Resolution;
 };
 
 struct FeCBPerObject
 {
 	XMMATRIX MatrixWorld;
+	
 };
 
 uint32 FeRenderEffect::CompileShaderFromFile(const char* szFileName, const char* szEntryPoint, const char* szShaderModel, void** ppBlobOut)
@@ -51,7 +54,7 @@ void FeRenderEffect::Release()
 	SafeRelease(CBPerFrame.Buffer);
 	SafeRelease(CBPerObject.Buffer);
 }
-void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderViewport& viewport)
+void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderViewport& viewport, float fDt)
 {
 	ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
@@ -66,6 +69,16 @@ void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderView
 
 	cbPerFrame.MatrixProj = XMMatrixTranspose(cbPerFrame.MatrixProj);
 	cbPerFrame.MatrixView = XMMatrixTranspose(cbPerFrame.MatrixView);
+
+	static float fTime = 0.0f;
+
+	fTime += fDt;
+
+	/*if (fTime > 1.0f)
+		fTime = 0.0f;*/
+
+	cbPerFrame.Time = fTime;
+	cbPerFrame.Resolution = XMVectorSet(viewport.Width, viewport.Height, 0, 0);
 
 	FeMatrix4 matViewPorj;
 	mult(matViewPorj, camera.MatrixProjection, camera.MatrixView);
@@ -96,6 +109,9 @@ void FeRenderEffect::Bind()
 
 	pContext->VSSetConstantBuffers(0, 1, &CBPerFrame.Buffer);
 	pContext->VSSetConstantBuffers(1, 1, &CBPerObject.Buffer);
+
+	pContext->PSSetConstantBuffers(0, 1, &CBPerFrame.Buffer);
+
 	pContext->PSSetSamplers(0, 1, &Samplers[0].State);
 }
 uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)

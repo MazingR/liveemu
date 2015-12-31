@@ -2,11 +2,14 @@
 #include <modulerenderer.hpp>
 
 #include <common/memorymanager.hpp>
+#include <common/filesystem.hpp>
 #include <common/string.hpp>
 
 #include <d3dx11include.hpp>
 #include <SDL.h>
 
+#define USE_DDS_IF_EXISTS 1
+#define SAVE_CONVERTED_TO_DDS 1
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
 class FeScopeLockedMutex
@@ -36,13 +39,13 @@ int ResourcesHandlerThreadFunction(void* pData)
 
 	while (!StopThread)
 	{
-		pThis->ProcessThreadedTexturesLoading();
+		pThis->ProcessThreadedTexturesLoading(StopThread);
 		SDL_Delay(100);
 	}
 	
 	return 0;
 }
-uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
+uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThreadSopped)
 {
 	TexturesLoadingMap* pTexturesToLoad = NULL;
 	{
@@ -54,6 +57,9 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 
 	for (TexturesLoadingMapIt it = texturesToLoad.begin(); it != texturesToLoad.end(); ++it)
 	{
+		if (bThreadSopped)
+			break;
+
 		FeRenderLoadingTexture& texture = it->second;
 
 		ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
@@ -64,12 +70,21 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 		D3DX11_IMAGE_INFO imgInfos;
 		ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
 
-		D3DX11GetImageInfoFromFile(texture.Path, NULL, &imgInfos, &hr);
+#if USE_DDS_IF_EXISTS
+		FeFile ddsPath;
+		FeFileSystem::GetFullPathChangeExtension(ddsPath, texture.Path, "dds");
+		const char* szPath = FeFileSystem::FileExists(ddsPath) ? ddsPath.Path : texture.Path;
+#else
+		const char* szPath = texture.Path;
+#endif
+		D3DX11GetImageInfoFromFile(szPath, NULL, &imgInfos, &hr);
 
-		uint32 iForcedFormat = DXGI_FORMAT_BC3_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM
+		uint32 iForcedFormat = DXGI_FORMAT_BC1_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM
+		uint32 iResize = 2;
+		
+		loadinfos.Width = imgInfos.Width / iResize;
+		loadinfos.Height = imgInfos.Height / iResize;
 
-		loadinfos.Width = imgInfos.Width;
-		loadinfos.Height = imgInfos.Height;
 		loadinfos.Depth = imgInfos.Depth;
 		loadinfos.FirstMipLevel = 0;
 		loadinfos.MipLevels = 1;
@@ -82,12 +97,14 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
 		loadinfos.pSrcInfo = &imgInfos;
 
-		texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(imgInfos.Width, imgInfos.Height, loadinfos.Format, true);
+		texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(loadinfos.Width, loadinfos.Height, loadinfos.Format, true);
 		
 		if (texture.SizeInMemory + TexturePoolAllocated > TexturePoolLimit)
 		{
 			break;
 		}
+
+		texture.WasConverted = loadinfos.Format != imgInfos.Format;
 
 		D3DX11CreateTextureFromFile(pD3DDevice, texture.Path, &loadinfos, NULL, &texture.Resource, &hr);
 
@@ -102,7 +119,7 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading()
 			FE_ASSERT(false, "texture  loading failed");
 			texture.LoadingState = FeETextureLoadingState::LoadFailed;
 		}
-		
+
 		{
 			SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
 			TexturesLoading.erase(it->first);
@@ -329,9 +346,34 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 			Textures[it->first] = loadedTexture;
 
 			TexturePoolAllocated += loadedTexture.SizeInMemory;
+
+#if SAVE_CONVERTED_TO_DDS
+			if (texture.WasConverted)
+				TexturesToSave[it->first] = texture;
+#endif
 		}
 
 		TexturesLoaded.clear();
+	}
+	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
+
+	for (TexturesLoadingMapIt it = TexturesToSave.begin(); it != TexturesToSave.end(); ++it)
+	{
+		FeRenderLoadingTexture& texture = it->second;
+
+		FeFile savedFile;
+		FeFileSystem::GetFullPathChangeExtension(savedFile, texture.Path, "dds");
+		HRESULT hr = D3DX11SaveTextureToFile(pD3DContext, texture.Resource, D3DX11_IFF_DDS, savedFile.Path);
+		if (FAILED(hr))
+		{
+			FE_ASSERT(false, "converted texture save failed");
+		}
+		else
+		{
+			FE_LOG("Save converted texture %s", texture.Path);
+		}
+		TexturesToSave.erase(it);
+		break; //  process one file per frame
 	}
 	return FeEReturnCode::Success;
 }

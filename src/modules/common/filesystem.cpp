@@ -1,6 +1,7 @@
 #include <filesystem.hpp>
 #include <windows.h>
 #include <queue>
+#include "string.hpp"
 
 
 #define FE_LOCALASSERT(condition, fmt, ...) FE_ASSERT(condition, "[FileSystem] "fmt, __VA_ARGS__) 
@@ -88,5 +89,64 @@ namespace FeFileSystem
 	uint32 ReadBinaryFile(const char* szPath, void** ppOutput)
 	{
 		return FeEReturnCode::Success;
+	}
+
+	void GetFullPathWithoutExtension(FeFile& output, const FeFile& input)
+	{
+		GetFullPathWithoutExtension(output, input.Path);
+	}
+	void GetFileNameWithoutExtension(FeFile& output, const FeFile& input)
+	{
+		GetFileNameWithoutExtension(output, input.Path);
+	}
+	void GetFileName(FeFile& output, const FeFile& input)
+	{
+		GetFileName(output, input.Path);
+	}
+	void GetDirectoryName(FeFile& output, const FeFile& input)
+	{
+		GetDirectoryName(output, input.Path);
+	}
+
+	void GetFullPathChangeExtension(FeFile& output, const char* input, const char* szExt)
+	{
+		GetFullPathWithoutExtension(output, input);
+		strcat(output.Path, ".");
+		strcat(output.Path, szExt);
+	}
+	void GetFullPathWithoutExtension(FeFile& output, const char* input)
+	{
+		size_t iPoint = FeStringTools::LastIndexOf(input, '.');
+		sprintf_s(output.Path, input);
+		output.Path[iPoint] = 0;
+	}
+	void GetFileNameWithoutExtension(FeFile& output, const char* input)
+	{
+		FE_ASSERT(false, "todo");
+
+		size_t iLastSlash = FeStringTools::LastIndexOf(input, '/');
+		size_t iLastBSlash = FeStringTools::LastIndexOf(input, '\\');
+		iLastSlash = iLastSlash > iLastBSlash ? iLastSlash : iLastBSlash;
+
+		sprintf_s(output.Path, strlen(input) - iLastSlash, input + iLastSlash);
+	}
+	void GetFileName(FeFile& output, const char* input)
+	{
+		FE_ASSERT(false, "todo");
+	}
+	void GetDirectoryName(FeFile& output, const char* input)
+	{
+		FE_ASSERT(false, "todo");
+	}
+	void FormatPath(FeFile& file)
+	{
+		FeStringTools::Replace(file.Path, '\\', '/');
+	}
+
+	bool FileExists(const FeFile& file)
+	{
+		WIN32_FIND_DATA findData;
+		HANDLE hFind = FindFirstFileEx(file.Path, FindExInfoStandard, &findData, FindExSearchNameMatch, NULL, 0);
+		return hFind != ((HANDLE)-1);
 	}
 };

@@ -82,6 +82,7 @@ struct FeRenderTexture
 	ID3D11Resource*					Resource;
 	ID3D11ShaderResourceView*		SRV;
 	uint32							SizeInMemory;
+	bool							WasConverted;
 };
 struct FeRenderLoadingTexture : public FeRenderTexture
 {

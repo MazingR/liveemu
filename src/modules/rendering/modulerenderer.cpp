@@ -131,7 +131,7 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 
 	for (uint32 i = 0; i < Effects.GetSize() ; ++i)
 	{
-		Effects[i].BeginFrame(camera, *batch.Viewport);
+		Effects[i].BeginFrame(camera, *batch.Viewport, fDt.TotalSeconds);
 	}
 
 	for (uint32 iInstanceIdx = 0; iInstanceIdx < instances.GetSize(); ++iInstanceIdx)

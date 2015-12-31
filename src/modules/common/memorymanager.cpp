@@ -101,7 +101,7 @@ uint32 FeMemoryManager::CreateHeap(const size_t& _size, const char* szName)
 
 void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, int iHeapId)
 {
-	FE_LOCALASSERT(MEM_PAGE_SIZE_KB>(_size / 1024), "can't allocate more than %d (KB) contiguous memory !", MEM_PAGE_SIZE_KB)
+	//FE_LOCALASSERT(MEM_PAGE_SIZE_KB>(_size / 1024), "can't allocate more than %d (KB) contiguous memory !", MEM_PAGE_SIZE_KB)
 
 	if (iHeapId == DEFAULT_HEAP)
 	{
