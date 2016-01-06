@@ -75,6 +75,7 @@ c_targetDir			="../../bin/"
 	-- scripts/src/netlist.lua \
 	-- scripts/toolchain.lua \
 	-- scripts/src/osd/modules.lua \
+	-- scripts/target/mame/mame.lua
 	
 	
 
@@ -194,7 +195,7 @@ function GenerateProject(config, groupName, projectName)
 		
 		configuration { config }
 			flags("Symbols")
-		
+			
 			if ProjectHas(prj, "kind")			then kind (prj["kind"])					end
 			if ProjectHas(prj, "srcPath")		then files { prj["srcPath"] }			end
 			if ProjectHas(prj, "includedirs")	then includedirs { prj["includedirs"] }	end

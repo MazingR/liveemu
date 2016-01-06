@@ -2,18 +2,20 @@ groups =
 {
 	emulator_mame = 
 	{
-		-- vmame = 
+		-- mame = 
 		-- {
-			-- name = "emulator_vmame",
+			-- name = "emulator_mame",
 			-- kind = c_projectKindStaticLib,
 			-- srcPath = 
 			-- {
+				-- c_src_root.."externals/emulators/mame/src/**.inl",
 				-- c_src_root.."externals/emulators/mame/src/**.h",
+				-- c_src_root.."externals/emulators/mame/src/**.hpp",
 				-- c_src_root.."externals/emulators/mame/src/**.c",
 				-- c_src_root.."externals/emulators/mame/src/**.cpp"
 			-- },
 			-- defines = nil,
-			-- targetname = "vmame"
+			-- targetname = "mame"
 		-- }
 	},
 	sdk_sdl = 
@@ -65,9 +67,42 @@ groups =
 			dependencyLibDir = { c_src_root.."externals/windows/FW1FontWrapper/lib/x86" },
 			targetname = "FW1FontWrapper",
 		},
+		directx = 
+		{
+			kind = c_projectKindExternal,
+			dependencyInclude = { c_src_root.."externals/windows/directx/include" },
+			dependencyLibDir = { c_src_root.."externals/windows/directx/lib/x86" },
+			targetname = "directx",
+		},
+		pthreads = 
+		{
+			kind = c_projectKindExternal,
+			dependencyInclude = { c_src_root.."externals/pthreads/include" },
+			dependencyLibDir = { c_src_root.."externals/pthreads/lib/x86" },
+			targetname = "pthreads",
+		},
 	},
 	modules = 
 	{
+		backend = 
+		{
+			name = "module_backend",
+			kind = c_projectKindStaticLib,
+			dependencyInclude = { c_src_root.."modules" },
+			srcPath = 
+			{
+				c_src_root.."modules/backend/**.h",
+				c_src_root.."modules/backend/**.c",
+			},
+			includedirs = { c_src_root.."modules/backend" },
+			defines = {"FE_D3D9x"},
+			targetname = "backend",
+			dependencies = 
+			{
+				{"externals", "directx"},
+				{"externals", "pthreads"},
+			},
+		},
 		common = 
 		{
 			name = "module_common",
