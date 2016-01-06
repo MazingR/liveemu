@@ -16,3 +16,6 @@
 [submodule "src/externals/emulators/yabause"]
 	path = src/externals/emulators/yabause
 	url = https://github.com/Yabause/yabause.git
+[submodule "src/externals/emulators/mame-buildtools"]
+	path = src/externals/emulators/mame-buildtools
+	url = https://github.com/mamedev/buildtools
