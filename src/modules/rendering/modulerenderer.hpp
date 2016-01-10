@@ -41,15 +41,16 @@ struct FeRenderBatch
 class FeModuleRendering : public FeModule
 {
 public:
+	static FeRenderDevice& GetDevice() { return Device; }
 
 	virtual uint32 Load(const FeModuleInit*) override;
 	virtual uint32 Unload() override;
 	virtual uint32 Update(const FeDt& fDt) override;
-
-	static FeRenderDevice& GetDevice() { return Device; }
+	
 	void SwitchDebugRenderTextMode();
 	FeRenderBatch& CreateRenderBatch();
-
+	void UnloadEffects();
+	uint32 LoadEffects();
 private:
 	void BeginRender();
 	void EndRender();

@@ -7,11 +7,11 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 	auto init = (FeModuleUiInit*)initBase;
 	srand(1564);
 
-	FeTArray<FeFile> files;
+	FeTArray<FePath> files;
 	files.SetHeapId(RENDERER_HEAP);
 
-	FeFileSystem::ListFilesRecursive("../data/test/textures/boxfronts", "*.jpg", files);
-	FeFileSystem::ListFilesRecursive("../data/test/textures/bb2VFX", "*", files);
+	FeFileTools::ListFilesRecursive("../data/test/textures/boxfronts", "*.jpg", files);
+	FeFileTools::ListFilesRecursive("../data/test/textures/bb2VFX", "*", files);
 	uint32 iTexturesCount = files.GetSize();
 	//iTexturesCount = 5;
 
@@ -34,11 +34,10 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 			// bind texture
 			FeRenderTextureId textureId;
 			uint32 iTexIdx = i % iTexturesCount;
-			pResourcesHandler->LoadTexture(files[iTexIdx].Path, &textureId);
+			pResourcesHandler->LoadTexture(files[iTexIdx].Value, &textureId);
 			geomInstance.Textures.Add(textureId);
 		}
 	}
-
 		
 	return FeEReturnCode::Success;
 }

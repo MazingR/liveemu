@@ -6,8 +6,21 @@ template <class T, class U = uint32>
 class FeTArray
 {
 public:
-	bool 	    IsEmpty()	const 				{ return (Size == 0); }
-	U			GetSize()	const				{ return Size; }
+	typedef T*		Iterator;
+	Iterator			Begin()			{ return BaseAdress; }
+	const Iterator		Begin() const	{ return BaseAdress; }
+	
+	Iterator			End()			{ return Begin() + GetSize(); }
+	const Iterator		End() const		{ return Begin() + GetSize(); }
+	
+	Iterator			begin()			{ return Begin(); }
+	const Iterator		begin() const	{ return Begin(); }
+
+	Iterator			end()			{ return End(); }
+	const Iterator		end() const		{ return End(); }
+
+	bool 	    IsEmpty()	const 		{ return (Size == 0); }
+	U			GetSize()	const		{ return Size; }
 
 	FeTArray(U _iSize = 0, THeapId iHeapId = DEFAULT_HEAP)
 		: BaseAdress(NULL)

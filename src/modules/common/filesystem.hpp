@@ -6,34 +6,77 @@
 #include <tarray.hpp>
 #include <unordered_map>
 
-struct FeFile
+struct FePath
 {
-	char Path[COMMON_PATH_SIZE];
+	char Value[COMMON_PATH_SIZE];
+
+	inline void Set(const char* str);
 };
 
-namespace FeFileSystem
+#include <application.hpp>
+
+namespace FeEFileChangeType
 {
-	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FeFile>& files);
-	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FeFile>& files);
+	enum Type
+	{
+		Deleted,
+		Created,
+		Changed
+	};
+}
+typedef void(*FeFileChangeEvent) (FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData);
+
+class FeModuleFilesManager : public FeModule
+{
+public:
+	virtual uint32 Load(const FeModuleInit*) override;
+	virtual uint32 Unload() override;
+	virtual uint32 Update(const FeDt& fDt) override;
+
+	void WatchDirectory(const char* szPath, FeFileChangeEvent onFileChanged, void* pUserData);
+
+private:
+	struct FileChangeEventParam
+	{
+		FeEFileChangeType::Type Type;
+		FePath					Path;
+	};
+	struct WatchedDirectory
+	{
+		FePath							Path;
+		FePath							Filter;
+		void*							Handle;
+		void*							WatchHandle;
+		//FeTArray<FileChangeEventParam>	OccuredEvents;
+		FeFileChangeEvent				OnFileChangeEvent;
+		void*							FileEventUserData;
+	};
+	FeTArray<WatchedDirectory> WatchedDirs;
+};
+
+namespace FeFileTools
+{
+	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FePath>& files);
+	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FePath>& files);
 	
-	uint32 ReadTextFile(const FeFile& file, char** ppOutput);
+	uint32 ReadTextFile(const FePath& file, char** ppOutput);
 	uint32 ReadTextFile(const char* szPath, char** ppOutput);
 
-	uint32 ReadBinaryFile(const FeFile& file, void** ppOutput);
+	uint32 ReadBinaryFile(const FePath& file, void** ppOutput);
 	uint32 ReadBinaryFile(const char* szPath, void** ppOutput);
 
-	void GetFullPathWithoutExtension(FeFile&, const FeFile&);
-	void GetFileNameWithoutExtension(FeFile&, const FeFile&);
-	void GetFileName(FeFile&, const FeFile&);
-	void GetDirectoryName(FeFile&, const FeFile&);
+	void GetFullPathWithoutExtension(FePath&, const FePath&);
+	void GetFileNameWithoutExtension(FePath&, const FePath&);
+	void GetFileName(FePath&, const FePath&);
+	void GetDirectoryName(FePath&, const FePath&);
 
-	void GetFullPathWithoutExtension(FeFile&, const char*);
-	void GetFileNameWithoutExtension(FeFile&, const char*);
-	void GetFileName(FeFile&, const char*);
-	void GetDirectoryName(FeFile&, const char*);
-	void FormatPath(FeFile&);
+	void GetFullPathWithoutExtension(FePath&, const char*);
+	void GetFileNameWithoutExtension(FePath&, const char*);
+	void GetFileName(FePath&, const char*);
+	void GetDirectoryName(FePath&, const char*);
+	void FormatPath(FePath&);
 
-	void GetFullPathChangeExtension(FeFile&, const char*, const char*);
+	void GetFullPathChangeExtension(FePath&, const char*, const char*);
 
-	bool FileExists(const FeFile&);
+	bool FileExists(const FePath&);
 };

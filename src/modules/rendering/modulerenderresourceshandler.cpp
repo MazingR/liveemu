@@ -45,6 +45,8 @@ int ResourcesHandlerThreadFunction(void* pData)
 	
 	return 0;
 }
+#pragma optimize( "", off )
+
 uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThreadSopped)
 {
 	TexturesLoadingMap* pTexturesToLoad = NULL;
@@ -54,13 +56,13 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThr
 	}
 
 	TexturesLoadingMap& texturesToLoad = *pTexturesToLoad;
-
-	for (TexturesLoadingMapIt it = texturesToLoad.begin(); it != texturesToLoad.end(); ++it)
+	
+	for (auto& idedTexture : texturesToLoad)
 	{
 		if (bThreadSopped)
 			break;
 
-		FeRenderLoadingTexture& texture = it->second;
+		FeRenderLoadingTexture& texture = idedTexture.second;
 
 		ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
 		ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetLoadingThreadContext();
@@ -71,16 +73,16 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThr
 		ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
 
 #if USE_DDS_IF_EXISTS
-		FeFile ddsPath;
-		FeFileSystem::GetFullPathChangeExtension(ddsPath, texture.Path, "dds");
-		const char* szPath = FeFileSystem::FileExists(ddsPath) ? ddsPath.Path : texture.Path;
+		FePath ddsPath;
+		FeFileTools::GetFullPathChangeExtension(ddsPath, texture.Path, "dds");
+		const char* szPath = FeFileTools::FileExists(ddsPath) ? ddsPath.Value : texture.Path;
 #else
 		const char* szPath = texture.Path;
 #endif
 		D3DX11GetImageInfoFromFile(szPath, NULL, &imgInfos, &hr);
 
-		uint32 iForcedFormat = DXGI_FORMAT_BC1_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM
-		uint32 iResize = 2;
+		uint32 iForcedFormat = DXGI_FORMAT_BC3_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM DXGI_FORMAT_BC3_UNORM
+		uint32 iResize = 1;
 		
 		loadinfos.Width = imgInfos.Width / iResize;
 		loadinfos.Height = imgInfos.Height / iResize;
@@ -122,12 +124,12 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThr
 
 		{
 			SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
-			TexturesLoading.erase(it->first);
+			TexturesLoading.erase(idedTexture.first);
 		}
 
 		{
 			SCOPELOCK(TexturesLoadedMutex); // <------ Lock Mutex
-			TexturesLoaded[it->first] = texture;
+			TexturesLoaded[idedTexture.first] = texture;
 		}
 	}
 
@@ -135,8 +137,14 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThr
 
 	return FeEReturnCode::Success;
 }
-uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iTextureFormat, bool bHasAlpha)
+
+#pragma optimize( "", on  )
+
+uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint32 _iWidth, uint32 _iHeight, uint32 iTextureFormat, bool bHasAlpha)
 {
+	uint32 iWidth = _iWidth;
+	uint32 iHeight = _iHeight;
+
 	uint32 iTextureSize = 0;
 	DXGI_FORMAT iFormat = (DXGI_FORMAT)iTextureFormat;
 	uint32 iPixelBitSize = 0;
@@ -179,6 +187,9 @@ uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint
 
 	if (iPixelBitSize != 0) // texture format is compressed
 	{
+		uint32 iSizeMultiple = 256;
+		iWidth = (uint32)ceil((float)(_iWidth / (float)iSizeMultiple)) * iSizeMultiple;
+		iHeight = (uint32)ceil((float)(_iHeight / (float)iSizeMultiple)) * iSizeMultiple;
 		iTextureSize = ((iWidth*iHeight) / 2)*(iPixelBitSize / 8);
 	}
 	else
@@ -361,9 +372,9 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 	{
 		FeRenderLoadingTexture& texture = it->second;
 
-		FeFile savedFile;
-		FeFileSystem::GetFullPathChangeExtension(savedFile, texture.Path, "dds");
-		HRESULT hr = D3DX11SaveTextureToFile(pD3DContext, texture.Resource, D3DX11_IFF_DDS, savedFile.Path);
+		FePath savedFile;
+		FeFileTools::GetFullPathChangeExtension(savedFile, texture.Path, "dds");
+		HRESULT hr = D3DX11SaveTextureToFile(pD3DContext, texture.Resource, D3DX11_IFF_DDS, savedFile.Value);
 		if (FAILED(hr))
 		{
 			FE_ASSERT(false, "converted texture save failed");

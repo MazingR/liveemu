@@ -51,5 +51,5 @@ namespace FeMath
 		if (val >= max) return 1.0f;
 
 		return float(val - min) * (1.0f / float(max - min));
-	}	
+	}
 };

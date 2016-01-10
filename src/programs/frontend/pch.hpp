@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common/common.hpp>
+#include <common/filesystem.hpp>
 #include <rendering/modulerenderer.hpp>
 #include <rendering/modulerenderresourceshandler.hpp>
 

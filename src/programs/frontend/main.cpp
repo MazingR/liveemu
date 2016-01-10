@@ -28,7 +28,10 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	SDL_GetWindowWMInfo(window, &wmInfo);
 	HWND hwnd = wmInfo.info.win.window;
 
-
+	{
+		FeModuleInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleFilesManager>(init));
+	}
 	{
 		FeModuleInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleRenderResourcesHandler>(init));

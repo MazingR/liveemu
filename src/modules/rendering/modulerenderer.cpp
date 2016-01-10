@@ -1,6 +1,7 @@
 #include <modulerenderer.hpp>
 #include <modulerenderresourceshandler.hpp>
 #include <common/memorymanager.hpp>
+#include <common/filesystem.hpp>
 
 #include <d3dx11include.hpp>
 #include "FW1FontWrapper.h"
@@ -9,6 +10,26 @@
 #define UPDATE_RENDER_INFOS_FREQUENCY 30
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
+void OnEffectFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
+{
+	((FeModuleRendering*)pUserData)->UnloadEffects();
+	((FeModuleRendering*)pUserData)->LoadEffects();
+}
+
+void FeModuleRendering::UnloadEffects()
+{
+	for (uint32 i = 0; i < Effects.GetSize(); ++i)
+		Effects[i].Release();
+	
+	Effects.Clear();
+}
+uint32 FeModuleRendering::LoadEffects()
+{
+	FeRenderEffect& newEffect = Effects.Add();
+	FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/default.fx"));
+
+	return FeEReturnCode::Success;
+}
 uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 {
 	RegisteredRenderBatches.SetHeapId(RENDERER_HEAP);
@@ -16,9 +37,7 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 	auto init = (FeModuleRenderingInit*)initBase;
 
 	FE_FAILEDRETURN(Device.Initialize(init->WindowHandle));
-
-	FeRenderEffect& newEffect = Effects.Add();
-	FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/default.fx"));
+	FE_FAILEDRETURN(LoadEffects());
 
 	// Creat static geometries (primitive forms)
 	Geometries.Reserve(16);
@@ -36,20 +55,22 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 
 	DefaultViewport.CreateFromBackBuffer();
 
+	auto pFileManagerModule = FeApplication::StaticInstance.GetModule<FeModuleFilesManager>();
+	pFileManagerModule->WatchDirectory("../data/themes/common/shaders", OnEffectFileChanged, this);
+
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleRendering::Unload()
 {
-	Device.Release();
-
-	for (uint32 i = 0; i < Effects.GetSize(); ++i)
-		Effects[i].Release();
+	UnloadEffects();
 
 	FeGeometryHelper::ReleaseGeometryData();
 	FeGeometryHelper::ReleaseStaticGeometryData();
 
 	SafeRelease(FontWrapper);
 	SafeRelease(FW1Factory);
+
+	Device.Release();
 
 	return FeEReturnCode::Success;
 }
@@ -138,9 +159,10 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	{
 		FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
 
-		if (geomInstance.Effect != iLastEffectId)
+		if (geomInstance.Effect != iLastEffectId && Effects.GetSize() >= geomInstance.Effect)
 		{
-			FE_ASSERT(Effects.GetSize() >= geomInstance.Effect, "Invalid effect Id !");
+			//FE_ASSERT(Effects.GetSize() >= geomInstance.Effect, "Invalid effect Id !");
+
 			pEffect = &Effects[geomInstance.Effect - 1];
 			pEffect->Bind();
 			iLastEffectId = geomInstance.Effect;

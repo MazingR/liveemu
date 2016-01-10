@@ -16,6 +16,8 @@ cbuffer cbPerFrame : register(b0)
 {
 	matrix View;
 	matrix Proj;
+	float Time;
+	float4 Resolution;
 };
 
 cbuffer cbPerObject : register(b1)
@@ -68,7 +70,8 @@ float4 PS(PS_INPUT input) : SV_Target
 
 	clip(fColor.a < 0.5f ? -1 : 1);
 	//fColor *= (1 - pow(fTx, fPow)) * (1 - pow(fTy, fPow));
-
+	// fColor.r = sin(Time);
+	
 	return fColor;
 	//return 1;
 }
