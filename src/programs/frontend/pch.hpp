@@ -3,7 +3,7 @@
 #include <common/common.hpp>
 #include <common/filesystem.hpp>
 #include <rendering/modulerenderer.hpp>
-#include <rendering/modulerenderresourceshandler.hpp>
+#include <rendering/renderresourceshandler.hpp>
 
 #include <common/memorymanager.hpp>
 

@@ -1,6 +1,6 @@
 #include <moduleui.hpp>
 #include <rendering/modulerenderer.hpp>
-#include <rendering/modulerenderresourceshandler.hpp>
+#include <rendering/renderresourceshandler.hpp>
 
 uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 {

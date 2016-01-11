@@ -1,5 +1,5 @@
 #include <modulerenderer.hpp>
-#include <modulerenderresourceshandler.hpp>
+#include <renderresourceshandler.hpp>
 #include <common/memorymanager.hpp>
 #include <common/filesystem.hpp>
 
