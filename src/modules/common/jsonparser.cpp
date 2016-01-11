@@ -2,9 +2,9 @@
 
 #include <jsonparser.hpp>
 
-FeObjectsFactory FeObjectsFactory::StaticInstance;
+FeCObjectsFactory FeObjectsFactory;
 
-FeSerializable* FeObjectsFactory::CreateObjectFromFactory(const char* sTypeName)
+FeSerializable* FeCObjectsFactory::CreateObjectFromFactory(const char* sTypeName)
 {
 	FeSerializable* pResult = NULL;
 	uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
@@ -15,4 +15,11 @@ FeSerializable* FeObjectsFactory::CreateObjectFromFactory(const char* sTypeName)
 		return it->second.CreateFunc();
 	}
 	return NULL;
+}
+
+FeCObjectsFactory& GetObjectsFactory()
+{
+	static FeCObjectsFactory FeObjectsFactory;
+
+	return FeObjectsFactory;
 }

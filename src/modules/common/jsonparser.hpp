@@ -4,25 +4,43 @@
 #include "filesystem.hpp"
 #include "string.hpp"
 
-#pragma warning(disable: 4244)
-#include <rapidjson/document.h>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
+#undef malloc
+#undef calloc
+#undef realloc
+#undef free
+
+#if HOOK_MALLOC
+	#include <malloc.h>
+	#undef malloc
+	#undef calloc
+	#undef realloc
+	#undef free
+
+	#define malloc(size)		std_FeMallocHook(size, DEFAULT_HEAP)
+	#define calloc(nmemb, size)	std_FeCallocHook(nmemb, size, DEFAULT_HEAP)
+	#define realloc(ptr, size)	std_FeReallocHook(ptr, size, DEFAULT_HEAP)
+	#define free(ptr)			std_FeFreeHook(ptr, DEFAULT_HEAP)
+
+	#pragma warning(disable: 4244)
+	#include <rapidjson/document.h>
+	#include <rapidjson/writer.h>
+	#include <rapidjson/stringbuffer.h>
+
+	#undef malloc
+	#undef calloc
+	#undef realloc
+	#undef free
+
+	#define malloc(size)		FeMallocHook(size, DEFAULT_HEAP)
+	#define calloc(nmemb, size)	FeCallocHook(nmemb, size, DEFAULT_HEAP)
+	#define realloc(ptr, size)	FeReallocHook(ptr, size, DEFAULT_HEAP)
+	#define free(ptr)			FeFreeHook(ptr, DEFAULT_HEAP)
+#endif
 
 typedef rapidjson::Value FeSerializerValue;
 
-class FeSerializable
-{
-public:
-	virtual uint32 Serialize(FeSerializerValue& serializer) 
-	{
-		return FeEReturnCode::Success;
-	}
-	virtual uint32 Deserialize(FeSerializerValue& serializer)
-	{
-		return FeEReturnCode::Success;
-	}
-};
+class FeSerializable;
+
 typedef FeSerializable*(*FeCreateObjectFunc) ();
 
 struct FeFactory
@@ -31,13 +49,12 @@ struct FeFactory
 	FeCreateObjectFunc	CreateFunc;
 };
 
-class FeObjectsFactory
+class FeCObjectsFactory
 {
 public:
 	void RegisterFactory(const char* sTypeName, FeCreateObjectFunc createFunc);
 	FeSerializable* CreateObjectFromFactory(const char* sTypeName);
 
-	static FeObjectsFactory StaticInstance;
 	typedef std::map<uint32, FeFactory> FactoriesMap;
 	typedef FactoriesMap::iterator FactoriesMapIt;
 
@@ -50,11 +67,11 @@ public:
 	template<typename T>
 	void CreateFactory(FeCreateObjectFunc func)
 	{
-		if (!HasFactory<T>())
-		{
-			const char* sTypeName = GetTypeName<T>();
-			uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
+		const char* sTypeName = GetTypeName<T>();
+		uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
 
+		if (Factories.find(iTypeHash) == Factories.end())
+		{
 			FeFactory newFactory;
 			newFactory.CreateFunc = func;
 			sprintf_s(newFactory.TypeName, sTypeName);
@@ -62,12 +79,7 @@ public:
 			Factories[iTypeHash] = newFactory;
 		}
 	}
-	template<class T>
-	bool HasFactory()
-	{
-		static uint32 iTypeHash = typeid(T).hash_code();
-		return Factories.find(iTypeHash) != Factories.end();
-	}
+	
 	template<class T>
 	const FeFactory& GetFactory()
 	{
@@ -80,6 +92,8 @@ private:
 
 };
 
+FeCObjectsFactory& GetObjectsFactory();
+
 template<typename T>
 struct FeTFactory
 {
@@ -87,7 +101,7 @@ struct FeTFactory
 
 	FeTFactory()
 	{
-		FeObjectsFactory::StaticInstance.CreateFactory<T>(&FeTFactory<T>::CreateInstance);
+		GetObjectsFactory().CreateFactory<T>(&FeTFactory<T>::CreateInstance);
 	}
 };
 
@@ -166,3 +180,4 @@ namespace FeJsonParser
 		return FeEReturnCode::Success;
 	}
 }
+

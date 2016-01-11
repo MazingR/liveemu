@@ -9,7 +9,20 @@
 #define DEFAULT_HEAP_SIZE 16
 #define MEM_PAGE_SIZE_KB 512
 
-HANDLE g_initHeapHandle = 0;
+bool g_IsMemoryManagerInit = false;
+
+HANDLE GetDefaultHeapHandle()
+{
+	static HANDLE heapHandle = 0;
+
+	if (!heapHandle)
+	{
+		size_t iHeapSize = DEFAULT_HEAP_SIZE*(1024 * 1024);
+		heapHandle = HeapCreate(0, iHeapSize, iHeapSize);
+	}
+
+	return heapHandle;
+}
 
 FeMemoryManager FeMemoryManager::StaticInstance;
 
@@ -26,7 +39,10 @@ C_BEGIN
 void *FeMallocHook(size_t size, int iHeapId)
 {
 #if HOOK_MALLOC
-	return FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+	if (g_IsMemoryManagerInit)
+		return FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+	else
+		return HeapAlloc(GetDefaultHeapHandle(), 0, size);
 #else
 	return malloc(size);
 #endif
@@ -34,9 +50,16 @@ void *FeMallocHook(size_t size, int iHeapId)
 void *FeCallocHook(size_t nmemb, size_t size, int iHeapId)
 {
 #if HOOK_MALLOC
-	void * outPtr = FeMemoryManager::StaticInstance.Allocate(nmemb*size, MEMALIGNEMENT, iHeapId);
-	memset(outPtr, 0, nmemb*size);
-	return outPtr;
+	if (g_IsMemoryManagerInit)
+	{
+		void * outPtr = FeMemoryManager::StaticInstance.Allocate(nmemb*size, MEMALIGNEMENT, iHeapId);
+		memset(outPtr, 0, nmemb*size);
+		return outPtr;
+	}
+	else
+	{
+		return HeapAlloc(GetDefaultHeapHandle(), 0, nmemb*size);
+	}
 #else
 	return calloc(nmemb, size);
 #endif
@@ -44,14 +67,28 @@ void *FeCallocHook(size_t nmemb, size_t size, int iHeapId)
 void *FeReallocHook(void *ptr, size_t size, int iHeapId)
 {
 #if HOOK_MALLOC
-	void* output = FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
-
-	if (ptr)
+	if (g_IsMemoryManagerInit)
 	{
-		memcpy(output, ptr, size);
-		FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+		void* output = FeMemoryManager::StaticInstance.Allocate(size, MEMALIGNEMENT, iHeapId);
+
+		if (ptr)
+		{
+			memcpy(output, ptr, size);
+			FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+		}
+		return output;
 	}
-	return output;
+	else
+	{
+		void* output = HeapAlloc(GetDefaultHeapHandle(), 0, size);
+
+		if (ptr)
+		{
+			memcpy(output, ptr, size);
+			HeapFree(GetDefaultHeapHandle(), 0, ptr);
+	}
+		return output;
+	}
 #else
 	return realloc(ptr,size);
 #endif
@@ -59,7 +96,14 @@ void *FeReallocHook(void *ptr, size_t size, int iHeapId)
 void FeFreeHook(void *ptr, int iHeapId)
 {
 #if HOOK_MALLOC
-	FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+	if (g_IsMemoryManagerInit)
+	{
+		FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
+	}
+	else
+	{
+		HeapFree(GetDefaultHeapHandle(), 0, ptr);
+	}
 #else
 	free(ptr);
 #endif
@@ -68,8 +112,8 @@ C_END
 
 FeMemoryManager::FeMemoryManager()
 {
-	size_t iHeapSize = DEFAULT_HEAP_SIZE*(1024 * 1024);
-	g_initHeapHandle = HeapCreate(0, iHeapSize, iHeapSize);
+	FE_ASSERT(false == g_IsMemoryManagerInit, "MemoryManager already init !");
+	g_IsMemoryManagerInit = true;
 }
 FeMemoryManager::~FeMemoryManager()
 {
@@ -105,7 +149,7 @@ void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, 
 
 	if (iHeapId == DEFAULT_HEAP)
 	{
-		void* outputPtr = HeapAlloc(g_initHeapHandle, 0, _size);
+		void* outputPtr = HeapAlloc(GetDefaultHeapHandle(), 0, _size);
 		FE_LOCALASSERT(outputPtr, "Not enough local memory on default heap ! (%d MB)", DEFAULT_HEAP_SIZE);
 		return outputPtr;
 	}
@@ -126,7 +170,7 @@ void* FeMemoryManager::Free(void* _ptr, int iHeapId)
 
 	if (iHeapId == DEFAULT_HEAP)
 	{
-		HeapFree(g_initHeapHandle, 0, _ptr);
+		HeapFree(GetDefaultHeapHandle(), 0, _ptr);
 		return NULL;
 	}
 
