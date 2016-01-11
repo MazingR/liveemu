@@ -3,6 +3,8 @@
 #include <queue>
 #include "string.hpp"
 
+#include <SDL.h>
+
 
 #define FE_LOCALASSERT(condition, fmt, ...) FE_ASSERT(condition, "[FileSystem] "fmt, __VA_ARGS__) 
 #define FE_LOCALLOG(fmt, ...) FE_LOG("[FileSystem] "fmt, __VA_ARGS__) 
@@ -71,33 +73,6 @@ uint32 FeModuleFilesManager::Update(const FeDt& fDt)
 
 			FindNextChangeNotification(watchedDir.WatchHandle);
 		}
-
-
-
-		//DWORD  dwWaitStatus = WaitForSingleObject(watchedDir.WatchHandle, 0);
-
-		//if (dwWaitStatus == WAIT_OBJECT_0)
-		//{
-		//	FILE_NOTIFY_INFORMATION notifyInfos;
-		//	ZeroMemory(&notifyInfos, sizeof(FILE_NOTIFY_INFORMATION));
-
-		//	DWORD iBytesReturned;
-		//	BOOL bResult = ReadDirectoryChangesW(watchedDir.Handle, &notifyInfos, sizeof(notifyInfos), false, FILE_CHANGE_FLAGS, &iBytesReturned, NULL, NULL);
-		//	
-		//	if (bResult)
-		//	{
-		//		FePath changedPath;
-		//		size_t iConvertedCount;
-		//		wcstombs_s(&iConvertedCount, changedPath.Value, notifyInfos.FileName, COMMON_PATH_SIZE);
-		//		watchedDir.OnFileChangeEvent(FeEFileChangeType::Changed, changedPath.Value, watchedDir.FileEventUserData);
-
-		//		FindNextChangeNotification(watchedDir.WatchHandle);
-		//	}
-		//	else
-		//	{
-		//		watchedDir.OnFileChangeEvent(FeEFileChangeType::Changed, "", watchedDir.FileEventUserData);
-		//	}
-		//}
 	}
 	return FeEReturnCode::Success;
 }
@@ -128,6 +103,54 @@ void FeModuleFilesManager::WatchDirectory(const char* szPath, FeFileChangeEvent 
 	}
 }
 
+uint32 sdl_file_write(const char* filename, const char* szContent)
+{
+	SDL_RWops *rw = SDL_RWFromFile(filename, "w");
+
+	if (rw == NULL)
+		return FeEReturnCode::File_OpenFailed;
+
+	if (rw != NULL) {
+		const char *str = "Hello World";
+		size_t len = SDL_strlen(szContent);
+		size_t iWritten = SDL_RWwrite(rw, str, 1, len);
+
+		FE_ASSERT(iWritten == len, "Failed writting to file %s", filename);
+
+		SDL_RWclose(rw);
+	}
+
+	return FeEReturnCode::Success;
+}
+uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize) {
+	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
+
+	if (rw == NULL)
+		return FeEReturnCode::File_OpenFailed;
+
+	size_t res_size = (size_t)SDL_RWsize(rw);
+	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 1);
+
+	size_t nb_read_total = 0, nb_read = 1;
+	char* buf = (char*)*outputBuff;
+
+	while (nb_read_total < res_size && nb_read != 0) {
+		nb_read = SDL_RWread(rw, buf, 1, (res_size - nb_read_total));
+		nb_read_total += nb_read;
+		buf += nb_read;
+	}
+	SDL_RWclose(rw);
+	*pFileSize = nb_read_total;
+
+	if (nb_read_total != res_size) {
+		free(*outputBuff);
+		return FeEReturnCode::File_ReadFailed;
+	}
+
+	((char*)*outputBuff)[nb_read_total] = '\0';
+
+	return FeEReturnCode::Success;
+}
 namespace FeFileTools
 {
 	uint32 DoListFiles(const char* szPath, const char* szFilter, FeTArray<FePath>& files, bool bRecusrive)
@@ -195,22 +218,32 @@ namespace FeFileTools
 		return DoListFiles(szPath, szFilter, files, true);
 	}
 
-	uint32 ReadTextFile(const FePath& file, char** ppOutput)
+	uint32 ReadTextFile(const FePath& file, char** ppOutput, size_t* iFileSize)
 	{
-		return FeEReturnCode::Success;
+		return ReadTextFile(file.Value, ppOutput, iFileSize);
 	}
-	uint32 ReadTextFile(const char* szPath, char** ppOutput)
+	uint32 ReadTextFile(const char* szPath, char** ppOutput, size_t* iFileSize)
 	{
-		return FeEReturnCode::Success;
+		return sdl_file_read(szPath, (void**)ppOutput, iFileSize);
+	}
+	
+	uint32 WriteTextFile(const FePath& file, const char* pInput)
+	{
+		return WriteTextFile(file.Value, pInput);
+	}
+	uint32 WriteTextFile(const char* szPath, const char* pInput)
+	{
+		return sdl_file_write(szPath, pInput);
 	}
 
-	uint32 ReadBinaryFile(const FePath& file, void** ppOutput)
+
+	uint32 ReadBinaryFile(const FePath& file, void** ppOutput, size_t* iFileSize)
 	{
-		return FeEReturnCode::Success;
+		return ReadBinaryFile(file.Value, ppOutput, iFileSize);
 	}
-	uint32 ReadBinaryFile(const char* szPath, void** ppOutput)
+	uint32 ReadBinaryFile(const char* szPath, void** ppOutput, size_t* iFileSize)
 	{
-		return FeEReturnCode::Success;
+		return sdl_file_read(szPath, ppOutput, iFileSize);
 	}
 
 	void GetFullPathWithoutExtension(FePath& output, const FePath& input)
@@ -270,5 +303,18 @@ namespace FeFileTools
 		WIN32_FIND_DATA findData;
 		HANDLE hFind = FindFirstFileEx(file.Value, FindExInfoStandard, &findData, FindExSearchNameMatch, NULL, 0);
 		return hFind != ((HANDLE)-1);
+	}
+	uint32 GetFileSize(const char* szPath, size_t* iSize)
+	{
+		SDL_RWops *rw = SDL_RWFromFile(szPath, "r");
+
+		if (rw == NULL)
+			return FeEReturnCode::File_OpenFailed;
+
+		*iSize = (size_t)SDL_RWsize(rw);
+
+		SDL_RWclose(rw);
+
+		return FeEReturnCode::Success;
 	}
 };

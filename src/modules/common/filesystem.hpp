@@ -58,12 +58,17 @@ namespace FeFileTools
 {
 	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FePath>& files);
 	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FePath>& files);
-	
-	uint32 ReadTextFile(const FePath& file, char** ppOutput);
-	uint32 ReadTextFile(const char* szPath, char** ppOutput);
 
-	uint32 ReadBinaryFile(const FePath& file, void** ppOutput);
-	uint32 ReadBinaryFile(const char* szPath, void** ppOutput);
+	uint32 GetFileSize(const char* szPath, size_t* iSize);
+	
+	uint32 ReadTextFile(const FePath& file, char** ppOutput, size_t* iFileSize);
+	uint32 ReadTextFile(const char* szPath, char** ppOutput, size_t* iFileSize);
+
+	uint32 ReadBinaryFile(const FePath& file, void** ppOutput, size_t* iFileSize);
+	uint32 ReadBinaryFile(const char* szPath, void** ppOutput, size_t* iFileSize);
+
+	uint32 WriteTextFile(const FePath& file, const char* pInput);
+	uint32 WriteTextFile(const char* szPath, const char* pInput);
 
 	void GetFullPathWithoutExtension(FePath&, const FePath&);
 	void GetFileNameWithoutExtension(FePath&, const FePath&);

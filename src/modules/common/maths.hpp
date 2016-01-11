@@ -17,6 +17,19 @@ typedef gmtl::Matrix44f FeMatrix4;
 const FeMatrix4 FeMatrix4Identity = gmtl::MAT_IDENTITY44F;
 const FeMatrix3 FeMatrix3Identity = gmtl::MAT_IDENTITY33F;
 
+struct FeTransform
+{
+	FeVector3	Translation;
+	FeRotation	Rotation;
+	FeVector3	Scale;
+
+	void SetIdentity()
+	{
+		Translation = FeVector3(0.f, 0.f, 0.f);
+		Rotation	= FeRotation::EulerAngle(0.f, 0.f, 0.f);
+		Scale		= FeVector3(1.f, 1.f, 1.f);
+	}
+};
 namespace FeMatrix
 {
 	inline FeMatrix4 FromTranslation(FeVector3 vec) { return gmtl::makeTrans< gmtl::Matrix44f >(vec); }

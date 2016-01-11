@@ -115,7 +115,8 @@ groups =
 			},
 			includedirs = { 
 				c_src_root.."modules/common",
-				c_src_root.."externals/gmtl/include"},
+				c_src_root.."externals/gmtl/include",
+				c_src_root.."externals/rapidjson/include"},
 			targetname = "common",
 			dependencies = 
 			{

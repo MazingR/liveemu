@@ -19,3 +19,6 @@
 [submodule "src/externals/emulators/mame-buildtools"]
 	path = src/externals/emulators/mame-buildtools
 	url = https://github.com/mamedev/buildtools
+[submodule "src/externals/rapidjson"]
+	path = src/externals/rapidjson
+	url = https://github.com/miloyip/rapidjson.git
