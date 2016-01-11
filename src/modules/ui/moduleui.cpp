@@ -52,21 +52,38 @@
 /// <summary>
 /// Declares the properties of a class with serialization functions following the 3 steps defined above
 /// </summary>
-#define DECLARE_PROPERTIES(properties, thisClass, baseClass)	\
+#define FE_DECLARE_CLASS_BODY(properties, thisClass, baseClass)	\
 	private:													\
+	static const FeTFactory<thisClass> Factory;						\
+	const TestObj obj;\
 	DECLARE_CLASS_MEMBERS(properties)							\
 	public:														\
 	DECLARE_SERIALIZER(properties, thisClass, baseClass)		\
 	DECLARE_DESERIALIZER(properties, baseClass)					\
+	private:													\
+	//const thisClass __const_instance__;							\
 
+#define FE_DECLARE_CLASS_DEFAULT_CTOR(thisClass, baseClass)		\
+	public:														\
+	thisClass() : baseClass() {}								\
+
+class TestObj
+{
+public:
+	TestObj()
+	{
+		FE_LOG("");
+	}
+};
 template<typename T>
-struct FePtr
+struct FeTPtr
 {
 public:
 	T* Ptr;
 
-	FePtr() : Ptr(NULL) {}
-	~FePtr()
+	FeTPtr() : Ptr(NULL) {}
+	
+	~FeTPtr()
 	{
 		Delete();
 	}
@@ -80,6 +97,7 @@ public:
 		Delete();
 		Ptr = FE_NEW(T, 1);
 	}
+	
 	void Delete()
 	{
 		if (Ptr)
@@ -113,16 +131,6 @@ public:
 	{
 		return FeEReturnCode::Success;
 	}
-/*
-	static uint32 Deserialize(FeSerializerValue& value, FeSerializable* pOutput, const char* _sPropertyName)
-	{
-		FeSerializerValue jsonProperty;
-
-		if (!FetchProperty(value, jsonProperty, _sPropertyName))
-			return FeEReturnCode::Success;
-
-		return FeJsonParser::DeserializeObject(pOutput, jsonProperty);
-	}*/
 	
 	template<typename T>
 	static uint32 Deserialize(FeSerializerValue& value, FeTArray<T>* pOutput, const char* _sPropertyName)
@@ -150,7 +158,7 @@ public:
 	}
 	
 	template<typename T>
-	static uint32 Deserialize(FeSerializerValue& value, FePtr<T>* pOutput, const char* _sPropertyName)
+	static uint32 Deserialize(FeSerializerValue& value, FeTPtr<T>* pOutput, const char* _sPropertyName)
 	{
 		FeSerializerValue jsonProperty;
 
@@ -159,7 +167,7 @@ public:
 
 		if (jsonProperty.HasMember("_serialize_type_"))
 		{
-			pOutput->Ptr = (T*)CreateObjectPtrFromSerializedType(jsonProperty["_serialize_type_"].GetString());
+			pOutput->Ptr = (T*)FeObjectsFactory::StaticInstance.CreateObjectFromFactory(jsonProperty["_serialize_type_"].GetString());
 		}
 
 		return FeJsonParser::DeserializeObject(*pOutput->Ptr, jsonProperty);
@@ -207,9 +215,8 @@ public:
 
 		return FeEReturnCode::Success;
 	}
-
-	static void* CreateObjectPtrFromSerializedType(const char*);
 };
+
 class FeTestObjectBase : public FeSerializable
 {
 public:
@@ -218,7 +225,8 @@ public:
 		_d(FeTArray<int>,	Values)				\
 		_d(FeTransform,		Transform)			\
 
-	DECLARE_PROPERTIES(FeTestObjectBase_Properties, FeTestObjectBase, FeSerializable)
+	FE_DECLARE_CLASS_DEFAULT_CTOR(FeTestObjectBase, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeTestObjectBase, FeSerializable)
 };
 
 class FeTestObjectChild : public FeTestObjectBase
@@ -227,40 +235,28 @@ public:
 	#define FeTestObjectChild_Properties(_d)	\
 		_d(FePath,	File)						\
 
-	DECLARE_PROPERTIES(FeTestObjectChild_Properties, FeTestObjectChild, FeTestObjectBase)
+	FE_DECLARE_CLASS_DEFAULT_CTOR(FeTestObjectChild, FeTestObjectBase)
+	FE_DECLARE_CLASS_BODY(FeTestObjectChild_Properties, FeTestObjectChild, FeTestObjectBase)
 };
-
 
 class FeTestObjectA : public FeSerializable
 {
 	#define FeTestObjectA_Properties(_d)			\
-		_d(FeTArray<FePtr<FeTestObjectBase>>,Objs)	\
+		_d(FeTArray<FeTPtr<FeTestObjectBase>>,Objs)	\
 
-	DECLARE_PROPERTIES(FeTestObjectA_Properties, FeTestObjectA, FeSerializable)
+	FE_DECLARE_CLASS_DEFAULT_CTOR(FeTestObjectA, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeTestObjectA_Properties, FeTestObjectA, FeSerializable)
 };
-
-void* FeSerializerHelper::CreateObjectPtrFromSerializedType(const char* _sType)
-{
-	std::string sType = _sType;
-
-	void* pOutput = NULL;
-
-	if (sType == "FeTestObjectChild")
-		pOutput = FE_NEW(FeTestObjectChild, 1);
-
-	return pOutput;
-}
-
 
 uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 {
 	auto init = (FeModuleUiInit*)initBase;
 	srand(1564);
 
-	{
-		FeTestObjectA obj;
-		auto iRes = FeJsonParser::DeserializeObject(obj, "../data/test/ui/component.json");
-	}
+	//{
+	//	FeTestObjectA obj;
+	//	auto iRes = FeJsonParser::DeserializeObject(obj, "../data/test/ui/component.json");
+	//}
 	FeTArray<FePath> files;
 	files.SetHeapId(RENDERER_HEAP);
 

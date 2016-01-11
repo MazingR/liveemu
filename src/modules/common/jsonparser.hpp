@@ -2,11 +2,12 @@
 
 #include <common.hpp>
 #include "filesystem.hpp"
+#include "string.hpp"
 
 #pragma warning(disable: 4244)
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 typedef rapidjson::Value FeSerializerValue;
 
@@ -40,27 +41,29 @@ public:
 	typedef std::map<uint32, FeFactory> FactoriesMap;
 	typedef FactoriesMap::iterator FactoriesMapIt;
 
-	template<class T>
+	template<typename T>
+	const char* GetTypeName()
+	{
+		return typeid(T).name()+6; // class Name
+	}
+
+	template<typename T>
 	void CreateFactory(FeCreateObjectFunc func)
 	{
-		if (!HasFactory())
+		if (!HasFactory<T>())
 		{
-			uint32 iTypeHash = typeid(T).hash_code();
-			char sTypeName[64] = typeid(T).name;
+			const char* sTypeName = GetTypeName<T>();
+			uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
 
-			{
-				FeFactory newFactory;
-				Factories.insert(iTypeHash, newFactory)
-			}
-			{
-				FeFactory& newFactory = Factories[iTypeHash];
-				newFactory.CreateFunc = func;
-				sprintf_s(newFactory.TypeName, sTypeName);
-			}
+			FeFactory newFactory;
+			newFactory.CreateFunc = func;
+			sprintf_s(newFactory.TypeName, sTypeName);
+
+			Factories[iTypeHash] = newFactory;
 		}
 	}
 	template<class T>
-	const FeFactory& HasFactory()
+	bool HasFactory()
 	{
 		static uint32 iTypeHash = typeid(T).hash_code();
 		return Factories.find(iTypeHash) != Factories.end();
@@ -75,11 +78,21 @@ public:
 private:
 	FactoriesMap Factories;
 
-}
+};
+
+template<typename T>
+struct FeTFactory
+{
+	static FeSerializable* CreateInstance() { return FE_NEW(T, 1); }
+
+	FeTFactory()
+	{
+		FeObjectsFactory::StaticInstance.CreateFactory<T>(&FeTFactory<T>::CreateInstance);
+	}
+};
+
 namespace FeJsonParser
 {
-	
-
 	template<class T>
 	uint32 DeserializeObject(T& output, const FePath& path)
 	{
@@ -92,7 +105,9 @@ namespace FeJsonParser
 		char* szContent;
 		size_t iFileSize;
 
-		FeFileTools::ReadTextFile(path, &szContent, &iFileSize);
+		auto iResult = FeFileTools::ReadTextFile(path, &szContent, &iFileSize);
+		if (iResult != FeEReturnCode::Success)
+			return iResult;
 
 		rapidjson::Document d;
 		rapidjson::ParseResult result = d.Parse(szContent);
@@ -118,11 +133,11 @@ namespace FeJsonParser
 		return FeEReturnCode::Success;
 	}
 
-	template<>
-	uint32 DeserializeObject(FeSerializable*& output, FeSerializerValue& value)
-	{
-		return output->Deserialize(value);
-	}
+	//template<>
+	//uint32 DeserializeObject(FeSerializable*& output, FeSerializerValue& value)
+	//{
+	//	return output->Deserialize(value);
+	//}
 
 	template<class T>
 	uint32 SerializeObject(const T& input, const FePath& path)

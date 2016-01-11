@@ -2,30 +2,17 @@
 
 #include <jsonparser.hpp>
 
-namespace FeObject
+FeObjectsFactory FeObjectsFactory::StaticInstance;
+
+FeSerializable* FeObjectsFactory::CreateObjectFromFactory(const char* sTypeName)
 {
-	static FeTArray<FeFactory> Factories;
-
-	void RegisterFactory(const char* sTypeName, FeCreateObjectFunc createFunc)
+	FeSerializable* pResult = NULL;
+	uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
+	FactoriesMapIt it = Factories.find(iTypeHash);
+	
+	if (it != Factories.end())
 	{
-		FeFactory& newFactory = Factories.Add();
-		newFactory.CreateFunc = createFunc;
-		sprintf_s(newFactory.TypeName, sTypeName);
+		return it->second.CreateFunc();
 	}
-	FeSerializable* CreateObjectFromFactory(const char* sTypeName)
-	{
-		FeSerializable* pResult = NULL;
-
-		for (auto factory : Factories)
-		{
-			if (strcmp(factory.TypeName, sTypeName) == 0)
-			{
-				pResult = factory.CreateFunc();
-
-				break;
-			}
-		}
-
-		return pResult;
-	}
+	return NULL;
 }

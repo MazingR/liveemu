@@ -7,11 +7,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-	void *FeMallocHook(size_t size, int iHeapId);
-	void *FeCallocHook(size_t nmemb, size_t size, int iHeapId);
-	void *FeReallocHook(void *ptr, size_t size, int iHeapId);
-	void FeFreeHook(void *ptr, int iHeapId);
+	namespace std
+	{
+		void *FeMallocHook(size_t size, int iHeapId);
+		void *FeCallocHook(size_t nmemb, size_t size, int iHeapId);
+		void *FeReallocHook(void *ptr, size_t size, int iHeapId);
+		void FeFreeHook(void *ptr, int iHeapId);
+	}
 
 #ifdef __cplusplus
 }
@@ -31,10 +33,10 @@ extern "C" {
 #undef realloc
 #undef free
 
-#define malloc(size)			FeMallocHook(size, DEFAULT_HEAP)
+#define malloc(size)		FeMallocHook(size, DEFAULT_HEAP)
 #define calloc(nmemb, size)	FeCallocHook(nmemb, size, DEFAULT_HEAP)
 #define realloc(ptr, size)	FeReallocHook(ptr, size, DEFAULT_HEAP)
-#define free(ptr)				FeFreeHook(ptr, DEFAULT_HEAP)
+#define free(ptr)			FeFreeHook(ptr, DEFAULT_HEAP)
 
 #define FE_ALLOCATE(size, heap) FeMallocHook(size, heap)
 #define FE_FREE(ptr, heap) FeFreeHook(ptr, heap)

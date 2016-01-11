@@ -78,7 +78,7 @@ void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderView
 		fTime = 0.0f;*/
 
 	cbPerFrame.Time = fTime;
-	cbPerFrame.Resolution = XMVectorSet(viewport.Width, viewport.Height, 0, 0);
+	cbPerFrame.Resolution = XMVectorSet((float)viewport.Width, (float)viewport.Height, 0.f, 0.f);
 
 	FeMatrix4 matViewPorj;
 	mult(matViewPorj, camera.MatrixProjection, camera.MatrixView);
