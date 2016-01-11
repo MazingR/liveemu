@@ -1,4 +1,4 @@
-#include <modulerenderresourceshandler.hpp>
+#include <renderresourceshandler.hpp>
 #include <modulerenderer.hpp>
 
 #include <common/memorymanager.hpp>
