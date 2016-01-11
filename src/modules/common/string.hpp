@@ -14,5 +14,6 @@ namespace FeStringTools
 	
 	size_t IndexOf(const char* szString, char szChar, size_t iStart=0, size_t iEnd=(size_t)-1);
 	size_t LastIndexOf(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = (size_t)-1);
+	size_t Count(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = (size_t)-1);
 	size_t Replace(char* szString, char szFind, char szReplace);
 }

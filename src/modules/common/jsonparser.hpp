@@ -125,10 +125,34 @@ namespace FeJsonParser
 
 		rapidjson::Document d;
 		rapidjson::ParseResult result = d.Parse(szContent);
-		FE_FREE(szContent, 1);
-
+		
 		if (result.IsError())
+		{
+			size_t iErrorOffset = result.Offset();
+			size_t iTextLen = strlen(szContent);
+			size_t iLineEnd = FeStringTools::IndexOf(szContent, '\n', iErrorOffset);
+			if ((size_t)-1 == iLineEnd)
+				iLineEnd = iTextLen;
+
+			size_t iLineStart = FeStringTools::LastIndexOf(szContent, '\n', 0, iErrorOffset)+1;
+			size_t iLineCount = FeStringTools::Count(szContent, '\n', 0, iLineStart)+1;
+			size_t iLineLen = iLineEnd - iLineStart -1;
+
+			char* szLine = FE_NEW_ARRAYD(char, iLineLen+1);
+			if (iLineLen>0 && (iLineStart + iLineLen)<iTextLen)
+			{
+				memcpy_s(szLine, iLineLen, szContent + iLineStart, iLineLen);
+				szLine[iLineLen] = '\0';
+			}
+			FE_LOG("Deserialize failed : '%s' at line %u\n===> '%s'", path, iLineCount, szLine);
+
+			FE_DELETE_ARRAYD(char, szLine, iLineLen);
+
+			FE_FREE(szContent, 1);
 			return FeEReturnCode::Failed;
+		}
+
+		FE_FREE(szContent, 1);
 
 		return DeserializeObject(output, d);
 	}

@@ -98,16 +98,32 @@ namespace FeStringTools
 		return h;
 	}
 
+	size_t Count(const char* szString, char szChar, size_t iStart, size_t iEnd)
+	{
+		size_t iLen = strlen(szString);
+		iLen = iLen > iEnd ? iEnd : iLen;
+		size_t iCount = 0;
 
+		for (size_t i = iStart; i < iLen; ++i)
+		{
+			if (szString[i] == szChar)
+				iCount++;
+		}
+
+		return iCount;
+	}
 	size_t DoIndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd, bool bReverse)
 	{
 		size_t iLen = strlen(szString);
 		iLen = iLen > iEnd ? iEnd : iLen;
 
-		for (size_t i = bReverse ? iLen - 1 : iStart; bReverse ? (i < iLen) : (i >= iStart); bReverse ? (--i) : (++i))
+		for (size_t i = bReverse ? iLen - 1 : iStart; bReverse ? (i >= iStart) : (i < iLen); bReverse ? (--i) : (++i))
 		{
 			if (szString[i] == szChar)
 				return  i;
+
+			if (bReverse&&i == 0)
+				break;
 		}
 
 		return (size_t)-1;
