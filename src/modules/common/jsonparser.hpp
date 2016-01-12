@@ -144,7 +144,7 @@ namespace FeJsonParser
 				memcpy_s(szLine, iLineLen, szContent + iLineStart, iLineLen);
 				szLine[iLineLen] = '\0';
 			}
-			FE_LOG("Deserialize failed : '%s' at line %u\n===> '%s'", path, iLineCount, szLine);
+			FE_ASSERT(false, "Deserialize failed : '%s' at line %u\n===> '%s'", path, iLineCount, szLine);
 
 			FE_DELETE_ARRAYD(char, szLine, iLineLen);
 

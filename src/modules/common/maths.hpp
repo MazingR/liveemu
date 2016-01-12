@@ -9,6 +9,7 @@
 #include <gmtl/Generate.h>
 
 typedef gmtl::Vec3f FeVector3;
+typedef gmtl::Vec4f FeColor;
 typedef gmtl::Matrix33f FeMatrix3;
 typedef gmtl::EulerAngleXYZf FeRotation;
 typedef gmtl::Vec4f FeVector4;

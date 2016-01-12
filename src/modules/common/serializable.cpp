@@ -1,8 +1,6 @@
 #pragma once 
 
 #include "serializable.hpp"
-#include "maths.hpp"
-
 
 uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName)
 {
@@ -10,6 +8,53 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, int* pOutput, c
 
 	if (FetchProperty(value, jsonProperty, _sPropertyName))
 		*pOutput = jsonProperty.GetInt();
+
+	return FeEReturnCode::Success;
+}
+
+uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, uint32* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (FetchProperty(value, jsonProperty, _sPropertyName))
+		*pOutput = jsonProperty.GetUint();
+
+	return FeEReturnCode::Success;
+}
+
+uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, float* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (FetchProperty(value, jsonProperty, _sPropertyName))
+		*pOutput = (float)jsonProperty.GetDouble();
+
+	return FeEReturnCode::Success;
+}
+
+uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeVector3* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (FetchProperty(value, jsonProperty, _sPropertyName))
+		*pOutput = FeVector3(
+		(float)jsonProperty[0].GetDouble(),
+		(float)jsonProperty[1].GetDouble(),
+		(float)jsonProperty[2].GetDouble());
+
+	return FeEReturnCode::Success;
+}
+
+uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeColor* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (FetchProperty(value, jsonProperty, _sPropertyName))
+		*pOutput = FeColor(
+		(float)jsonProperty[0].GetDouble(),
+		(float)jsonProperty[1].GetDouble(),
+		(float)jsonProperty[2].GetDouble(),
+		(float)jsonProperty[3].GetDouble());
 
 	return FeEReturnCode::Success;
 }

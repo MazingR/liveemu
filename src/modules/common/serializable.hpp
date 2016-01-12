@@ -3,8 +3,6 @@
 #include <common.hpp>
 #include <jsonparser.hpp>
 
-struct FeTransform;
-
 /// <summary>
 /// Step 1 : Simply declare the class members
 /// </summary>
@@ -117,6 +115,8 @@ public:
 	}
 };
 
+#include "maths.hpp"
+
 class FeSerializerHelper
 {
 private:
@@ -183,7 +183,11 @@ public:
 		return FeJsonParser::DeserializeObject(*pOutput->Ptr, jsonProperty);
 	}
 
-	static uint32 Deserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, FePath* pOutput, const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, FeTransform* pOutput, const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, int*			pOutput,	const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, float*			pOutput,	const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, uint32*			pOutput,	const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, FePath*			pOutput,	const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, FeVector3*		pOutput, const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, FeColor*		pOutput, const char* _sPropertyName);
+	static uint32 Deserialize(FeSerializerValue& value, FeTransform*	pOutput,	const char* _sPropertyName);
 };
