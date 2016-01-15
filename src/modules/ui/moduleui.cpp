@@ -2,6 +2,76 @@
 #include <rendering/modulerenderer.hpp>
 #include <rendering/renderresourceshandler.hpp>
 
+#include <common/serializable.hpp>
+#include <common/maths.hpp>
+
+namespace FeEUiElementState
+{
+	enum Type
+	{
+		Visible		= 1 << 0,
+		Collapsed	= 1 << 1,
+		Selected	= 1 << 2,
+	};
+}
+
+class FeUiElement : public FeSerializable
+{
+public:
+	bool HasState(FeEUiElementState::Type state);
+	bool IsVisible();
+	bool IsSelected();
+
+#define FeTestObjectBase_Properties(_d)		\
+	_d(FeTransform,				Transform)	\
+	_d(FeEUiElementState::Type, State)		\
+
+	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeTestObjectBase, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiElement)
+
+bool FeUiElement::HasState(FeEUiElementState::Type state)
+{
+	return this->State & state;
+}
+bool FeUiElement::IsSelected()
+{
+	return HasState(FeEUiElementState::Selected);
+}
+bool FeUiElement::IsVisible()
+{
+	return HasState(FeEUiElementState::Visible);
+}
+
+class FeUiComponent : public FeUiElement
+{
+public:
+#define FeTestObjectBase_Properties(_d)		\
+
+	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeUiElement, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiComponent)
+
+class FeUiContainer : public FeUiElement
+{
+public:
+#define FeTestObjectBase_Properties(_d)		\
+	_d(FeTArray<FeUiElement>, Children)		\
+
+	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeUiElement, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiContainer)
+
+class FeUiListPanel : public FeUiContainer
+{
+public:
+#define FeTestObjectBase_Properties(_d)		\
+	_d(FeTArray<FeUiElement>, Children)		\
+
+	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeUiElement, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiListPanel)
+
 uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 {
 	auto init = (FeModuleUiInit*)initBase;
