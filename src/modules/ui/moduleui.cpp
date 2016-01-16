@@ -5,15 +5,26 @@
 #include <common/serializable.hpp>
 #include <common/maths.hpp>
 
-namespace FeEUiElementState
+#define FeEUiElementState_Values(_d)		\
+		_d(FeEUiElementState, Visible)		\
+		_d(FeEUiElementState, Collapsed)	\
+		_d(FeEUiElementState, Selected)		\
+
+FE_DECLARE_ENUM(FeEUiElementState, FeEUiElementState_Values)
+
+class FeUiRenderEffect : public FeSerializable
 {
-	enum Type
-	{
-		Visible		= 1 << 0,
-		Collapsed	= 1 << 1,
-		Selected	= 1 << 2,
-	};
-}
+public:
+	bool HasState(FeEUiElementState::Type state);
+	bool IsVisible();
+	bool IsSelected();
+
+#define FeUiRenderEffect_Properties(_d)					\
+		_d(FeString,							Name)	\
+
+	FE_DECLARE_CLASS_BODY(FeUiRenderEffect_Properties, FeUiRenderEffect, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiRenderEffect)
 
 class FeUiElement : public FeSerializable
 {
@@ -22,17 +33,19 @@ public:
 	bool IsVisible();
 	bool IsSelected();
 
-#define FeTestObjectBase_Properties(_d)		\
-	_d(FeTransform,				Transform)	\
-	_d(FeEUiElementState::Type, State)		\
+	#define FeUiElement_Properties(_d)					\
+		_d(FeTransform,						Transform)	\
+		_d(FeEUiElementState::Type,			State)		\
+		_d(FeTArray<FeTPtr<FeUiElement>>,	Children)
 
-	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeTestObjectBase, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeUiElement_Properties, FeUiElement, FeSerializable)
 };
 FE_DECLARE_CLASS_BOTTOM(FeUiElement)
 
+
 bool FeUiElement::HasState(FeEUiElementState::Type state)
 {
-	return this->State & state;
+	return (this->State & state) != 0;
 }
 bool FeUiElement::IsSelected()
 {
@@ -43,44 +56,30 @@ bool FeUiElement::IsVisible()
 	return HasState(FeEUiElementState::Visible);
 }
 
-class FeUiComponent : public FeUiElement
+class FeUiPanel : public FeUiElement
 {
 public:
-#define FeTestObjectBase_Properties(_d)		\
-
-	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeUiElement, FeSerializable)
-};
-FE_DECLARE_CLASS_BOTTOM(FeUiComponent)
-
-class FeUiContainer : public FeUiElement
-{
-public:
-#define FeTestObjectBase_Properties(_d)		\
+#define FeUiPanel_Properties(_d)		\
 	_d(FeTArray<FeUiElement>, Children)		\
 
-	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeUiElement, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeUiPanel_Properties, FeUiPanel, FeUiElement)
 };
-FE_DECLARE_CLASS_BOTTOM(FeUiContainer)
+FE_DECLARE_CLASS_BOTTOM(FeUiPanel)
 
-class FeUiListPanel : public FeUiContainer
+
+class FeScriptFile : public FeUiElement
 {
 public:
-#define FeTestObjectBase_Properties(_d)		\
-	_d(FeTArray<FeUiElement>, Children)		\
+#define FeScriptFile_Properties(_d)					\
+	_d(FeTArray<FeUiPanel>,			UiPanels)		\
+	_d(FeTArray<FeUiRenderEffect>,	UiEffects)		\
 
-	FE_DECLARE_CLASS_BODY(FeTestObjectBase_Properties, FeUiElement, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeScriptFile_Properties, FeUiElement, FeSerializable)
 };
-FE_DECLARE_CLASS_BOTTOM(FeUiListPanel)
+FE_DECLARE_CLASS_BOTTOM(FeScriptFile)
 
-uint32 FeModuleUi::Load(const FeModuleInit* initBase)
+uint32 FeModuleUi::LoadUnitTest(uint32 iTest)
 {
-	auto init = (FeModuleUiInit*)initBase;
-	srand(1564);
-
-	{
-		FeTestObjectA obj;
-		auto iRes = FeJsonParser::DeserializeObject(obj, "../data/test/ui/component.json");
-	}
 	FeTArray<FePath> files;
 	files.SetHeapId(RENDERER_HEAP);
 
@@ -92,17 +91,17 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 	// Creat textures
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	GeometryInstances.SetHeapId(RENDERER_HEAP);
-	const int InstancesCount = 1024*1;
-		
+	const int InstancesCount = 1024 * 1;
+
 	GeometryInstances.Reserve(InstancesCount);
 
 	for (uint32 i = 0; i < InstancesCount; ++i)
 	{
-		 FeRenderGeometryInstance& geomInstance = GeometryInstances.Add();
+		FeRenderGeometryInstance& geomInstance = GeometryInstances.Add();
 
 		geomInstance.Effect = RENDERER_DEFAULT_EFFECT_ID;
 		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-		
+
 		if (iTexturesCount>0)
 		{
 			// bind texture
@@ -112,23 +111,21 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 			geomInstance.Textures.Add(textureId);
 		}
 	}
-		
+
 	return FeEReturnCode::Success;
 }
-uint32 FeModuleUi::Unload()
+uint32 FeModuleUi::UpdateUnitTest(uint32 iTest, const FeDt& fDt)
 {
-	return FeEReturnCode::Success;
-}
-uint32 FeModuleUi::Update(const FeDt& fDt)
-{
+	srand(1564);
+
 	static float fRotX = 0, fRotY = 0, fRotZ = 0;
 	static FeVector3 translation(0, 0, 0), scale(1, 1, 1);
 	static float fIncrement = 0.0f;
-		
+
 	int32 iColomns = 60;
 	fIncrement += 0.15f*fDt.TotalSeconds;
 
-	float fOffset = (1.01f-abs(sin(fIncrement)))*3.0f;
+	float fOffset = (1.01f - abs(sin(fIncrement)))*3.0f;
 
 	float fOffsetBetweenX = 1.f*fOffset;
 	float fOffsetBetweenY = 1.0f*fOffset;
@@ -158,5 +155,29 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 
 		renderBatch.GeometryInstances.Add(geomInstance);
 	}
+
+	return FeEReturnCode::Success;
+}
+
+uint32 FeModuleUi::Load(const FeModuleInit* initBase)
+{
+	auto init = (FeModuleUiInit*)initBase;
+	
+	{
+		FeScriptFile obj;
+		auto iRes = FeJsonParser::DeserializeObject(obj, "../data/test/ui/script.json");
+	}
+
+	//LoadUnitTest(0);
+		
+	return FeEReturnCode::Success;
+}
+uint32 FeModuleUi::Unload()
+{
+	return FeEReturnCode::Success;
+}
+uint32 FeModuleUi::Update(const FeDt& fDt)
+{
+	//UpdateUnitTest(0, fDt);
 	return FeEReturnCode::Success;
 }

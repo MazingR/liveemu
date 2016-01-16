@@ -2,7 +2,11 @@
 
 #include <common.hpp>
 #include <jsonparser.hpp>
+#include "maths.hpp"
 
+// -------------------------------------------------------------------------------------------------------------------------
+// Class declaration preprocessing for serialization
+// -------------------------------------------------------------------------------------------------------------------------
 /// <summary>
 /// Step 1 : Simply declare the class members
 /// </summary>
@@ -15,12 +19,12 @@
 /// </summary>
 #define BEGIN_DECLARE_SERIALIZER(baseClass, thisClass)				\
 	virtual uint32 Serialize(FeSerializerValue& value) override		\
-				{															\
+	{																\
 		//baseClass::Serialize(value);								\
 
 #define END_DECLARE_SERIALIZER										\
 	return FeEReturnCode::Success;									\
-				}															\
+	}																\
 
 #define DECLARE_PROPERTY_SERIALIZE(t,n)		/*FE_FAILEDRETURN( FeSerializerHelper::Serialize(value, &n, #n) );*/
 
@@ -34,14 +38,14 @@
 /// </summary>
 #define BEGIN_DECLARE_DESERIALIZER(baseClass)						\
 	virtual uint32 Deserialize(FeSerializerValue& value) override	\
-				{															\
+	{																\
 		baseClass::Deserialize(value);								\
 
 #define END_DECLARE_DESERIALIZER									\
 	return FeEReturnCode::Success;									\
-				}															\
+	}																\
 
-#define DECLARE_PROPERTY_DESERIALIZE(t,n)	FE_FAILEDRETURN( FeSerializerHelper::Deserialize(value, &n, #n) );
+#define DECLARE_PROPERTY_DESERIALIZE(t,n)	FE_FAILEDRETURN( FeDeserialize(value, &n, #n) );
 
 #define DECLARE_DESERIALIZER(properties, baseClass)	\
 	BEGIN_DECLARE_DESERIALIZER(baseClass)			\
@@ -53,21 +57,26 @@
 /// </summary>
 #define FE_DECLARE_CLASS_BODY(properties, thisClass, baseClass)	\
 	private:													\
-	/*static const FeTFactory<thisClass> Factory;*/					\
-	/*const TestObj obj;*/											\
 	DECLARE_CLASS_MEMBERS(properties)							\
 	public:														\
 	DECLARE_SERIALIZER(properties, thisClass, baseClass)		\
 	DECLARE_DESERIALIZER(properties, baseClass)					\
-	private:													\
-	//const thisClass __const_instance__;						\
 
 #define FE_DECLARE_CLASS_DEFAULT_CTOR(thisClass, baseClass)		\
 	public:														\
 	thisClass() : baseClass() {}								\
 
-#define FE_DECLARE_CLASS_BOTTOM(thisClass)						\
-	static FeTFactory<thisClass> Factory_##thisClass;			\
+#define FE_DECLARE_CLASS_BOTTOM(thisClass)																	\
+	static FeTFactory<thisClass> Factory_##thisClass;														\
+	static uint32 FeDeserialize(FeSerializerValue& value, thisClass* pOutput, const char* _sPropertyName)	\
+	{																										\
+		FeSerializerValue jsonProperty;																		\
+																											\
+		if (!FetchProperty(value, jsonProperty, _sPropertyName))											\
+			return FeEReturnCode::Success;																	\
+																											\
+		return FeJsonParser::DeserializeObject(*pOutput, jsonProperty);										\
+	}																										\
 
 
 template<typename T>
@@ -115,79 +124,98 @@ public:
 	}
 };
 
-#include "maths.hpp"
+bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const char* sPropertyName);
 
-class FeSerializerHelper
+template<typename T>
+uint32 FeDeserialize(FeSerializerValue& value, FeTArray<T>* pOutput, const char* _sPropertyName)
 {
-private:
-	static bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const char* sPropertyName)
-	{
-		if (strcmp(sPropertyName, ".") == 0)
-		{
-			property = obj;
-			return true;
-		}
-		else if (obj.HasMember(sPropertyName))
-		{
-			property = obj[sPropertyName];
-			return true;
-		}
+	FeSerializerValue jsonProperty;
 
-		return false;
-	}
-public:
-
-	static uint32 Serialize(FeSerializerValue& value, const void* pInput, const char* _sPropertyName)
-	{
+	if (!FetchProperty(value, jsonProperty, _sPropertyName))
 		return FeEReturnCode::Success;
-	}
 
-	template<typename T>
-	static uint32 Deserialize(FeSerializerValue& value, FeTArray<T>* pOutput, const char* _sPropertyName)
+	if (jsonProperty.IsArray())
 	{
-		FeSerializerValue jsonProperty;
+		size_t iSize = jsonProperty.Size();
+		pOutput->Clear();
+		pOutput->Reserve(iSize);
 
-		if (!FetchProperty(value, jsonProperty, _sPropertyName))
-			return FeEReturnCode::Success;
-
-		if (jsonProperty.IsArray())
+		for (size_t i = 0; i < iSize; ++i)
 		{
-			size_t iSize = jsonProperty.Size();
-			pOutput->Clear();
-			pOutput->Reserve(iSize);
+			FeSerializerValue& element = jsonProperty[i];
+			T& elementObj = pOutput->Add();
 
-			for (size_t i = 0; i < iSize; ++i)
-			{
-				FeSerializerValue& element = jsonProperty[i];
-				T& elementObj = pOutput->Add();
-
-				Deserialize(element, &elementObj, ".");
-			}
+			FeDeserialize(element, &elementObj, ".");
 		}
+	}
+	return FeEReturnCode::Success;
+}
+
+template<typename T>
+uint32 FeDeserialize(FeSerializerValue& value, FeTPtr<T>* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (!FetchProperty(value, jsonProperty, _sPropertyName))
 		return FeEReturnCode::Success;
-	}
 
-	template<typename T>
-	static uint32 Deserialize(FeSerializerValue& value, FeTPtr<T>* pOutput, const char* _sPropertyName)
+	if (jsonProperty.HasMember("_serialize_type_"))
 	{
-		FeSerializerValue jsonProperty;
-
-		if (!FetchProperty(value, jsonProperty, _sPropertyName))
-			return FeEReturnCode::Success;
-
-		if (jsonProperty.HasMember("_serialize_type_"))
-		{
-			pOutput->Ptr = (T*)GetObjectsFactory().CreateObjectFromFactory(jsonProperty["_serialize_type_"].GetString());
-		}
-
-		return FeJsonParser::DeserializeObject(*pOutput->Ptr, jsonProperty);
+		pOutput->Ptr = (T*)GetObjectsFactory().CreateObjectFromFactory(jsonProperty["_serialize_type_"].GetString());
 	}
 
-	static uint32 Deserialize(FeSerializerValue& value, int*			pOutput,	const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, float*			pOutput,	const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, uint32*			pOutput,	const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, FePath*			pOutput,	const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, FeVector3*		pOutput, const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, FeColor*		pOutput, const char* _sPropertyName);
-	static uint32 Deserialize(FeSerializerValue& value, FeTransform*	pOutput,	const char* _sPropertyName);
-};
+	return FeJsonParser::DeserializeObject(*pOutput->Ptr, jsonProperty);
+}
+
+uint32 FeDeserialize(FeSerializerValue& value, int*			pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, float*			pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, uint32*			pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FePath*			pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FeVector3*		pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FeColor*		pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FeTransform*	pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _sPropertyName);
+
+// -------------------------------------------------------------------------------------------------------------------------
+// Enum declaration preprocessing for serialization
+// -------------------------------------------------------------------------------------------------------------------------
+#define FE_DECLARE_ENUM_VALUE(_name_, _value_)	\
+	_value_,									\
+
+#define FE_DECLARE_ENUM_MAP_INJECTION(_name_, _value_)									\
+	iValuesMap[FeStringTools::GenerateUIntIdFromString(#_value_)] = _name_::_value_;	\
+
+#define FE_DECLARE_ENUM(_name_, _values_)																			\
+	namespace _name_																								\
+	{																												\
+		enum Type																									\
+		{																											\
+			_values_(FE_DECLARE_ENUM_VALUE)																			\
+		};																											\
+	};																												\
+	static uint32 FeDeserialize(FeSerializerValue& value, _name_::Type* pOutput, const char* _sPropertyName)		\
+	{																												\
+		FeSerializerValue jsonProperty;																				\
+		if (!FetchProperty(value, jsonProperty, _sPropertyName))													\
+			return FeEReturnCode::Success;																			\
+																													\
+		static std::map<uint32, _name_::Type> iValuesMap;															\
+		if (iValuesMap.size() == 0)																					\
+		{																											\
+			_values_(FE_DECLARE_ENUM_MAP_INJECTION)																	\
+		}																											\
+																													\
+		uint32 iValue = FeStringTools::GenerateUIntIdFromString(jsonProperty.GetString());							\
+																													\
+		if (iValuesMap.find(iValue) != iValuesMap.end())															\
+		{																											\
+			*pOutput = iValuesMap[iValue];																			\
+			return FeEReturnCode::Success;																			\
+		}																											\
+		else																										\
+		{																											\
+			FE_ASSERT(false, "Couldn't deserialize enum %s with value %s", #_name_, jsonProperty.GetString());		\
+			return FeEReturnCode::Failed;																			\
+		}																											\
+	}																												\
+

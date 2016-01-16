@@ -1,7 +1,79 @@
 #pragma once 
 
 #include "string.hpp"
+#include "serializable.hpp"
 #include <string>
+
+static FeStringPool* StaticInstance = NULL;
+
+FeString::FeString(const FeString& copy) : FeString()
+{
+	if (copy.Pooled)
+	{
+		Pooled = copy.Pooled;
+		Pooled->RefCount++;
+	}
+}
+FeString::FeString(FePooledString& pooledStr) : FeString()
+{
+	Pooled = &pooledStr;
+	pooledStr.RefCount++;
+}
+
+FeString::~FeString()
+{
+	FeStringPool::GetInstance()->DeleteString(this);
+}
+void FeStringPool::DeleteString(FeString* pStr)
+{
+	if (pStr->Pooled)
+	{
+		FePooledString& pooledStr = *pStr->Pooled;
+		FE_ASSERT(pooledStr.RefCount > 0, "Invalid pooled string ref count !");
+		pooledStr.RefCount--;
+
+		if (pooledStr.RefCount == 0)
+		{
+			// delete pooled string from memory
+			FE_DELETE_ARRAY(char, pooledStr.Cstr, pooledStr.Size, 1);
+			Pool.erase(pooledStr.Id);
+		}
+	}
+}
+FeString FeStringPool::CreateString(const char* szValue)
+{
+	uint32 iId = FeStringTools::GenerateUIntIdFromString(szValue);
+	static StringPoolMapIt itEnd = Pool.end();
+
+	if (Pool.find(iId) != itEnd)
+	{
+		return FeString(Pool[iId]);
+	}
+
+	// Create new pooled string
+	Pool[iId] = FePooledString();
+
+	FePooledString* pooledStr = &Pool[iId];
+	size_t iLen = strlen(szValue) + 1;
+
+	pooledStr->Cstr = FE_NEW_ARRAY(char, iLen, 1);
+	sprintf_s(pooledStr->Cstr, iLen, szValue);
+
+	pooledStr->Id = iId;
+	pooledStr->Size = iLen;
+	pooledStr->RefCount = 1;
+
+	return FeString(*pooledStr);
+}
+FeStringPool* FeStringPool::GetInstance()
+{
+	if (!StaticInstance)
+	{
+		StaticInstance = FE_NEW(FeStringPool, 0);
+	}
+
+	return StaticInstance;
+}
 
 namespace FeStringTools
 {
@@ -21,17 +93,7 @@ namespace FeStringTools
 			szStr[i] = toupper(szStr[i]);
 		}
 	}
-	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2, unsigned int  _crc)
-	{
-		if (!cptr)
-			return 0;
-
-		uint32 length = (uint32)strlen(cptr);
-		uint32 crc = GenerateIntIdFromBuffer(cptr, length, _crc);
-
-		return crc;
-	}
-
+	
 	//-----------------------------------------------------------------------------
 	// MurmurHash2, by Austin Appleby
 
@@ -96,6 +158,17 @@ namespace FeStringTools
 		h ^= h >> 15;
 
 		return h;
+	}
+
+	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2, unsigned int  _crc)
+	{
+		if (!cptr)
+			return 0;
+
+		uint32 length = (uint32)strlen(cptr);
+		uint32 crc = GenerateIntIdFromBuffer(cptr, length, _crc);
+
+		return crc;
 	}
 
 	size_t Count(const char* szString, char szChar, size_t iStart, size_t iEnd)

@@ -4,12 +4,13 @@
 #include "filesystem.hpp"
 #include "string.hpp"
 
-#undef malloc
-#undef calloc
-#undef realloc
-#undef free
-
 #if HOOK_MALLOC
+
+	#undef malloc
+	#undef calloc
+	#undef realloc
+	#undef free
+
 	#include <malloc.h>
 	#undef malloc
 	#undef calloc
@@ -35,10 +36,15 @@
 	#define calloc(nmemb, size)	FeCallocHook(nmemb, size, DEFAULT_HEAP)
 	#define realloc(ptr, size)	FeReallocHook(ptr, size, DEFAULT_HEAP)
 	#define free(ptr)			FeFreeHook(ptr, DEFAULT_HEAP)
+
+#else
+	#pragma warning(disable: 4244)
+	#include <rapidjson/document.h>
+	#include <rapidjson/writer.h>
+	#include <rapidjson/stringbuffer.h>
 #endif
 
 typedef rapidjson::Value FeSerializerValue;
-
 class FeSerializable;
 
 typedef FeSerializable*(*FeCreateObjectFunc) ();

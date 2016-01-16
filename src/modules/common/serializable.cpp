@@ -2,7 +2,23 @@
 
 #include "serializable.hpp"
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName)
+bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const char* sPropertyName)
+{
+	if (strcmp(sPropertyName, ".") == 0)
+	{
+		property = obj;
+		return true;
+	}
+	else if (obj.HasMember(sPropertyName))
+	{
+		property = obj[sPropertyName];
+		return true;
+	}
+
+	return false;
+}
+
+uint32 FeDeserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -12,7 +28,7 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, int* pOutput, c
 	return FeEReturnCode::Success;
 }
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, uint32* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, uint32* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -22,7 +38,7 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, uint32* pOutput
 	return FeEReturnCode::Success;
 }
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, float* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, float* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -32,7 +48,7 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, float* pOutput,
 	return FeEReturnCode::Success;
 }
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeVector3* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeVector3* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -45,7 +61,7 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeVector3* pOut
 	return FeEReturnCode::Success;
 }
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeColor* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeColor* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -59,7 +75,7 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeColor* pOutpu
 	return FeEReturnCode::Success;
 }
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FePath* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FePath* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -69,7 +85,7 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FePath* pOutput
 	return FeEReturnCode::Success;
 }
 
-uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeTransform* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeTransform* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
@@ -88,6 +104,16 @@ uint32 FeSerializerHelper::Deserialize(FeSerializerValue& value, FeTransform* pO
 			(float)jsonProperty["S"][1].GetDouble(),
 			(float)jsonProperty["S"][2].GetDouble());
 	}
+
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (FetchProperty(value, jsonProperty, _sPropertyName))
+		*pOutput = FeStringPool::GetInstance()->CreateString(jsonProperty.GetString());
 
 	return FeEReturnCode::Success;
 }

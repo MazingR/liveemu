@@ -19,6 +19,9 @@ public:
 	virtual uint32 Unload() override;
 	virtual uint32 Update(const FeDt& fDt) override;
 
+	uint32 LoadUnitTest(uint32 iTest);
+	uint32 UpdateUnitTest(uint32 iTest, const FeDt& fDt);
+
 private:
 	FeTArray<FeRenderGeometryInstance> GeometryInstances;
 };

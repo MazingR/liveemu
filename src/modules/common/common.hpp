@@ -15,6 +15,10 @@
 #endif
 
 #define SafeRelease(a) {if (a) a->Release();}
+#define STR_SIZE_SMALL 32
+#define STR_SIZE_MEDIUM 128
+#define STR_SIZE_WIDE 512
+
 #define COMMON_STR_SIZE 128
 #define COMMON_PATH_SIZE 512
 
