@@ -12,21 +12,41 @@
 
 void OnEffectFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
 {
-	((FeModuleRendering*)pUserData)->UnloadEffects();
-	((FeModuleRendering*)pUserData)->LoadEffects();
+	((FeModuleRendering*)pUserData)->ReloadEffects();
 }
+uint32 FeModuleRendering::ReloadEffects()
+{
+	for (auto& effect : Effects)
+	{
+		effect.second.Release();
+		FE_FAILEDRETURN(effect.second.CreateFromFile(effect.second.GetFile().Value));
+	}
 
+	return FeEReturnCode::Success;
+}
 void FeModuleRendering::UnloadEffects()
 {
-	for (uint32 i = 0; i < Effects.GetSize(); ++i)
-		Effects[i].Release();
-	
-	Effects.Clear();
+	for (auto& effect : Effects)
+	{
+		effect.second.Release();
+	}
+	Effects.clear();
 }
-uint32 FeModuleRendering::LoadEffects()
+uint32 FeModuleRendering::LoadEffects(const FeTArray<FeRenderEffect>& effects)
 {
-	FeRenderEffect& newEffect = Effects.Add();
-	FE_FAILEDRETURN(newEffect.CreateFromFile("../data/themes/common/shaders/default.fx"));
+	for (auto& newEffect : effects)
+	{
+		uint32 iId = newEffect.GetName().Id();
+
+		FE_ASSERT(Effects.find(iId) == Effects.end(), "Trying to add effect with same name : %s", newEffect.GetName().Cstr());
+		Effects[iId] = newEffect;
+
+		FeRenderEffect& effect = Effects[iId];
+		if (effect.CreateFromFile(effect.GetFile().Value) != FeEReturnCode::Success)
+		{
+			Effects.erase(iId);
+		}
+	}
 
 	return FeEReturnCode::Success;
 }
@@ -37,7 +57,6 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 	auto init = (FeModuleRenderingInit*)initBase;
 
 	FE_FAILEDRETURN(Device.Initialize(init->WindowHandle));
-	FE_FAILEDRETURN(LoadEffects());
 
 	// Creat static geometries (primitive forms)
 	Geometries.Reserve(16);
@@ -150,20 +169,23 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	FeRenderTextureId lastBindedTextures[16];
 	ZeroMemory(lastBindedTextures, sizeof(FeRenderTextureId) * 16);
 
-	for (uint32 i = 0; i < Effects.GetSize() ; ++i)
+	for (auto& effect : Effects)
 	{
-		Effects[i].BeginFrame(camera, *batch.Viewport, fDt.TotalSeconds);
+		effect.second.BeginFrame(camera, *batch.Viewport, fDt.TotalSeconds);
 	}
 
 	for (uint32 iInstanceIdx = 0; iInstanceIdx < instances.GetSize(); ++iInstanceIdx)
 	{
 		FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
 
-		if (geomInstance.Effect != iLastEffectId && Effects.GetSize() >= geomInstance.Effect)
+		if (geomInstance.Effect != iLastEffectId)
 		{
-			//FE_ASSERT(Effects.GetSize() >= geomInstance.Effect, "Invalid effect Id !");
+			if (Effects.find(geomInstance.Effect) == Effects.end())
+			{
+				continue; // effect not found !
+			}
 
-			pEffect = &Effects[geomInstance.Effect - 1];
+			pEffect = &Effects[geomInstance.Effect];
 			pEffect->Bind();
 			iLastEffectId = geomInstance.Effect;
 

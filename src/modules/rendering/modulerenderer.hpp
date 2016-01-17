@@ -50,7 +50,8 @@ public:
 	void SwitchDebugRenderTextMode();
 	FeRenderBatch& CreateRenderBatch();
 	void UnloadEffects();
-	uint32 LoadEffects();
+	uint32 ReloadEffects();
+	uint32 LoadEffects(const FeTArray<FeRenderEffect>& effects);
 private:
 	void BeginRender();
 	void EndRender();
@@ -58,7 +59,7 @@ private:
 	void RenderDebugText(const FeDt& fDt);
 
 	static FeRenderDevice Device;
-	FeTArray<FeRenderEffect> Effects;
+	std::map<FeRenderEffectId, FeRenderEffect> Effects;
 	FeTArray<FeRenderGeometryData> Geometries;
 		
 	FeTArray<FeRenderBatch>			RegisteredRenderBatches;

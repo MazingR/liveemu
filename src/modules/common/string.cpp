@@ -225,4 +225,24 @@ namespace FeStringTools
 
 		return iFound;
 	}
+	size_t TrimEnd(char* szString, char szChar)
+	{
+		size_t iLen = strlen(szString);
+		size_t iNewSize = iLen;
+
+		for (size_t i = iLen-1; i >= 0; --i)
+		{
+			if (szString[i] == szChar)
+			{
+				szString[i] = '\0';
+			}
+			else
+			{
+				iNewSize = i + 1;
+				break;
+			}
+		}
+
+		return iNewSize;
+	}
 }

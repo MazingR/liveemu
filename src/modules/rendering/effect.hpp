@@ -1,7 +1,7 @@
 #pragma once
 
 #include <commonrenderer.hpp>
-#include <map>
+#include <common/serializable.hpp>
 
 // forward declares
 struct FeRenderGeometryInstance;
@@ -9,7 +9,7 @@ struct FeRenderViewport;
 struct FeRenderGeometryInstance;
 class FeModuleRenderResourcesHandler;
 
-class FeRenderEffect
+class FeRenderEffect : public FeSerializable
 {
 public:
 	void BeginFrame(const FeRenderCamera& camera, const FeRenderViewport& viewport, float fDt);
@@ -26,8 +26,15 @@ private:
 	ID3D11PixelShader*					PixelShader;
 	ID3D11InputLayout*					VertexLayout;
 		
-	FeTArray<FeRenderSampler>	Samplers;
+	FeTArray<FeRenderSampler>			Samplers;
 
 	FeRenderConstantBuffer				CBPerFrame;
 	FeRenderConstantBuffer				CBPerObject;
+
+	#define FeRenderEffect_Properties(_d)		\
+		_d(FeString,					Name)	\
+		_d(FePath,						File)	\
+
+	FE_DECLARE_CLASS_BODY(FeRenderEffect_Properties, FeRenderEffect, FeSerializable)
 };
+FE_DECLARE_CLASS_BOTTOM(FeRenderEffect)

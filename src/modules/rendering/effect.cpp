@@ -58,14 +58,15 @@ void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderView
 {
 	ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
-	XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, -8.0f, 0.0f);
-	XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMVECTOR Eye	= XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
+	XMVECTOR At		= XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	XMVECTOR Up		= XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	FeCBPerFrame cbPerFrame;
 
-	cbPerFrame.MatrixProj = XMMatrixPerspectiveFovLH(XM_PIDIV4, ((float)viewport.Width / (float)viewport.Height), 0.01f, 100.0f);
-	cbPerFrame.MatrixView = XMMatrixLookAtLH(Eye, At, Up);
+	//cbPerFrame.MatrixProj = XMMatrixPerspectiveFovLH(XM_PIDIV4, ((float)viewport.Width / (float)viewport.Height), 0.01f, 100.0f);
+	cbPerFrame.MatrixProj = XMMatrixOrthographicLH(1.0f, 1.0f, -1.0f, 1.0f);
+	cbPerFrame.MatrixView = XMMatrixIdentity();// XMMatrixLookAtLH(Eye, At, Up);
 
 	cbPerFrame.MatrixProj = XMMatrixTranspose(cbPerFrame.MatrixProj);
 	cbPerFrame.MatrixView = XMMatrixTranspose(cbPerFrame.MatrixView);
@@ -121,7 +122,9 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	ID3DBlob* pVSBlob = NULL;
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
 
-	FE_FAILEDRETURN( CompileShaderFromFile(szFilePath, "VS", "vs_4_0", (void**)&pVSBlob) );
+	char szFullPath[1024];
+	sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, szFilePath);
+	FE_FAILEDRETURN( CompileShaderFromFile(szFullPath, "VS", "vs_4_0", (void**)&pVSBlob) );
 
 	// Create the vertex shader
 	hr = pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, (ID3D11VertexShader**)&VertexShader);
@@ -147,7 +150,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 
 	// Compile the pixel shader
 	ID3DBlob* pPSBlob = NULL;
-	hr = CompileShaderFromFile(szFilePath, "PS", "ps_4_0", (void**)&pPSBlob);
+	hr = CompileShaderFromFile(szFullPath, "PS", "ps_4_0", (void**)&pPSBlob);
 
 	if (FAILED(hr))
 	{

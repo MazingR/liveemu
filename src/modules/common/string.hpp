@@ -14,6 +14,7 @@ namespace FeStringTools
 	size_t LastIndexOf(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = (size_t)-1);
 	size_t Count(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = (size_t)-1);
 	size_t Replace(char* szString, char szFind, char szReplace);
+	size_t TrimEnd(char* szString, char szChar);
 }
 
 struct FePooledString
@@ -28,8 +29,8 @@ struct FeString
 	friend class FeStringPool;
 
 public:
-	inline const char* Cstr() { return Pooled ? Pooled->Cstr : NULL; }
-	inline const uint32 Id() { return Pooled ? Pooled->Id : 0; }
+	inline const char* Cstr() const { return Pooled ? Pooled->Cstr : NULL; }
+	inline const uint32 Id() const { return Pooled ? Pooled->Id : 0; }
 	FeString() : Pooled(NULL) {}
 	~FeString();
 

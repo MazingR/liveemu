@@ -218,6 +218,14 @@ public:
 		T& baseelem = Add();
 		baseelem = element;
 	}
+	void		Add(const FeTArray<T>& elements)
+	{
+		for (auto& element : elements)
+		{
+			T& baseelem = Add();
+			baseelem = element;
+		}
+	}
 	void		Add(const T* _pElement, U _num)
 	{
 		Reserve(Size + _num);

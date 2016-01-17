@@ -56,8 +56,11 @@ private:
 
 namespace FeFileTools
 {
-	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FePath>& files);
-	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FePath>& files);
+	void SetRootDir(const char* szPath);
+	const FePath& GetRootDir();
+
+	uint32 ListFiles(FeTArray<FePath>& files, const char* szPath, const char* szFilter = NULL);
+	uint32 ListFilesRecursive(FeTArray<FePath>& files, const char* szPath, const char* szFilter=NULL);
 
 	uint32 GetFileSize(const char* szPath, size_t* iSize);
 	
@@ -79,7 +82,7 @@ namespace FeFileTools
 	void GetFileNameWithoutExtension(FePath&, const char*);
 	void GetFileName(FePath&, const char*);
 	void GetDirectoryName(FePath&, const char*);
-	void FormatPath(FePath&);
+	void FormatPath(FePath& path,bool bIsDir=false);
 
 	void GetFullPathChangeExtension(FePath&, const char*, const char*);
 

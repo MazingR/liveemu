@@ -47,10 +47,17 @@
 
 #define DECLARE_PROPERTY_DESERIALIZE(t,n)	FE_FAILEDRETURN( FeDeserialize(value, &n, #n) );
 
+#define DECLARE_PROPERTY_ACCESSOR(t, n)				\
+	const t & Get##n () { return n ; }				\
+	void Set##n (const t & value) { n = value; }	\
+
 #define DECLARE_DESERIALIZER(properties, baseClass)	\
 	BEGIN_DECLARE_DESERIALIZER(baseClass)			\
 	properties(DECLARE_PROPERTY_DESERIALIZE)		\
 	END_DECLARE_DESERIALIZER						\
+
+#define DECLARE_ACCESSORS(properties, baseClass)	\
+	properties(DECLARE_PROPERTY_ACCESSOR)			\
 
 /// <summary>
 /// Declares the properties of a class with serialization functions following the 3 steps defined above
@@ -61,6 +68,7 @@
 	public:														\
 	DECLARE_SERIALIZER(properties, thisClass, baseClass)		\
 	DECLARE_DESERIALIZER(properties, baseClass)					\
+	DECLARE_ACCESSORS(properties, baseClass)					\
 
 #define FE_DECLARE_CLASS_DEFAULT_CTOR(thisClass, baseClass)		\
 	public:														\
@@ -191,6 +199,7 @@ uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _s
 		enum Type																									\
 		{																											\
 			_values_(FE_DECLARE_ENUM_VALUE)																			\
+			Count																									\
 		};																											\
 	};																												\
 	static uint32 FeDeserialize(FeSerializerValue& value, _name_::Type* pOutput, const char* _sPropertyName)		\

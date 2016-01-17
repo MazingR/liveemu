@@ -63,6 +63,7 @@ PS_INPUT VS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 float4 PS(PS_INPUT input) : SV_Target
 {
+	float4 fColor = float4(0,1,0,1);
 	// float4 fColor = texture0.Sample(samplerTexture0, input.Tex);
 	//float fTx = (input.Tex.x - 0.5f) / 0.5f;
 	//float fTy = (input.Tex.	y - 0.5f) / 0.5f;
@@ -71,8 +72,8 @@ float4 PS(PS_INPUT input) : SV_Target
 	// clip(fColor.a < 0.5f ? -1 : 1);
 	//fColor *= (1 - pow(fTx, fPow)) * (1 - pow(fTy, fPow));
 	// fColor.r = sin(Time);
+	// fColor.g = cos(Time);
 	
-	float4 fColor = float4(1,0,0,1);
 	return fColor;
 	//return 1;
 }

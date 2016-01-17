@@ -1,6 +1,7 @@
 #include <filesystem.hpp>
 #include <windows.h>
 #include <queue>
+#include <regex>
 #include "string.hpp"
 
 #include <SDL.h>
@@ -41,7 +42,7 @@ uint32 FeModuleFilesManager::Update(const FeDt& fDt)
 	
 	DWORD bytesRet = 0;
 
-	for (auto watchedDir : WatchedDirs)
+	for (auto& watchedDir : WatchedDirs)
 	{
 
 		DWORD dwWaitStatus = WaitForMultipleObjects(1, &watchedDir.WatchHandle, TRUE, 0);
@@ -57,17 +58,25 @@ uint32 FeModuleFilesManager::Update(const FeDt& fDt)
 				NULL))
 			{
 				size_t iFileChangedCount = bytesRet / sizeof(FILE_NOTIFY_INFORMATION);
-				for (size_t i = 0; i < iFileChangedCount-1; ++i)
+				
+				if (iFileChangedCount == 0)
 				{
-					FePath changedPath;
-					size_t iConvertedCount;
-					char szFileName[128];
+					watchedDir.OnFileChangeEvent(FeEFileChangeType::Changed, "", watchedDir.FileEventUserData);
+				}
+				else
+				{
+					for (size_t i = 0; i < iFileChangedCount; ++i)
+					{
+						FePath changedPath;
+						size_t iConvertedCount;
+						char szFileName[128];
 
-					wcstombs_s(&iConvertedCount, szFileName, buffer[i].FileName, 128);
-					sprintf_s(changedPath.Value, COMMON_PATH_SIZE, "%s/%s", watchedDir.Path.Value, szFileName);
-					FeFileTools::FormatPath(changedPath);
+						wcstombs_s(&iConvertedCount, szFileName, buffer[i].FileName, 128);
+						sprintf_s(changedPath.Value, COMMON_PATH_SIZE, "%s/%s", watchedDir.Path.Value, szFileName);
+						FeFileTools::FormatPath(changedPath);
 
-					watchedDir.OnFileChangeEvent(FeEFileChangeType::Changed, changedPath.Value, watchedDir.FileEventUserData);
+						watchedDir.OnFileChangeEvent(FeEFileChangeType::Changed, changedPath.Value, watchedDir.FileEventUserData);
+					}
 				}
 			}
 
@@ -153,20 +162,22 @@ uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize)
 }
 namespace FeFileTools
 {
+	FePath RootPath;
+
 	uint32 DoListFiles(const char* szPath, const char* szFilter, FeTArray<FePath>& files, bool bRecusrive)
 	{
+		std::regex filterRegex(szFilter);
+
 		struct HandledDir
 		{
 			HANDLE	Handle;
 			char	Path[COMMON_PATH_SIZE];
 		};
 		
-
 		FeTArray<HandledDir> dirs;
 		HandledDir& rootDir = dirs.Add();
 		sprintf_s(rootDir.Path, szPath);
-
-
+		
 		while (dirs.GetSize() > 0)
 		{
 			WIN32_FIND_DATA findData;
@@ -176,8 +187,9 @@ namespace FeFileTools
 			HandledDir& dir = dirs.Back();
 			dirs.PopBack();
 
-			sprintf_s(szTmpPath, "%s/%s", dir.Path, szFilter);
+			sprintf_s(szTmpPath, "%s%s/%s", GetRootDir().Value, dir.Path, "*");
 			hFind = FindFirstFileEx(szTmpPath, FindExInfoStandard, &findData, FindExSearchNameMatch, NULL, 0);
+
 			dir.Handle = hFind;
 
 			while (FindNextFile(dir.Handle, &findData))
@@ -188,7 +200,7 @@ namespace FeFileTools
 				{
 					bool bIsVirtual = strcmp(szFilePath, ".") == 0 || strcmp(szFilePath, "..") == 0;
 
-					if (!bIsVirtual)
+					if (!bIsVirtual && bRecusrive)
 					{
 						HandledDir& subDir = dirs.Add();
 						sprintf_s(subDir.Path, "%s/%s", dir.Path, findData.cFileName);
@@ -196,11 +208,16 @@ namespace FeFileTools
 				}
 				else
 				{
-					FePath& addedFile = files.Add();
-					size_t iPathLen = strlen(dir.Path) + strlen(findData.cFileName) + 2;
-					FE_ASSERT(iPathLen < COMMON_PATH_SIZE, "file path is too long ! : '%s'", findData.cFileName);
-					sprintf_s(addedFile.Value, "%s/%s", dir.Path, findData.cFileName);
-					FeFileTools::FormatPath(addedFile);
+					bool bSatisfiesFilter = szFilter ? std::regex_match(findData.cFileName, filterRegex) : true;
+
+					if (bSatisfiesFilter)
+					{
+						FePath& addedFile = files.Add();
+						size_t iPathLen = strlen(dir.Path) + strlen(findData.cFileName) + 2;
+						FE_ASSERT(iPathLen < COMMON_PATH_SIZE, "file path is too long ! : '%s'", findData.cFileName);
+						sprintf_s(addedFile.Value, "%s/%s", dir.Path, findData.cFileName);
+						FeFileTools::FormatPath(addedFile);
+					}
 				}
 			}
 
@@ -209,11 +226,11 @@ namespace FeFileTools
 		return FeEReturnCode::Success;
 	}
 
-	uint32 ListFiles(const char* szPath, const char* szFilter, FeTArray<FePath>& files)
+	uint32 ListFiles(FeTArray<FePath>& files, const char* szPath, const char* szFilter)
 	{
 		return DoListFiles(szPath, szFilter, files, false);
 	}
-	uint32 ListFilesRecursive(const char* szPath, const char* szFilter, FeTArray<FePath>& files)
+	uint32 ListFilesRecursive(FeTArray<FePath>& files, const char* szPath, const char* szFilter)
 	{
 		return DoListFiles(szPath, szFilter, files, true);
 	}
@@ -224,7 +241,10 @@ namespace FeFileTools
 	}
 	uint32 ReadTextFile(const char* szPath, char** ppOutput, size_t* iFileSize)
 	{
-		return sdl_file_read(szPath, (void**)ppOutput, iFileSize);
+		char szTmpPath[1024];
+		sprintf_s(szTmpPath, "%s%s", RootPath.Value, szPath);
+
+		return sdl_file_read(szTmpPath, (void**)ppOutput, iFileSize);
 	}
 	
 	uint32 WriteTextFile(const FePath& file, const char* pInput)
@@ -233,7 +253,10 @@ namespace FeFileTools
 	}
 	uint32 WriteTextFile(const char* szPath, const char* pInput)
 	{
-		return sdl_file_write(szPath, pInput);
+		char szTmpPath[1024];
+		sprintf_s(szTmpPath, "%s%s", RootPath.Value, szPath);
+
+		return sdl_file_write(szTmpPath, pInput);
 	}
 
 
@@ -243,7 +266,10 @@ namespace FeFileTools
 	}
 	uint32 ReadBinaryFile(const char* szPath, void** ppOutput, size_t* iFileSize)
 	{
-		return sdl_file_read(szPath, ppOutput, iFileSize);
+		char szTmpPath[1024];
+		sprintf_s(szTmpPath, "%s%s", RootPath.Value, szPath);
+
+		return sdl_file_read(szTmpPath, ppOutput, iFileSize);
 	}
 
 	void GetFullPathWithoutExtension(FePath& output, const FePath& input)
@@ -293,9 +319,16 @@ namespace FeFileTools
 	{
 		FE_ASSERT(false, "todo");
 	}
-	void FormatPath(FePath& file)
+	void FormatPath(FePath& file, bool bIsDir)
 	{
 		FeStringTools::Replace(file.Value, '\\', '/');
+		
+
+		if (bIsDir)
+		{
+			FeStringTools::TrimEnd(file.Value, '/');
+			strcat_s(file.Value, "/");
+		}
 	}
 
 	bool FileExists(const FePath& file)
@@ -316,5 +349,15 @@ namespace FeFileTools
 		SDL_RWclose(rw);
 
 		return FeEReturnCode::Success;
+	}
+
+	void SetRootDir(const char* szPath)
+	{
+		RootPath.Set(szPath);
+		FormatPath(RootPath, true);
+	}
+	const FePath& GetRootDir()
+	{
+		return RootPath;
 	}
 };
