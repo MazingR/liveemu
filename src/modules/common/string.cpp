@@ -34,7 +34,7 @@ FeString::~FeString()
 }
 void FeStringPool::DeleteString(FeString* pStr)
 {
-	return;
+	//return;
 
 	if (pStr->Pooled)
 	{
