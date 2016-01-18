@@ -22,3 +22,6 @@
 [submodule "src/externals/rapidjson"]
 	path = src/externals/rapidjson
 	url = https://github.com/miloyip/rapidjson.git
+[submodule "src/externals/freetype"]
+	path = src/externals/freetype
+	url = http://git.savannah.gnu.org/cgit/freetype/freetype2.git

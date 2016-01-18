@@ -16,7 +16,7 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version)
 
-	SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, 1280, 720, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
+		SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, 800, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
 	
 	if (window == nullptr)
 	{

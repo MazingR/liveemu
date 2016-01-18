@@ -21,7 +21,7 @@
 	"Panels" :
 	[
 		{
-			"Effect" : "Background_03",
+			"Effect" : "Background_04",
 			"Transform" : 
 			{
 				"T" : [0.0,		0.0,	0.1],

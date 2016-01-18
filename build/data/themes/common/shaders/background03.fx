@@ -19,9 +19,9 @@ void mainImage( out float4 fragColor, in float2 fragCoord )
 	for( int i=0; i<CIRCLES_COUNT; i++ )
 	{
 		// bubble seeds
-		float pha =	  sin(float(i)*546.13+1.0)*0.5 + 0.5;
+		float pha = sin(float(i)*546.13+1.0)*0.5 + 0.5;
 		float siz = pow( sin(float(i)*651.74+5.0)*0.5 + 0.5, 4.0 );
-		float pox =	  sin(float(i)*321.55+4.1);
+		float pox = sin(float(i)*321.55+4.1);
 
 		// buble size, position and color
 		float rad = 0.1 + 0.5*siz;
