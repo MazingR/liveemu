@@ -66,7 +66,7 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 	FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Quad, &geometryData, &geometryId);
 
 	HRESULT hResult = FW1CreateFactory(FW1_VERSION, &FW1Factory);
-	hResult = FW1Factory->CreateFontWrapper(Device.GetD3DDevice(), L"Impact", &FontWrapper);
+	hResult = FW1Factory->CreateFontWrapper(Device.GetD3DDevice(), L"Areial", &FontWrapper);
 
 	CurrentDebugTextMode = FeEDebugRenderTextMode::Rendering;
 
@@ -178,19 +178,16 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	{
 		FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
 
-		if (geomInstance.Effect != iLastEffectId)
+		if (geomInstance.Effect != iLastEffectId && Effects.find(geomInstance.Effect) != Effects.end())
 		{
-			if (Effects.find(geomInstance.Effect) == Effects.end())
-			{
-				continue; // effect not found !
-			}
-
 			pEffect = &Effects[geomInstance.Effect];
 			pEffect->Bind();
 			iLastEffectId = geomInstance.Effect;
 
 			RenderDebugInfos.FrameBindEffectCount++;
 		}
+		if (!pEffect)
+			continue; // effect not found !
 
 		pEffect->BindGeometryInstance(geomInstance, pResourcesHandler);
 
@@ -234,6 +231,71 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 
 		// todo : Set properties to constant buffers
 	}
+}
+
+void DrawTextLines(const char* szText, uint32& iLinesCount, uint32 iLineLength, float fFontSize, uint32 iColor, IFW1FontWrapper* pFontWrapper, ID3D11DeviceContext *pContext)
+{
+	wchar_t szWTmp[DEBUG_STRING_SIZE];
+	char szTmp[DEBUG_STRING_SIZE];
+	
+	uint32 iNewLinesCount = 0;
+	uint32 iTextLen = strlen(szText);
+	uint32 iLineStart = 0;
+	uint32 iLineEnd = FeStringTools::IndexOf(szText, '\n');
+	uint32 iLineSize = iLineEnd - iLineStart;
+
+	memset(szTmp, 0, DEBUG_STRING_SIZE);
+	memcpy_s(szTmp, DEBUG_STRING_SIZE, szText, iTextLen);
+
+	while (iLineStart < iTextLen && iLineLength<iTextLen)
+	{
+		bool bCut = false;
+
+		// didn't find a '\n'
+		if ((size_t)-1 == iLineEnd)
+		{
+			iLineStart += min(iTextLen - iLineStart, iLineLength);
+			bCut = true;
+		}
+		else if (iLineSize <= iLineLength)
+		{
+			iLineStart = iLineEnd + 1;
+		}
+		// '\n' is too far, cut the line
+		else
+		{
+			iLineStart += iLineLength;
+			bCut = true;
+		}
+		if (bCut)
+		{
+			szTmp[iLineLength] = '\n';
+			memcpy_s(szTmp + iLineStart + 1, DEBUG_STRING_SIZE - iLineStart - 1, szText + iLineStart, iTextLen - iLineStart);
+		}
+		iNewLinesCount++;
+
+		if (iLineStart + iLineLength >= iTextLen)
+		{
+			iNewLinesCount++;
+			break;
+		}
+
+		iLineEnd = FeStringTools::IndexOf(szText, '\n', iLineStart);
+		iLineSize = iLineEnd - iLineStart;
+	}
+	size_t iWSize;
+	mbstowcs_s(&iWSize, szWTmp, szTmp, DEBUG_STRING_SIZE);
+	pFontWrapper->DrawString(
+		pContext,
+		szWTmp,// String
+		fFontSize,// Font size
+		10.0f,// X position
+		iLinesCount*fFontSize,// Y position
+		iColor,// Text color, 0xAaBbGgRr
+		FW1_RESTORESTATE // Flags (for example FW1_RESTORESTATE to keep context states unchanged)
+		);
+
+	iLinesCount += iNewLinesCount;
 }
 void FeModuleRendering::RenderDebugText(const FeDt& fDt)
 {
@@ -303,31 +365,11 @@ Texture bind\t: %d \n\
 		}break;
 	}
 
-	wchar_t wc[DEBUG_STRING_SIZE*2 +1];
-	size_t iWSize;
-	mbstowcs_s(&iWSize, wc, DebugString, DEBUG_STRING_SIZE);
-
-	static float fBorderSize = 0.5f;
-	static float fOffset = 2.f;
-
-	FontWrapper->DrawString(
-		Device.GetImmediateContext(),
-		wc,// String
-		20.0f + fBorderSize,// Font size
-		10.0f - fBorderSize*fOffset,// X position
-		10.0f - fBorderSize*fOffset*2.0f,// Y position
-		0xff000000,// Text color, 0xAaBbGgRr
-		FW1_RESTORESTATE // Flags (for example FW1_RESTORESTATE to keep context states unchanged)
-		);
-	FontWrapper->DrawString(
-		Device.GetImmediateContext(),
-		wc,// String
-		20.0f,// Font size
-		10.0f,// X position
-		10.0f,// Y position
-		0xff00ffff,// Text color, 0xAaBbGgRr
-		FW1_RESTORESTATE // Flags (for example FW1_RESTORESTATE to keep context states unchanged)
-		);
+	uint32 iLinesCount = 0;
+	uint32 iLineLength = 100;
+	DrawTextLines(FeGetLastError(), iLinesCount, iLineLength, 15.0f, 0xff0000ff, FontWrapper, Device.GetImmediateContext());
+	iLinesCount += 3;
+	DrawTextLines(DebugString, iLinesCount, iLineLength, 15.0f, 0xff00ffff, FontWrapper, Device.GetImmediateContext());
 }
 
 void FeModuleRendering::SwitchDebugRenderTextMode()

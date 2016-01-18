@@ -19,7 +19,7 @@
 	}
 	void FeRenderViewport::Clear()  const
 	{
-		const float ClearColor[4] = { 1.f, 0.f, 1.f, 1.0f };
+		const float ClearColor[4] = { 0.f, 0.f, 0.f, 1.0f };
 		FeModuleRendering::GetDevice().GetImmediateContext()->ClearRenderTargetView(RenderTargetView, ClearColor);
 		FeModuleRendering::GetDevice().GetImmediateContext()->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}

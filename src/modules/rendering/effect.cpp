@@ -152,7 +152,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	ID3DBlob* pPSBlob = NULL;
 	hr = CompileShaderFromFile(szFullPath, "PS", "ps_4_0", (void**)&pPSBlob);
 
-	if (FAILED(hr))
+	if (FAILED(hr) || !pPSBlob)
 	{
 		MessageBox(NULL, "The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", "Error", MB_OK);
 		return hr;
@@ -166,9 +166,6 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	// Create the constant buffers
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
-
-	ZeroMemory(&CBPerFrame, sizeof(FeCBPerFrame));
-	ZeroMemory(&CBPerObject, sizeof(FeCBPerObject));
 
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.ByteWidth = sizeof(FeCBPerFrame);

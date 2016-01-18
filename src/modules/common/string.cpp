@@ -6,11 +6,11 @@
 
 static FeStringPool* StaticInstance = NULL;
 
-FeString::FeString(const FeString& copy) : FeString()
+FeString::FeString(const FeString& other) : FeString()
 {
-	if (copy.Pooled)
+	if (other.Pooled)
 	{
-		Pooled = copy.Pooled;
+		Pooled = other.Pooled;
 		Pooled->RefCount++;
 	}
 }
@@ -19,16 +19,27 @@ FeString::FeString(FePooledString& pooledStr) : FeString()
 	Pooled = &pooledStr;
 	pooledStr.RefCount++;
 }
-
+FeString& FeString::operator= (const FeString& other)
+{
+	if (other.Pooled)
+	{
+		Pooled = other.Pooled;
+		Pooled->RefCount++;
+	}
+	return *this;
+}
 FeString::~FeString()
 {
 	FeStringPool::GetInstance()->DeleteString(this);
 }
 void FeStringPool::DeleteString(FeString* pStr)
 {
+	return;
+
 	if (pStr->Pooled)
 	{
 		FePooledString& pooledStr = *pStr->Pooled;
+
 		FE_ASSERT(pooledStr.RefCount > 0, "Invalid pooled string ref count !");
 		pooledStr.RefCount--;
 

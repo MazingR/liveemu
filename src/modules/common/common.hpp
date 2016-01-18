@@ -69,14 +69,22 @@ namespace FeEReturnCode
 
 int __cdecl vs_printf(const char *format, ...);
 
+void FeSetLastError(const char* fmt, ...);
+const char* FeGetLastError();
+
 #define FE_FAILED(a) (a!=FeEReturnCode::Success)
 #define FE_FAILEDRETURN(a) { uint32 ___iResult = (a); { if FE_FAILED(___iResult) return ___iResult; } }
-#define FE_LOG(fmt, ...) vs_printf(fmt, __VA_ARGS__);vs_printf("\n");
+
+#define FE_LOG(fmt, ...)				\
+	vs_printf(fmt, __VA_ARGS__);		\
+	vs_printf("\n");					\
+	FeSetLastError(fmt, __VA_ARGS__);	\
+	
 
 #ifdef DEBUG
 	#define FE_ASSERT(condition, fmt, ...) { if (!(condition)) { FE_LOG(fmt, __VA_ARGS__);__debugbreak();  } }
 #else
-	#define FE_ASSERT(condition, fmt, ...) 
+	#define FE_ASSERT(condition, fmt, ...) { if (!(condition)) { FE_LOG(fmt, __VA_ARGS__); } }
 #endif
 
 #define FE_NEW(type, heap) FeNew<type>(heap)

@@ -34,7 +34,7 @@ public:
 	FeString() : Pooled(NULL) {}
 	~FeString();
 
-private:
+	FeString& operator=(const FeString& other);
 	FePooledString* Pooled;
 	FeString(FePooledString& pooledStr);
 	FeString(const FeString& copy);

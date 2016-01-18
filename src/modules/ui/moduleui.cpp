@@ -9,6 +9,7 @@
 
 void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
 {
+	FeSetLastError("");
 	((FeModuleUi*)pUserData)->ReloadScripts();
 }
 
@@ -120,7 +121,6 @@ uint32 FeModuleUi::ReloadScripts()
 		if (iRes == FeEReturnCode::Success)
 		{
 			pRenderingModule->LoadEffects(scriptFile.GetEffects());
-
 			for (auto& panel : scriptFile.GetPanels())
 			{
 				Panels.Add(&panel);
@@ -167,6 +167,7 @@ uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 	ReloadScripts();
 	//LoadUnitTest(0);
 
+	// register file watcher for script files
 	auto pFileManagerModule = FeApplication::StaticInstance.GetModule<FeModuleFilesManager>();
 	pFileManagerModule->WatchDirectory("../data/themes", OnScriptFileChanged, this);
 		
