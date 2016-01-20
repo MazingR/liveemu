@@ -14,20 +14,8 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 	static char szWindowName[512] = "Hello World!";
 
 	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version)
-
-		SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, 800, 800, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
+	SDL_VERSION(&wmInfo.version);
 	
-	if (window == nullptr)
-	{
-		FE_LOG("SDL_CreateWindow Error: %s", SDL_GetError());
-		SDL_Quit();
-		return FeEReturnCode::Failed;
-	}
-	
-	SDL_GetWindowWMInfo(window, &wmInfo);
-	HWND hwnd = wmInfo.info.win.window;
-
 	{
 		FeModuleInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleFilesManager>(init));
@@ -41,7 +29,19 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		
 		init.WindowsCmdShow = appInit.WindowsCmdShow;
 		init.WindowsInstance = (HINSTANCE)appInit.WindowsInstance;
-		init.WindowHandle = hwnd;
+		init.Width = 800;
+		init.Height = 800;
+
+		SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, init.Width, init.Height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
+		if (window == nullptr)
+		{
+			FE_LOG("SDL_CreateWindow Error: %s", SDL_GetError());
+			SDL_Quit();
+			return FeEReturnCode::Failed;
+		}
+
+		SDL_GetWindowWMInfo(window, &wmInfo);
+		init.WindowHandle = wmInfo.info.win.window;
 
 		auto pModule = CreateModule<FeModuleRendering>();
 		FE_FAILEDRETURN(pModule->Load(&init));

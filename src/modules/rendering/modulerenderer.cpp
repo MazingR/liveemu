@@ -56,6 +56,8 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 
 	auto init = (FeModuleRenderingInit*)initBase;
 
+	RenderInit = *init;
+
 	FE_FAILEDRETURN(Device.Initialize(init->WindowHandle));
 
 	// Creat static geometries (primitive forms)
@@ -269,7 +271,7 @@ void DrawTextLines(const char* szText, uint32& iLinesCount, uint32 iLineLength, 
 		}
 		if (bCut)
 		{
-			szTmp[iLineLength] = '\n';
+			szTmp[iLineStart] = '\n';
 			memcpy_s(szTmp + iLineStart + 1, DEBUG_STRING_SIZE - iLineStart - 1, szText + iLineStart, iTextLen - iLineStart);
 		}
 		iNewLinesCount++;
@@ -366,7 +368,7 @@ Texture bind\t: %d \n\
 	}
 
 	uint32 iLinesCount = 0;
-	uint32 iLineLength = 100;
+	uint32 iLineLength = (RenderInit.Width/15)*2 -1;
 	DrawTextLines(FeGetLastError(), iLinesCount, iLineLength, 15.0f, 0xff0000ff, FontWrapper, Device.GetImmediateContext());
 	iLinesCount += 3;
 	DrawTextLines(DebugString, iLinesCount, iLineLength, 15.0f, 0xff00ffff, FontWrapper, Device.GetImmediateContext());

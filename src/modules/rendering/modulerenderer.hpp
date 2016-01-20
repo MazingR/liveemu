@@ -35,6 +35,17 @@ struct FeRenderBatch
 	}
 };
 
+struct FeModuleRenderingInit : public FeModuleInit
+{
+public:
+	uint32		Width;
+	uint32		Height;
+	bool		Debug;
+	void*		WindowHandle;
+	void*		WindowsInstance;
+	int			WindowsCmdShow;
+};
+
 /// <summary>
 /// Module main class to manage rendering
 /// </summary>
@@ -71,15 +82,5 @@ private:
 	FeEDebugRenderTextMode::Type	CurrentDebugTextMode;
 	FeRenderDebugInfos				RenderDebugInfos;
 	FeRenderViewport				DefaultViewport;
-};
-
-struct FeModuleRenderingInit : public FeModuleInit
-{
-public:
-	uint32		Width;
-	uint32		Height;
-	bool		Debug;
-	void*		WindowHandle;
-	void*		WindowsInstance;
-	int			WindowsCmdShow;
+	FeModuleRenderingInit			RenderInit;
 };
