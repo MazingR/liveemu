@@ -81,6 +81,59 @@ groups =
 			dependencyLibDir = { c_src_root.."externals/pthreads/lib/x86" },
 			targetname = "pthreads",
 		},
+		freetype = 
+		{
+		name = "external_freetype",
+			kind = c_projectKindStaticLib,
+			dependencyInclude = { c_src_root.."externals/freetype/include" },
+			srcPath = 
+			{
+				c_src_root.."externals/freetype/include/**.h",
+				c_src_root.."externals/freetype/src/**.h",
+				
+				c_src_root.."externals/freetype/src/autofit/autofit.c",
+				c_src_root.."externals/freetype/src/bdf/bdf.c",
+				c_src_root.."externals/freetype/src/cff/cff.c",
+				c_src_root.."externals/freetype/src/base/ftbase.c",
+				c_src_root.."externals/freetype/src/base/ftbitmap.c",
+				c_src_root.."externals/freetype/src/cache/ftcache.c",
+				c_src_root.."externals/freetype/src/base/ftfstype.c",
+				c_src_root.."externals/freetype/src/base/ftgasp.c",
+				c_src_root.."externals/freetype/src/base/ftglyph.c",
+				c_src_root.."externals/freetype/src/gzip/ftgzip.c",
+				c_src_root.."externals/freetype/src/base/ftinit.c",
+				c_src_root.."externals/freetype/src/lzw/ftlzw.c",
+				c_src_root.."externals/freetype/src/base/ftstroke.c",
+				c_src_root.."externals/freetype/src/base/ftsystem.c",
+				c_src_root.."externals/freetype/src/smooth/smooth.c",
+				c_src_root.."externals/freetype/src/base/ftbbox.c",
+				c_src_root.."externals/freetype/src/base/ftfntfmt.c",
+				c_src_root.."externals/freetype/src/base/ftmm.c",
+				c_src_root.."externals/freetype/src/base/ftpfr.c",
+				c_src_root.."externals/freetype/src/base/ftsynth.c",
+				c_src_root.."externals/freetype/src/base/fttype1.c",
+				c_src_root.."externals/freetype/src/base/ftwinfnt.c",
+				c_src_root.."externals/freetype/src/base/ftlcdfil.c",
+				c_src_root.."externals/freetype/src/base/ftgxval.c",
+				c_src_root.."externals/freetype/src/base/ftotval.c",
+				c_src_root.."externals/freetype/src/base/ftpatent.c",
+				c_src_root.."externals/freetype/src/pcf/pcf.c",
+				c_src_root.."externals/freetype/src/pfr/pfr.c",
+				c_src_root.."externals/freetype/src/psaux/psaux.c",
+				c_src_root.."externals/freetype/src/pshinter/pshinter.c",
+				c_src_root.."externals/freetype/src/psnames/psmodule.c",
+				c_src_root.."externals/freetype/src/raster/raster.c",
+				c_src_root.."externals/freetype/src/sfnt/sfnt.c",
+				c_src_root.."externals/freetype/src/truetype/truetype.c",
+				c_src_root.."externals/freetype/src/type1/type1.c",
+				c_src_root.."externals/freetype/src/cid/type1cid.c",
+				c_src_root.."externals/freetype/src/type42/type42.c",
+				c_src_root.."externals/freetype/src/winfonts/winfnt.c"
+			},
+			includedirs = { c_src_root.."externals/freetype/include" },
+			targetname = "freetype",
+			defines = {"WIN32", "_LIB", "_CRT_SECURE_NO_WARNINGS", "FT_DEBUG_LEVEL_ERROR", "FT_DEBUG_LEVEL_TRACE", "FT2_BUILD_LIBRARY"}
+		},
 	},
 	modules = 
 	{
@@ -121,6 +174,7 @@ groups =
 			dependencies = 
 			{
 				{"sdk_sdl", "sdl"},
+				{"externals", "freetype"},
 			},
 		},
 		renderer = 
