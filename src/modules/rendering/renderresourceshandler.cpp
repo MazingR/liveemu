@@ -307,7 +307,7 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 			ResourcePoolAllocated += loadedResource.SizeInMemory;
 
 #if SAVE_CREATED_RESOURCE
-			if (resource.RuntimeCreated)
+			if (resource.RuntimeCreated && resource.LoadingState == FeEResourceLoadingState::Loaded)
 #else
 			if (false)
 #endif

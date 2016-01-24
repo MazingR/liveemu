@@ -33,7 +33,7 @@
 			"Effect" : "Default",
 			"Transform" : 
 			{
-				"T" : [-0.4,		0.0,	0.0],
+				"T" : [-0.4,		0.1,	0.0],
 				"S" : [0.2,		0.2,	1.0]
 			},
 			"Bindings" :
@@ -42,7 +42,7 @@
 					"Source" : 
 					{
 						"Type" : "StaticImage",
-						"Path" : ["test/textures/512x512/gamepad-gc.png"],
+						"Path" : ["test/textures/512x512/gamepad-snes.png"],
 						"Property" :"",
 						"Index" :0
 					},
@@ -54,7 +54,37 @@
 					}
 				}
 			],
-			"Children" : []
+			"Children" : 
+			[
+				{
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Default",
+					"Transform" : 
+					{
+						"T" : [0.21,		0.0,	-0.01],
+						"S" : [1.0,		1.0,	1.0]
+					},
+					"Bindings" :
+					[
+						{
+							"Source" : 
+							{
+								"Type" : "StaticImage",
+								"Path" : ["test/textures/512x512/gamepad-xb.png"],
+								"Property" :"",
+								"Index" :0
+							},
+							"Target" : 
+							{
+								"Path" : [],
+								"Property" :"Texture",
+								"Index" :0
+							}
+						}
+					],
+					"Children" : []
+				}
+			]
 		}
 	]
 }

@@ -1,7 +1,7 @@
 #include "common.fx"
 #include "simpleVS.fx"
 
-#define SPEED 0.02f
+#define SPEED 0.05f
 
 #define LINESCOUNT 12
 #define SPHERES_COUNT 8
@@ -54,7 +54,7 @@ float4 mainImage( in float2 pos )
 		
 		float fR = s.z + sin(fTime+fS)*SIZE_DELTA ;
 		
-		float4 fLightColor = float4(lerp(fColorA, fColorB, sin(fTime)*0.5f + 0.5f), 1.f)*SATURATON + 0.05f;
+		float4 fLightColor = float4(lerp(fColorA, fColorB, sin(fTime)*0.5f + 0.5f), 1.f)*SATURATON*0.5f + 0.05f;
 		fColor += ComputeCircle(pos, s.xy, fR)*INTENSITY*fLightColor;
 	}
 	

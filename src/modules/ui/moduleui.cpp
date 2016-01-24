@@ -131,14 +131,26 @@ uint32 FeModuleUi::ReloadScripts()
 	}
 
 	// Pre compute rendering instances
-	std::queue<FeUiElement*> uiElements;
+	struct UiElementNode
+	{
+		FeUiElement* Element;
+		FeUiElement* Parent;
+	};
+	std::queue<UiElementNode> uiElements;
 
 	for (auto& panel : Panels)
-		uiElements.push(panel);
+	{
+		UiElementNode element;
+		element.Element = panel;
+		element.Parent = NULL;
+		uiElements.push(element);
+	}
 
 	while (uiElements.size())
 	{
-		FeUiElement* pElement = uiElements.front();
+		UiElementNode element = uiElements.front();
+		FeUiElement* pElement = element.Element;
+
 		uiElements.pop();
 
 		FeUiRenderingInstance& renderingInstance = RenderingInstances.Add();
@@ -148,10 +160,24 @@ uint32 FeModuleUi::ReloadScripts()
 		renderingInstance.Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
 		renderingInstance.Geometry.Textures.Clear();
 
-		FeGeometryHelper::ComputeAffineTransform(renderingInstance.Geometry.Transform,
-			pElement->GetTransform().Translation,
-			pElement->GetTransform().Rotation,
-			pElement->GetTransform().Scale);
+		FeVector3	t = pElement->GetTransform().Translation;
+		FeRotation	r = pElement->GetTransform().Rotation;
+		FeVector3	s = pElement->GetTransform().Scale;
+
+		if (element.Parent)
+		{
+			auto& pT = element.Parent->GetTransform().Translation;
+			auto& pR = element.Parent->GetTransform().Rotation;
+			auto& pS = element.Parent->GetTransform().Scale;
+
+			for (uint32 i = 0; i < 3; ++i)
+			{
+				t[i] += pT[i];
+				r[i] += pR[i];
+				s[i] *= pS[i];
+			}
+		}
+		FeGeometryHelper::ComputeAffineTransform(renderingInstance.Geometry.Transform, t, r, s);
 
 		for (auto& dataBind : pElement->GetBindings())
 		{
@@ -186,7 +212,13 @@ uint32 FeModuleUi::ReloadScripts()
 		}
 
 		for (auto& child : pElement->GetChildren())
-			uiElements.push(child.Ptr);
+		{
+			UiElementNode childElement;
+			childElement.Element = child.Ptr;
+			childElement.Parent = pElement;
+
+			uiElements.push(childElement);
+		}
 	}
 	for (auto& instance : RenderingInstances)
 	{
