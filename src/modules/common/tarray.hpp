@@ -245,6 +245,10 @@ public:
 	{
 		return BaseAdress[Size - 1];
 	}
+	const T&	Back() const
+	{
+		return BaseAdress[Size - 1];
+	}
 	static U	ErrorIndex(){ return U(-1); }
 	U			Find(const T& element) const
 	{
@@ -349,14 +353,18 @@ public:
 	{
 		if (iHeapId != HeapId)
 		{
-			T* newBaseAdress = FE_NEW_ARRAY(T, EffectiveSize, iHeapId);
-				
-			for (U i = 0; i < Size; i++)
+			if (EffectiveSize > 0)
 			{
-				newBaseAdress[i] = BaseAdress[i];
+				T* newBaseAdress = FE_NEW_ARRAY(T, EffectiveSize, iHeapId);
+				
+				for (U i = 0; i < Size; i++)
+				{
+					newBaseAdress[i] = BaseAdress[i];
+				}
+			
+				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
+				BaseAdress = newBaseAdress;
 			}
-			FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
-			BaseAdress = newBaseAdress;
 			HeapId = iHeapId;
 		}
 	}

@@ -9,7 +9,7 @@
 #include <SDL.h>
 
 #define USE_DDS_IF_EXISTS 1
-#define SAVE_CONVERTED_TO_DDS 1
+#define SAVE_CREATED_RESOURCE 1
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
 class FeScopeLockedMutex
@@ -39,114 +39,63 @@ int ResourcesHandlerThreadFunction(void* pData)
 
 	while (!StopThread)
 	{
-		pThis->ProcessThreadedTexturesLoading(StopThread);
+		pThis->ProcessThreadedResourcesLoading(StopThread);
 		SDL_Delay(100);
 	}
 	
 	return 0;
 }
-#pragma optimize( "", off )
 
-uint32 FeModuleRenderResourcesHandler::ProcessThreadedTexturesLoading(bool& bThreadSopped)
+uint32 FeModuleRenderResourcesHandler::ProcessThreadedResourcesLoading(bool& bThreadSopped)
 {
-	TexturesLoadingMap* pTexturesToLoad = NULL;
+	ResourcesLoadingMap* pResourcesToLoad = NULL;
 	{
-		SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
-		pTexturesToLoad = new TexturesLoadingMap(TexturesLoading);
+		SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
+		pResourcesToLoad = new ResourcesLoadingMap(ResourcesLoading);
 	}
 
-	TexturesLoadingMap& texturesToLoad = *pTexturesToLoad;
+	ResourcesLoadingMap& resourcesToLoad = *pResourcesToLoad;
 	
-	for (auto& idedTexture : texturesToLoad)
+	for (auto& idedResource : resourcesToLoad)
 	{
 		if (bThreadSopped)
 			break;
 
-		FeRenderLoadingTexture& texture = idedTexture.second;
+		FeRenderLoadingResource& resource = idedResource.second;
+		uint32 iRet = FeEReturnCode::Failed;
 
-		ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
-		ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetLoadingThreadContext();
-
-		HRESULT hr;
-		D3DX11_IMAGE_LOAD_INFO loadinfos;
-		D3DX11_IMAGE_INFO imgInfos;
-		ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
-
-#if USE_DDS_IF_EXISTS
-		FePath ddsPath;
-		FeFileTools::GetFullPathChangeExtension(ddsPath, texture.Path, "dds");
-		const char* szPath = FeFileTools::FileExists(ddsPath) ? ddsPath.Value : texture.Path;
-#else
-		const char* szPath = texture.Path;
-#endif
-		D3DX11GetImageInfoFromFile(szPath, NULL, &imgInfos, &hr);
-
-		uint32 iForcedFormat = DXGI_FORMAT_BC3_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM DXGI_FORMAT_BC3_UNORM
-		uint32 iResize = 1;
-		
-		loadinfos.Width = imgInfos.Width / iResize;
-		loadinfos.Height = imgInfos.Height / iResize;
-
-		loadinfos.Depth = imgInfos.Depth;
-		loadinfos.FirstMipLevel = 0;
-		loadinfos.MipLevels = 1;
-		loadinfos.Usage = D3D11_USAGE_DEFAULT;//D3D11_USAGE_DYNAMIC
-		loadinfos.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-		loadinfos.CpuAccessFlags = 0;//D3D11_CPU_ACCESS_WRITE
-		loadinfos.MiscFlags = 0;
-		loadinfos.Format = iForcedFormat ? (DXGI_FORMAT)iForcedFormat : imgInfos.Format;
-		loadinfos.Filter = D3DX11_FILTER_LINEAR;
-		loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
-		loadinfos.pSrcInfo = &imgInfos;
-
-		texture.SizeInMemory = ComputeTextureSizeInMemoryFromFormat(loadinfos.Width, loadinfos.Height, loadinfos.Format, true);
-		
-		if (texture.SizeInMemory + TexturePoolAllocated > TexturePoolLimit)
+		switch (resource.Type)
 		{
-			break;
-		}
-
-		texture.WasConverted = loadinfos.Format != imgInfos.Format;
-
-		D3DX11CreateTextureFromFile(pD3DDevice, texture.Path, &loadinfos, NULL, &texture.Resource, &hr);
-
-		if (SUCCEEDED(hr))
-		{
-			hr = pD3DDevice->CreateShaderResourceView(texture.Resource, NULL, &texture.SRV);
-			texture.LoadingState = FeETextureLoadingState::Loaded;
+			case FeEResourceType::Texture:
+			{
+				iRet = CreateTexture(resource, (FeRenderTextureData*)resource.Interface->GetData());
+			} break;
 		}
 		
-		if (FAILED(hr))
+		resource.LoadingState = FE_FAILED(iRet) ? FeEResourceLoadingState::LoadFailed : FeEResourceLoadingState::Loaded;
+
 		{
-			FE_ASSERT(false, "texture  loading failed");
-			texture.LoadingState = FeETextureLoadingState::LoadFailed;
+			SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
+			ResourcesLoading.erase(idedResource.first);
 		}
 
 		{
-			SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
-			TexturesLoading.erase(idedTexture.first);
-		}
-
-		{
-			SCOPELOCK(TexturesLoadedMutex); // <------ Lock Mutex
-			TexturesLoaded[idedTexture.first] = texture;
+			SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
+			ResourcesLoaded[idedResource.first] = resource;
 		}
 	}
 
-	delete pTexturesToLoad;
+	delete pResourcesToLoad;
 
 	return FeEReturnCode::Success;
 }
-
-#pragma optimize( "", on  )
-
-uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint32 _iWidth, uint32 _iHeight, uint32 iTextureFormat, bool bHasAlpha)
+uint32 FeModuleRenderResourcesHandler::ComputeResourceSizeInMemoryFromFormat(uint32 _iWidth, uint32 _iHeight, uint32 iResourceFormat, bool bHasAlpha)
 {
 	uint32 iWidth = _iWidth;
 	uint32 iHeight = _iHeight;
 
-	uint32 iTextureSize = 0;
-	DXGI_FORMAT iFormat = (DXGI_FORMAT)iTextureFormat;
+	uint32 iResourceSize = 0;
+	DXGI_FORMAT iFormat = (DXGI_FORMAT)iResourceFormat;
 	uint32 iPixelBitSize = 0;
 		
 	switch(iFormat)
@@ -185,12 +134,12 @@ uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint
 			iPixelBitSize = 0;
 	};
 
-	if (iPixelBitSize != 0) // texture format is compressed
+	if (iPixelBitSize != 0) // resource format is compressed
 	{
 		uint32 iSizeMultiple = 256;
 		iWidth = (uint32)ceil((float)(_iWidth / (float)iSizeMultiple)) * iSizeMultiple;
 		iHeight = (uint32)ceil((float)(_iHeight / (float)iSizeMultiple)) * iSizeMultiple;
-		iTextureSize = ((iWidth*iHeight) / 2)*(iPixelBitSize / 8);
+		iResourceSize = ((iWidth*iHeight) / 2)*(iPixelBitSize / 8);
 	}
 	else
 	{
@@ -294,35 +243,35 @@ uint32 FeModuleRenderResourcesHandler::ComputeTextureSizeInMemoryFromFormat(uint
 				iPixelBitSize = 0;
 		};
 
-		iTextureSize = (iWidth*iHeight)*(iPixelBitSize / 8);
+		iResourceSize = (iWidth*iHeight)*(iPixelBitSize / 8);
 	}
 
-	return iTextureSize;
+	return iResourceSize;
 }
 void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos)
 {
-	infos.LoadedTexturesCount = 0;
-	infos.LoadedTexturesCountSizeInMemory = 0;
-	infos.TexturesPoolSize = TexturePoolLimit;
+	infos.LoadedResourcesCount = 0;
+	infos.LoadedResourcesCountSizeInMemory = 0;
+	infos.ResourcesPoolSize = ResourcePoolLimit;
 	
-	for (TexturesMapIt it = Textures.begin(); it != Textures.end(); ++it)
+	for (ResourcesMapIt it = Resources.begin(); it != Resources.end(); ++it)
 	{
-		FeRenderTexture& texture = it->second;
+		FeRenderResource& resource = it->second;
 
-		if (texture.LoadingState == FeETextureLoadingState::Loaded)
+		if (resource.LoadingState == FeEResourceLoadingState::Loaded)
 		{
-			infos.LoadedTexturesCount++;
-			infos.LoadedTexturesCountSizeInMemory += texture.SizeInMemory;
+			infos.LoadedResourcesCount++;
+			infos.LoadedResourcesCountSizeInMemory += resource.SizeInMemory;
 		}
 	}
 }
 uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 {
-	TexturePoolLimit = 256*(1024*1024);
-	TexturePoolAllocated = 0;
+	ResourcePoolLimit = 256*(1024*1024);
+	ResourcePoolAllocated = 0;
 
-	TexturesLoadingMutex = SDL_CreateMutex();
-	TexturesLoadedMutex = SDL_CreateMutex();
+	ResourcesLoadingMutex = SDL_CreateMutex();
+	ResourcesLoadedMutex = SDL_CreateMutex();
 
 	LoadingThread = SDL_CreateThread(ResourcesHandlerThreadFunction, "ModuleRenderResourcesHandler", this);
 	
@@ -334,95 +283,172 @@ uint32 FeModuleRenderResourcesHandler::Unload()
 	int iReturned;
 	SDL_WaitThread(LoadingThread, &iReturned);
 
-	SDL_DestroyMutex(TexturesLoadingMutex);
-	SDL_DestroyMutex(TexturesLoadedMutex);
+	SDL_DestroyMutex(ResourcesLoadingMutex);
+	SDL_DestroyMutex(ResourcesLoadedMutex);
 
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 {
 	{
-		SCOPELOCK(TexturesLoadedMutex); // <------ Lock Mutex
+		SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
 
-		for (TexturesLoadingMapIt it = TexturesLoaded.begin(); it != TexturesLoaded.end(); ++it)
+		for (ResourcesLoadingMapIt it = ResourcesLoaded.begin(); it != ResourcesLoaded.end(); ++it)
 		{
-			FeRenderLoadingTexture& texture = it->second;
+			FeRenderLoadingResource& resource = it->second;
 
-			FeRenderTexture loadedTexture;
-			loadedTexture.LoadingState	= texture.LoadingState;
-			loadedTexture.Resource		= texture.Resource;
-			loadedTexture.SizeInMemory	= texture.SizeInMemory;
-			loadedTexture.SRV			= texture.SRV;
+			FeRenderResource loadedResource;
+			loadedResource.LoadingState	= resource.LoadingState;
+			loadedResource.SizeInMemory	= resource.SizeInMemory;
 			
-			Textures[it->first] = loadedTexture;
+			resource.Interface->CopyAndAllocateTo(&loadedResource.Interface);
+			
+			Resources[it->first] = loadedResource;
+			ResourcePoolAllocated += loadedResource.SizeInMemory;
 
-			TexturePoolAllocated += loadedTexture.SizeInMemory;
-
-#if SAVE_CONVERTED_TO_DDS
-			if (texture.WasConverted)
-				TexturesToSave[it->first] = texture;
+#if SAVE_CREATED_RESOURCE
+			if (resource.RuntimeCreated)
+#else
+			if (false)
 #endif
+			{
+				ResourcesToSave[it->first] = resource;
+			}
+			else
+			{
+				resource.Interface->Release();
+			}
 		}
 
-		TexturesLoaded.clear();
+		ResourcesLoaded.clear();
 	}
 	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
-	for (TexturesLoadingMapIt it = TexturesToSave.begin(); it != TexturesToSave.end(); ++it)
+	for (ResourcesLoadingMapIt it = ResourcesToSave.begin(); it != ResourcesToSave.end(); ++it)
 	{
-		FeRenderLoadingTexture& texture = it->second;
+		FeRenderLoadingResource& resource = it->second;
 
 		FePath savedFile;
-		FeFileTools::GetFullPathChangeExtension(savedFile, texture.Path, "dds");
-		HRESULT hr = D3DX11SaveTextureToFile(pD3DContext, texture.Resource, D3DX11_IFF_DDS, savedFile.Value);
+		FeFileTools::GetFullPathChangeExtension(savedFile, resource.Path.Value, "dds");
+
+		FeRenderTextureData* pTextureData = (FeRenderTextureData*)resource.Interface->GetData();
+		char szFullPath[COMMON_PATH_SIZE];
+		sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, savedFile.Value);
+
+		HRESULT hr = D3DX11SaveTextureToFile(pD3DContext, pTextureData->D3DResource, D3DX11_IFF_DDS, szFullPath);
+
 		if (FAILED(hr))
 		{
-			FE_ASSERT(false, "converted texture save failed");
+			FE_ASSERT(false, "converted resource save failed");
 		}
 		else
 		{
-			FE_LOG("Save converted texture %s", texture.Path);
+			FE_LOG("Save converted resource %s", resource.Path.Value);
 		}
-		TexturesToSave.erase(it);
+
+		resource.Interface->Release();
+		ResourcesToSave.erase(it);
+
 		break; //  process one file per frame
 	}
 	return FeEReturnCode::Success;
 }
-const FeRenderTexture* FeModuleRenderResourcesHandler::GetTexture(const FeRenderTextureId& textureId) const
+const FeRenderResource* FeModuleRenderResourcesHandler::GetResource(const FeResourceId& resourceId) const
 {
-	TexturesMap::const_iterator it = Textures.find(textureId);
-	return (it != Textures.end()) ? &it->second : NULL;
+	ResourcesMap::const_iterator it = Resources.find(resourceId);
+	return (it != Resources.end()) ? &it->second : NULL;
 }
-uint32 FeModuleRenderResourcesHandler::LoadTexture(const char* szTexturePath, FeRenderTextureId* pTextureId)
-{
-	char szPath[COMMON_PATH_SIZE];
-	sprintf_s(szPath, szTexturePath);
-	FeStringTools::ToLower(szPath);
-
-	*pTextureId = FeStringTools::GenerateUIntIdFromString(szPath);
-	FeRenderTextureId iTexId = *pTextureId;
-
-	if (!GetTexture(iTexId))
-	{
-		SCOPELOCK(TexturesLoadingMutex); // <------ Lock Mutex
-
-		TexturesLoadingMap::const_iterator it = TexturesLoading.find(iTexId);
-		
-		if (it == TexturesLoading.end())
-		{
-			// todo: make all of it asynchone & thread safe
-			TexturesLoading[iTexId] = FeRenderLoadingTexture(); // add texture to map
-
-			FeRenderLoadingTexture& texture = TexturesLoading[iTexId];
-			ZeroMemory(&texture, sizeof(FeRenderLoadingTexture));
-			sprintf_s(texture.Path, COMMON_PATH_SIZE, szPath);
-			texture.LoadingState = FeETextureLoadingState::Idle;
-		}
-	}
-	return FeEReturnCode::Success;
-}
-uint32 FeModuleRenderResourcesHandler::UnloadTexture(const FeRenderTextureId&)
+uint32 FeModuleRenderResourcesHandler::UnloadResource(const FeResourceId&)
 {
 	// todo
 	return FeEReturnCode::Success;
+}
+uint32 FeModuleRenderResourcesHandler::LoadResource(FeRenderLoadingResource& resource)
+{
+	FeStringTools::ToLower(resource.Path.Value);
+	resource.Id = FeStringTools::GenerateUIntIdFromString(resource.Path.Value);
+
+	if (!GetResource(resource.Id))
+	{
+		SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
+
+		ResourcesLoadingMap::const_iterator it = ResourcesLoading.find(resource.Id);
+
+		if (it == ResourcesLoading.end())
+		{
+			resource.LoadingState = FeEResourceLoadingState::Idle;
+			switch (resource.Type)
+			{
+			case FeEResourceType::Texture: resource.Interface = FeCreateRenderResourceInterface<FeRenderTextureData>();	break;
+			case FeEResourceType::Font: resource.Interface = FeCreateRenderResourceInterface<FeRenderFontData>();	break;
+			default:
+			{
+				FE_ASSERT(false, "Unknown render resource type !");
+			}
+			}
+			ResourcesLoading[resource.Id] = resource;
+		}
+	}
+
+	return FeEReturnCode::Success;
+}
+uint32 FeModuleRenderResourcesHandler::CreateTexture(FeRenderLoadingResource& resource, FeRenderTextureData* pTextureData)
+{
+	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
+	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetLoadingThreadContext();
+
+	HRESULT hr;
+	D3DX11_IMAGE_LOAD_INFO loadinfos;
+	D3DX11_IMAGE_INFO imgInfos;
+	ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
+	
+	FePath fullPath;
+	sprintf_s(fullPath.Value, "%s%s", FeFileTools::GetRootDir().Value, resource.Path.Value);
+
+#if USE_DDS_IF_EXISTS
+	FePath ddsPath;
+	FeFileTools::GetFullPathChangeExtension(ddsPath, fullPath.Value, "dds");
+	
+	if (FeFileTools::FileExists(ddsPath))
+		fullPath = ddsPath;
+#endif
+	D3DX11GetImageInfoFromFile(fullPath.Value, NULL, &imgInfos, &hr);
+
+	uint32 iForcedFormat = DXGI_FORMAT_BC3_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM DXGI_FORMAT_BC3_UNORM
+	uint32 iResize = 1;
+
+	loadinfos.Width = imgInfos.Width / iResize;
+	loadinfos.Height = imgInfos.Height / iResize;
+
+	loadinfos.Depth = imgInfos.Depth;
+	loadinfos.FirstMipLevel = 0;
+	loadinfos.MipLevels = 1;
+	loadinfos.Usage = D3D11_USAGE_DEFAULT;//D3D11_USAGE_DYNAMIC
+	loadinfos.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	loadinfos.CpuAccessFlags = 0;//D3D11_CPU_ACCESS_WRITE
+	loadinfos.MiscFlags = 0;
+	loadinfos.Format = iForcedFormat ? (DXGI_FORMAT)iForcedFormat : imgInfos.Format;
+	loadinfos.Filter = D3DX11_FILTER_LINEAR;
+	loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
+	loadinfos.pSrcInfo = &imgInfos;
+
+	resource.SizeInMemory = ComputeResourceSizeInMemoryFromFormat(loadinfos.Width, loadinfos.Height, loadinfos.Format, true);
+
+	if (resource.SizeInMemory + ResourcePoolAllocated <= ResourcePoolLimit)
+	{
+		resource.RuntimeCreated = loadinfos.Format != imgInfos.Format;
+
+		D3DX11CreateTextureFromFile(pD3DDevice, fullPath.Value, &loadinfos, NULL, &pTextureData->D3DResource, &hr);
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pD3DDevice->CreateShaderResourceView(pTextureData->D3DResource, NULL, &pTextureData->D3DSRV);
+		}
+
+		return SUCCEEDED(hr) ? FeEReturnCode::Success : FeEReturnCode::Failed;
+	}
+	else
+	{
+		return FeEReturnCode::Failed;
+	}
 }

@@ -184,7 +184,7 @@ function GenerateProject(config, groupName, projectName)
 	
 	if prj["kind"]~=c_projectKindExternal then
 		configuration "Debug"
-			defines {"DEBUG"}
+			defines {"DEBUG", "_DEBUG"}
 		configuration "Release"
 			defines {"NDEBUG"}
 			flags {"OptimizeSpeed", "FloatFast", "EnableSSE2"}

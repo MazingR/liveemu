@@ -21,10 +21,6 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleFilesManager>(init));
 	}
 	{
-		FeModuleInit init;
-		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleRenderResourcesHandler>(init));
-	}
-	{
 		FeModuleRenderingInit init;
 		
 		init.WindowsCmdShow = appInit.WindowsCmdShow;
@@ -47,9 +43,17 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		FE_FAILEDRETURN(pModule->Load(&init));
 	}
 	{
+		FeModuleInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleRenderResourcesHandler>(init));
+	}
+	{
 		FeModuleUiInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleUi>(init));
 	}
+	//{
+	//	FeModuleInit init;
+	//	FE_FAILEDRETURN(CreateAndLoadModule<FeModuleFontsHandler>(init));
+	//}
 
 	return FeEReturnCode::Success;
 }

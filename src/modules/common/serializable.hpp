@@ -48,7 +48,7 @@
 #define DECLARE_PROPERTY_DESERIALIZE(t,n)	FE_FAILEDRETURN( FeDeserialize(value, &n, #n) );
 
 #define DECLARE_PROPERTY_ACCESSOR(t, n)				\
-	const t & Get##n () { return n ; }				\
+	const t & Get##n () const { return n ; }		\
 	void Set##n (const t & value) { n = value; }	\
 
 #define DECLARE_DESERIALIZER(properties, baseClass)	\

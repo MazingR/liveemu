@@ -64,7 +64,7 @@ uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 	Geometries.Reserve(16);
 	Geometries.SetZeroMemory();
 	FeRenderGeometryData& geometryData = Geometries.Add();
-	FeRenderGeometryId geometryId;
+	FeResourceId geometryId;
 	FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Quad, &geometryData, &geometryId);
 
 	HRESULT hResult = FW1CreateFactory(FW1_VERSION, &FW1Factory);
@@ -113,13 +113,19 @@ uint32 FeModuleRendering::Update(const FeDt& fDt)
 	//}
 
 	// Render frame
+	for (auto& batch : RegisteredRenderBatches)
+	{
+		FE_ASSERT(batch.GeometryInstances[1].Textures.GetSize() < 8, "");
+	}
 	BeginRender();
 	{
 		// Render all registered batches
-		for (uint32 i = 0; i < RegisteredRenderBatches.GetSize(); ++i)
+		for (  auto& batch : RegisteredRenderBatches)
 		{
-			RenderBatch(RegisteredRenderBatches[i], fDt);
-			RegisteredRenderBatches[i].GeometryInstances.Clear();
+			FE_ASSERT(batch.GeometryInstances[1].Textures.GetSize()< 8, "");
+
+			RenderBatch(batch, fDt);
+			batch.GeometryInstances.Clear();
 		}
 		RenderDebugText(fDt);
 	}
@@ -158,8 +164,8 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 
 	FeTArray<FeRenderGeometryInstance>& instances = batch.GeometryInstances;
 
-	FeRenderEffectId iLastEffectId = 0;
-	FeRenderGeometryId iLastGeometryId = 0;
+	FeResourceId iLastEffectId = 0;
+	FeResourceId iLastGeometryId = 0;
 		
 	FeRenderGeometryData* pGeometryData = NULL;
 	FeRenderEffect* pEffect = NULL;
@@ -168,8 +174,8 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	ID3D11DeviceContext* pContext = GetDevice().GetImmediateContext();
 
-	FeRenderTextureId lastBindedTextures[16];
-	ZeroMemory(lastBindedTextures, sizeof(FeRenderTextureId) * 16);
+	FeResourceId lastBindedTextures[16];
+	ZeroMemory(lastBindedTextures, sizeof(FeResourceId) * 16);
 
 	for (auto& effect : Effects)
 	{
@@ -179,7 +185,7 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 	for (uint32 iInstanceIdx = 0; iInstanceIdx < instances.GetSize(); ++iInstanceIdx)
 	{
 		FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
-
+		
 		if (geomInstance.Effect != iLastEffectId && Effects.find(geomInstance.Effect) != Effects.end())
 		{
 			pEffect = &Effects[geomInstance.Effect];
@@ -196,15 +202,17 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 		// Set resources (textures)
 		for (uint32 iTextureIdx = 0; iTextureIdx < geomInstance.Textures.GetSize(); ++iTextureIdx)
 		{
-			const FeRenderTextureId& textureId = geomInstance.Textures[iTextureIdx];
+			const FeResourceId& textureId = geomInstance.Textures[iTextureIdx];
+			
 			if (lastBindedTextures[iTextureIdx] != textureId)
 			{
 				lastBindedTextures[iTextureIdx] = textureId;
-				const FeRenderTexture* pTexture = pResourcesHandler->GetTexture(textureId);
+				const FeRenderResource* pResource = pResourcesHandler->GetResource(textureId);
 
-				if (pTexture && pTexture->LoadingState == FeETextureLoadingState::Loaded)
+				if (pResource && pResource->LoadingState == FeEResourceLoadingState::Loaded)
 				{
-					pContext->PSSetShaderResources(iTextureIdx, 1, &pTexture->SRV);
+					FeRenderTextureData* pTexData = (FeRenderTextureData*)pResource->Interface->GetData();
+					pContext->PSSetShaderResources(iTextureIdx, 1, &pTexData->D3DSRV);
 					RenderDebugInfos.FrameBindTextureCount++;
 				}
 				else
@@ -333,9 +341,9 @@ void FeModuleRendering::RenderDebugText(const FeDt& fDt)
 Texture Count\t%d \n\
 Texture Mem.\t%4.1f / %4.0f (MB) \n\
 				",
-				resourcesDebugInfos.LoadedTexturesCount, 
-				(resourcesDebugInfos.LoadedTexturesCountSizeInMemory) / (1024.0f*1024.0f),
-				(resourcesDebugInfos.TexturesPoolSize) / (1024.0f*1024.0f));
+				resourcesDebugInfos.LoadedResourcesCount, 
+				(resourcesDebugInfos.LoadedResourcesCountSizeInMemory) / (1024.0f*1024.0f),
+				(resourcesDebugInfos.ResourcesPoolSize) / (1024.0f*1024.0f));
 			}
 			break;
 		case FeEDebugRenderTextMode::Rendering:

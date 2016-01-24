@@ -1,3 +1,5 @@
+#pragma once
+
 #include <rendering/effect.hpp>
 #include <common/serializable.hpp>
 #include <common/maths.hpp>
@@ -9,6 +11,40 @@
 
 FE_DECLARE_ENUM(FeEUiElementState, FeEUiElementState_Values)
 
+#define FeEUiBindingType_Values(_d)			\
+		_d(FeEUiBindingType, Variable)		\
+		_d(FeEUiBindingType, List)			\
+		_d(FeEUiBindingType, StaticImage)	\
+		_d(FeEUiBindingType, StaticText)	\
+
+FE_DECLARE_ENUM(FeEUiBindingType, FeEUiBindingType_Values)
+
+class FeUiBinding : public FeSerializable
+{
+public:
+
+#define FeUiBinding_Properties(_d)				\
+		_d(FeTArray<FeString>,		Path)		\
+		_d(FeString,				Property)	\
+		_d(uint32,					Index)		\
+		_d(FeEUiBindingType::Type,	Type)		\
+
+	FE_DECLARE_CLASS_BODY(FeUiBinding_Properties, FeUiBinding, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiBinding)
+
+class FeUiDataBinding : public FeSerializable
+{
+public:
+
+#define FeUiDataBinding_Properties(_d)		\
+		_d(FeUiBinding,	Source)				\
+		_d(FeUiBinding,	Target)				\
+
+	FE_DECLARE_CLASS_BODY(FeUiDataBinding_Properties, FeUiDataBinding, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiDataBinding)
+
 class FeUiElement : public FeSerializable
 {
 public:
@@ -16,11 +52,12 @@ public:
 	bool IsVisible();
 	bool IsSelected();
 
-	#define FeUiElement_Properties(_d)					\
-		_d(FeTransform,						Transform)	\
-		_d(FeEUiElementState::Type,			State)		\
-		_d(FeTArray<FeTPtr<FeUiElement>>,	Children)	\
-		_d(FeString,						Effect)		\
+	#define FeUiElement_Properties(_d)						\
+		_d(FeTransform,						Transform)		\
+		_d(FeEUiElementState::Type,			State)			\
+		_d(FeTArray<FeTPtr<FeUiElement>>,	Children)		\
+		_d(FeString,						Effect)			\
+		_d(FeTArray<FeUiDataBinding>,		Bindings)		\
 
 	FE_DECLARE_CLASS_BODY(FeUiElement_Properties, FeUiElement, FeSerializable)
 };

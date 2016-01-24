@@ -36,3 +36,48 @@ private:
 	FeTArray<FeUiRenderingInstance> RenderingInstances;
 	FeTArray<FeUiPanel*>			Panels;
 };
+
+
+// forward declares
+struct  FT_LibraryRec_;
+struct  FT_FaceRec_;
+
+namespace FeEFontLoadingState
+{
+	enum Type
+	{
+		Idle,
+		Loading,
+		Loaded,
+		LoadFailed
+	};
+}
+
+struct FeFontData
+{
+	FeResourceId	TextureId;
+	FT_FaceRec_*		FtFontFace;
+};
+//
+//class FeModuleFontsHandler : public FeModule
+//{
+//public:
+//	virtual uint32 Load(const FeModuleInit*) override;
+//	virtual uint32 Unload() override;
+//	virtual uint32 Update(const FeDt& fDt) override;
+//
+//	uint32 LoadFontFromFile(const FePath& path);
+//
+//private:
+//
+//	static void FontLoadingCallback(FeRenderTexture* pTexture, void* pUserData);
+//
+//	FT_LibraryRec_*	FtLibrary;
+//	FeTArray<FeFontData> Fonts;
+//};
+//
+//struct FeFontLoadingData
+//{
+//	FePath					FontPath;
+//	FeModuleFontsHandler*	This;
+//};

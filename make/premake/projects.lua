@@ -128,7 +128,9 @@ groups =
 				c_src_root.."externals/freetype/src/type1/type1.c",
 				c_src_root.."externals/freetype/src/cid/type1cid.c",
 				c_src_root.."externals/freetype/src/type42/type42.c",
-				c_src_root.."externals/freetype/src/winfonts/winfnt.c"
+				c_src_root.."externals/freetype/src/winfonts/winfnt.c",
+				
+				c_src_root.."externals/freetype/builds/windows/ftdebug.c"
 			},
 			includedirs = { c_src_root.."externals/freetype/include" },
 			targetname = "freetype",

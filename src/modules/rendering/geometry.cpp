@@ -84,11 +84,11 @@ uint32 FeGeometryHelper::ComputeStaticGeometry()
 
 	return FeEReturnCode::Success;
 }
-FeRenderGeometryId FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Type eType)
+FeResourceId FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Type eType)
 {
-	return (FeRenderGeometryId)eType + 1;
+	return (FeResourceId)eType + 1;
 }
-uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, FeRenderGeometryData* geometryData, FeRenderGeometryId* geometryId)
+uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, FeRenderGeometryData* geometryData, FeResourceId* geometryId)
 {
 	if (!ComputedGeometry)
 	{
@@ -96,11 +96,11 @@ uint32 FeGeometryHelper::CreateStaticGeometry(FeEGemetryDataType::Type eType, Fe
 		ComputedGeometry = true;
 	}
 	*geometryData = StaticGeometryData[eType];
-	*geometryId = (FeRenderGeometryId)eType + 1;
+	*geometryId = (FeResourceId)eType + 1;
 
 	return FeEReturnCode::Success;
 }
-uint32 FeGeometryHelper::CreateGeometry(void* vertexBuffer, uint32 iVertexCount, void* indexBuffer, uint32 iIndexCount, FeRenderGeometryData* geometryData, FeRenderGeometryId* geometryId)
+uint32 FeGeometryHelper::CreateGeometry(void* vertexBuffer, uint32 iVertexCount, void* indexBuffer, uint32 iIndexCount, FeRenderGeometryData* geometryData, FeResourceId* geometryId)
 {
 	FeRenderGeometryData& newGeometryData = GeometryData.Add();
 	*geometryId = GeometryData.GetSize();

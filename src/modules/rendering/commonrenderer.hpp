@@ -27,10 +27,7 @@ struct ID3D11Texture2D;
 struct IFW1Factory;
 struct IFW1FontWrapper;
 
-typedef uint32 FeRenderGeometryId;
-typedef uint32 FeRenderEffectId;
-typedef uint32 FeRenderTextureId;
-typedef uint32 FeShaderId;
+typedef uint32 FeResourceId;
 
 struct FeRenderCamera
 {
@@ -59,7 +56,7 @@ namespace FeEDebugRenderTextMode
 		Count
 	};
 };
-namespace FeETextureLoadingState
+namespace FeEResourceLoadingState
 {
 	enum Type
 	{
@@ -69,24 +66,101 @@ namespace FeETextureLoadingState
 		LoadFailed
 	};
 }
-typedef uint32 FeRenderTextureId;
+typedef uint32 FeResourceId;
 
 struct FeTextureLoadingQueryResult
 {
-	FeRenderTextureId TextureId;
+	FeResourceId TextureId;
 };
 
-struct FeRenderTexture
+namespace FeEResourceType
 {
-	FeETextureLoadingState::Type	LoadingState;
-	ID3D11Resource*					Resource;
-	ID3D11ShaderResourceView*		SRV;
-	uint32							SizeInMemory;
-	bool							WasConverted;
+	enum Type
+	{
+		Texture,
+		Font,
+		Geometry,
+		Sound
+	};
+}
+
+class FeIRenderResourceInterface
+{
+public:
+	virtual void CopyTo(FeIRenderResourceInterface* pCopy) = 0;
+	virtual void CopyAndAllocateTo(FeIRenderResourceInterface** pCopy) = 0;
+	virtual void Release()=0;
+	
+	virtual void* GetData() = 0;
 };
-struct FeRenderLoadingTexture : public FeRenderTexture
+
+template<typename T>
+class FeRenderResourceInterface : public FeIRenderResourceInterface
 {
-	char Path[COMMON_PATH_SIZE];
+public:
+	void CopyTo(FeIRenderResourceInterface* pCopy)
+	{
+		memcpy_s(pCopy, sizeof(FeRenderResourceInterface<T>), this, sizeof(FeRenderResourceInterface<T>));
+	}
+	void CopyAndAllocateTo(FeIRenderResourceInterface** pCopy)
+	{
+		*pCopy = FE_NEW(FeRenderResourceInterface<T>, RENDERER_HEAP);
+		CopyTo(*pCopy);
+	}
+	void Release()
+	{
+		FE_DELETE(FeRenderResourceInterface<T>, this, RENDERER_HEAP);
+	}
+
+	void* GetData()
+	{
+		return &Data;
+	}
+
+	T* GetTData()
+	{
+		return &Data;
+	}
+	T Data;
+};
+
+template<typename T>
+static FeRenderResourceInterface<T>* FeCreateRenderResourceInterface()
+{
+	return FE_NEW(FeRenderResourceInterface<T>, RENDERER_HEAP);
+}
+
+struct FeRenderTextureData
+{
+	ID3D11Resource*					D3DResource;
+	ID3D11ShaderResourceView*		D3DSRV;
+};
+struct FeRenderFontData
+{
+	FeRenderTextureData				TextureData;
+};
+
+struct FeRenderResource
+{
+	FeEResourceType::Type			Type;
+	FeEResourceLoadingState::Type	LoadingState;
+	uint32							SizeInMemory;
+	bool							RuntimeCreated;
+	FeIRenderResourceInterface*		Interface;
+};
+typedef void(*FeResourceLoadingCallbackFunc) (FeRenderResource* pResource, void* pUserData);
+
+struct FeResourceLoadingCallback
+{
+	FeResourceLoadingCallbackFunc	Functor;
+	void*							UserData;
+};
+
+struct FeRenderLoadingResource : public FeRenderResource
+{
+	FePath						Path;
+	FeResourceId				Id;
+	FeResourceLoadingCallback	LoadingFinishedCallback;
 };
 struct FeRenderViewport
 {
@@ -121,14 +195,16 @@ struct FeGeometryTransform
 };
 struct FeRenderGeometryInstance
 {
-	FeRenderGeometryId						Geometry;
-	FeRenderEffectId						Effect;
-	FeTArray<FeRenderTextureId>	Textures;
-	FeGeometryTransform						Transform;
+	FeResourceId					Geometry;
+	FeResourceId					Effect;
+	FeTArray<FeResourceId>			Textures;
+	FeGeometryTransform				Transform;
 
 	FeRenderGeometryInstance()
 	{
+		Textures.SetHeapId(RENDERER_HEAP);
 		Textures.Reserve(1);
+		Textures.Clear();
 	}
 };
 namespace FeEGemetryDataType

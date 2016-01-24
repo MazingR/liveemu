@@ -9,10 +9,11 @@ struct SDL_Thread;
 
 struct FeModuleRenderResourcesHandlerDebugInfos
 {
-	uint32 LoadedTexturesCount;
-	uint32 TexturesPoolSize;
-	uint32 LoadedTexturesCountSizeInMemory;
+	uint32 LoadedResourcesCount;
+	uint32 ResourcesPoolSize;
+	uint32 LoadedResourcesCountSizeInMemory;
 };
+
 class FeModuleRenderResourcesHandler : public FeModule
 {
 public:
@@ -20,32 +21,37 @@ public:
 	virtual uint32 Unload() override;
 	virtual uint32 Update(const FeDt& fDt) override;
 
-	const FeRenderTexture* GetTexture(const FeRenderTextureId&) const;
-		
-	uint32 LoadTexture(const char*, FeRenderTextureId*);
-	uint32 UnloadTexture(const FeRenderTextureId&);
+	uint32 LoadResource(FeRenderLoadingResource& resourceLoading);
+	uint32 UnloadResource(const FeResourceId&);
+	const FeRenderResource* GetResource(const FeResourceId&) const;
 
 	void ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos);
-	uint32 ProcessThreadedTexturesLoading(bool& bThreadSopped);
+	uint32 ProcessThreadedResourcesLoading(bool& bThreadSopped);
 private:
-	static uint32 ComputeTextureSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iTextureFormat, bool bHasAlpha);
-	typedef std::map<FeRenderTextureId, FeRenderTexture> TexturesMap;
-	typedef TexturesMap::iterator TexturesMapIt;
+	static uint32 ComputeResourceSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iResourceFormat, bool bHasAlpha);
 
-	typedef std::map<FeRenderTextureId, FeRenderLoadingTexture> TexturesLoadingMap;
-	typedef TexturesLoadingMap::iterator TexturesLoadingMapIt;
+	typedef std::map<FeResourceId, FeRenderResource> ResourcesMap;
+	typedef ResourcesMap::iterator ResourcesMapIt;
+
+	typedef std::map<FeResourceId, FeRenderLoadingResource> ResourcesLoadingMap;
+	typedef ResourcesLoadingMap::iterator ResourcesLoadingMapIt;
+
+	uint32 CreateTexture(FeRenderLoadingResource& resource, FeRenderTextureData* pTextureData);
+	uint32 SaveTexture(FeRenderLoadingResource& resource, FeRenderTextureData* pTextureData);
+
 
 	SDL_Thread*			LoadingThread;
 		
-	TexturesMap			Textures;
-	TexturesLoadingMap	TexturesToSave;
-		
-	TexturesLoadingMap	TexturesLoading;
-	SDL_mutex*			TexturesLoadingMutex;
+	ResourcesMap		Resources;
+	
+	ResourcesLoadingMap	ResourcesToSave;
+	ResourcesLoadingMap	ResourcesLoading;
 
-	TexturesLoadingMap	TexturesLoaded;
-	SDL_mutex*			TexturesLoadedMutex;
+	SDL_mutex*			ResourcesLoadingMutex;
 
-	size_t				TexturePoolAllocated;
-	size_t				TexturePoolLimit;
+	ResourcesLoadingMap	ResourcesLoaded;
+	SDL_mutex*			ResourcesLoadedMutex;
+
+	size_t				ResourcePoolAllocated;
+	size_t				ResourcePoolLimit;
 };

@@ -146,3 +146,21 @@ struct FeDt
 	uint32	TotalMilliseconds;
 	int		TotalCpuWaited;
 };
+
+struct FePath
+{
+	char Value[COMMON_PATH_SIZE];
+
+	FePath() {}
+	FePath(const FePath& other)
+	{
+		sprintf_s(Value, other.Value);
+	}
+
+	FePath& operator=(const FePath& other)
+	{
+		sprintf_s(Value, other.Value);
+		return *this;
+	}
+	inline void Set(const char* str);
+};

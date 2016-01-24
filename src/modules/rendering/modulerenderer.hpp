@@ -63,6 +63,7 @@ public:
 	void UnloadEffects();
 	uint32 ReloadEffects();
 	uint32 LoadEffects(const FeTArray<FeRenderEffect>& effects);
+
 private:
 	void BeginRender();
 	void EndRender();
@@ -70,7 +71,7 @@ private:
 	void RenderDebugText(const FeDt& fDt);
 
 	static FeRenderDevice Device;
-	std::map<FeRenderEffectId, FeRenderEffect> Effects;
+	std::map<FeResourceId, FeRenderEffect> Effects;
 	FeTArray<FeRenderGeometryData> Geometries;
 		
 	FeTArray<FeRenderBatch>			RegisteredRenderBatches;

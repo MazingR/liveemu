@@ -6,7 +6,6 @@
 #include <common/maths.hpp>
 #include <queue>
 
-
 void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
 {
 	FeSetLastError("");
@@ -15,7 +14,6 @@ void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath
 
 uint32 FeModuleUi::LoadUnitTest(uint32 iTest)
 {
-	/*
 	FeTArray<FePath> files;
 	files.SetHeapId(RENDERER_HEAP);
 
@@ -26,28 +24,27 @@ uint32 FeModuleUi::LoadUnitTest(uint32 iTest)
 
 	// Creat textures
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
-	GeometryInstances.SetHeapId(RENDERER_HEAP);
-	const int InstancesCount = 1024 * 1;
-
-	GeometryInstances.Reserve(InstancesCount);
+	
+	const int InstancesCount = 1;
+	FeString szEffect = FeStringPool::GetInstance()->CreateString("Default");
 
 	for (uint32 i = 0; i < InstancesCount; ++i)
 	{
-		FeRenderGeometryInstance& geomInstance = GeometryInstances.Add();
+		auto pPanel = FE_NEW(FeUiPanel, 1);
+		Panels.Add(pPanel);
 
-		geomInstance.Effect = RENDERER_DEFAULT_EFFECT_ID;
-		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		pPanel->SetEffect(szEffect);
 
 		if (iTexturesCount>0)
 		{
-			// bind texture
-			FeRenderTextureId textureId;
+			FeRenderLoadingResource resLoading;
+			resLoading.Type = FeEResourceType::Texture;
 			uint32 iTexIdx = i % iTexturesCount;
-			pResourcesHandler->LoadTexture(files[iTexIdx].Value, &textureId);
-			geomInstance.Textures.Add(textureId);
+			resLoading.Path = files[iTexIdx];
+			
+			pResourcesHandler->LoadResource(resLoading); 
 		}
 	}
-	*/
 
 	return FeEReturnCode::Success;
 }
@@ -99,6 +96,7 @@ uint32 FeModuleUi::UpdateUnitTest(uint32 iTest, const FeDt& fDt)
 uint32 FeModuleUi::ReloadScripts()
 {
 	auto pRenderingModule = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
+	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 
 	// Clear stuff
 	pRenderingModule->UnloadEffects();
@@ -148,15 +146,51 @@ uint32 FeModuleUi::ReloadScripts()
 		renderingInstance.Owner = pElement;
 		renderingInstance.Geometry.Effect = pElement->GetEffect().Id();
 		renderingInstance.Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		renderingInstance.Geometry.Textures.Clear();
 
 		FeGeometryHelper::ComputeAffineTransform(renderingInstance.Geometry.Transform,
 			pElement->GetTransform().Translation,
 			pElement->GetTransform().Rotation,
 			pElement->GetTransform().Scale);
 
+		for (auto& dataBind : pElement->GetBindings())
+		{
+			auto& source	= dataBind.GetSource();
+			auto& target	= dataBind.GetTarget();
+
+			uint32 iTargetPropertyId = target.GetProperty().Id();
+
+			FeResourceId resourceId;
+
+			switch (source.GetType())
+			{
+				case FeEUiBindingType::StaticImage:
+				{
+					FeRenderLoadingResource resLoading;
+					resLoading.Type = FeEResourceType::Texture;
+					resLoading.Path.Set(source.GetPath().Back().Cstr());
+					pResourcesHandler->LoadResource(resLoading);
+					resourceId = resLoading.Id;
+				} break;
+				default:
+					break;
+			}
+
+			static FeString szTargetTexture = FeStringPool::GetInstance()->CreateString("Texture");
+
+			if (iTargetPropertyId == szTargetTexture.Id())
+			{
+				FE_ASSERT(renderingInstance.Geometry.Textures.GetSize() < 1, "");
+				renderingInstance.Geometry.Textures.Add(resourceId);
+			}
+		}
 
 		for (auto& child : pElement->GetChildren())
 			uiElements.push(child.Ptr);
+	}
+	for (auto& instance : RenderingInstances)
+	{
+		FE_ASSERT(instance.Geometry.Textures.GetSize() < 8, "");
 	}
 
 	return FeEReturnCode::Success;
@@ -189,7 +223,143 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 	for (auto& instance : RenderingInstances)
 	{
 		renderBatch.GeometryInstances.Add(instance.Geometry);
+		FE_ASSERT(instance.Geometry.Textures.GetSize() < 8, "");
 	}
 
 	return FeEReturnCode::Success;
 }
+
+//extern "C"
+//{
+//	int z_verbose = 0;
+//
+//	void z_error(/* should be const */char* message)
+//	{
+//		FE_LOG(message);
+//	}
+//}
+//
+//#include <ft2build.h>
+//#include <freetype/freetype.h>
+//
+//struct  FeFontData
+//{
+//
+//};
+//void FeModuleFontsHandler::FontLoadingCallback(FeRenderTexture* pTexture, void* _pUserData)
+//{
+//	FontLoadingData* pUserData = (FontLoadingData*)_pUserData;
+//	FePath& fontPath = pUserData->FontPath;
+//	FeModuleFontsHandler* pThis = pUserData->This;
+//
+//	FT_Face& face = pThis->FtFontFaces.Add();
+//	bool bLoadingFailed = false;
+//
+//	//"../data/themes/common/fonts/Super Retro Italic M54.ttf"
+//	auto error = FT_New_Face(pThis->FtLibrary, fontPath.Value, 0, &face);
+//
+//	if (error == FT_Err_Unknown_File_Format)
+//	{
+//		FE_LOG("the font file could be opened and read, but it appears that its font format is unsupported");
+//		bLoadingFailed = true;
+//	}
+//	else if (error)
+//	{
+//		FE_LOG("that the font file could not be opened or read, or that it is broken..");
+//		bLoadingFailed = true;
+//	}
+//
+//	if (bLoadingFailed)
+//	{
+//		pThis->FtFontFaces.PopBack();
+//	}
+//	else // font loading succeeded
+//	{
+//		error = FT_Set_Char_Size(
+//			face,	/* handle to face object           */
+//			0,		/* char_width in 1/64th of points  */
+//			16 * 64,/* char_height in 1/64th of points */
+//			300,	/* horizontal device resolution    */
+//			300);	/* vertical device resolution      */
+//
+//		error = FT_Set_Pixel_Sizes(
+//			face,	/* handle to face object */
+//			0,		/* pixel_width           */
+//			16);	/* pixel_height          */
+//
+//
+//		FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
+//		//int           pen_x, pen_y, n;
+//
+//		//pen_x = 300;
+//		//pen_y = 200;
+//
+//		char szTestTxt[] = "Hello World !";
+//
+//		size_t iTextSize = strlen(szTestTxt);
+//
+//		for (size_t n = 0; n < iTextSize; ++n)
+//		{
+//			FT_UInt  glyph_index;
+//
+//			/* retrieve glyph index from character code */
+//			glyph_index = FT_Get_Char_Index(face, szTestTxt[n]);
+//
+//			/* load glyph image into the slot (erase previous one) */
+//			error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
+//			if (error)
+//				continue;  /* ignore errors */
+//
+//			/* convert to an anti-aliased bitmap */
+//			error = FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
+//			if (error)
+//				continue;
+//
+//			/* now, draw to our target surface */
+//			//my_draw_bitmap(&slot->bitmap,
+//			//	pen_x + slot->bitmap_left,
+//			//	pen_y - slot->bitmap_top);
+//
+//			/* increment pen position */
+//			//pen_x += slot->advance.x >> 6;
+//			//pen_y += slot->advance.y >> 6; /* not useful for now */
+//		}
+//	}
+//
+//	FE_DELETE(FontLoadingData, pUserData, 1);
+//}
+//uint32 FeModuleFontsHandler::LoadFontFromFile(const FePath& path)
+//{
+//	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
+//	
+//	FeResourceId texId;
+//	FontLoadingData* pCallbackData = FE_NEW(FontLoadingData, 1);
+//
+//	pCallbackData->FontPath = path;
+//	pCallbackData->This = this;
+//
+//	pResourcesHandler->LoadTextureFromMemory("FontTest", &texId, FeModuleFontsHandler::FontLoadingCallback, pCallbackData);
+//
+//
+//	return FeEReturnCode::Success;
+//}
+//
+//uint32 FeModuleFontsHandler::Load(const FeModuleInit*)
+//{
+//	auto error = FT_Init_FreeType(&FtLibrary);
+//	
+//	if (error)
+//	{
+//		return FeEReturnCode::Failed;
+//	}
+//
+//	return FeEReturnCode::Success;
+//}
+//uint32 FeModuleFontsHandler::Unload()
+//{
+//	return FeEReturnCode::Success;
+//}
+//uint32 FeModuleFontsHandler::Update(const FeDt& fDt)
+//{
+//	return FeEReturnCode::Success;
+//}
