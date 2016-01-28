@@ -113,17 +113,11 @@ uint32 FeModuleRendering::Update(const FeDt& fDt)
 	//}
 
 	// Render frame
-	for (auto& batch : RegisteredRenderBatches)
-	{
-		FE_ASSERT(batch.GeometryInstances[1].Textures.GetSize() < 8, "");
-	}
 	BeginRender();
 	{
 		// Render all registered batches
 		for (  auto& batch : RegisteredRenderBatches)
 		{
-			FE_ASSERT(batch.GeometryInstances[1].Textures.GetSize()< 8, "");
-
 			RenderBatch(batch, fDt);
 			batch.GeometryInstances.Clear();
 		}
@@ -211,8 +205,16 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 
 				if (pResource && pResource->LoadingState == FeEResourceLoadingState::Loaded)
 				{
-					FeRenderTextureData* pTexData = (FeRenderTextureData*)pResource->Interface->GetData();
-					pContext->PSSetShaderResources(iTextureIdx, 1, &pTexData->D3DSRV);
+					if (pResource->Type == FeEResourceType::Texture)
+					{
+						FeRenderTexture* pTexData = (FeRenderTexture*)pResource->Interface->GetData();
+						pContext->PSSetShaderResources(iTextureIdx, 1, &pTexData->D3DSRV);
+					}
+					else if (pResource->Type == FeEResourceType::Font)
+					{
+						FeRenderFont* pFontData = (FeRenderFont*)pResource->Interface->GetData();
+						pContext->PSSetShaderResources(iTextureIdx, 1, &pFontData->Texture.D3DSRV);
+					}
 					RenderDebugInfos.FrameBindTextureCount++;
 				}
 				else

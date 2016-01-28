@@ -31,13 +31,23 @@ struct FeString
 public:
 	inline const char* Cstr() const { return Pooled ? Pooled->Cstr : NULL; }
 	inline const uint32 Id() const { return Pooled ? Pooled->Id : 0; }
+	
 	FeString() : Pooled(NULL) {}
 	~FeString();
 
 	FeString& operator=(const FeString& other);
-	FePooledString* Pooled;
 	FeString(FePooledString& pooledStr);
 	FeString(const FeString& copy);
+	bool IsEmpty()
+	{
+		return !Pooled;
+	}
+	bool operator==(const FeString& other) const
+	{
+		return other.Pooled == this->Pooled;
+	}
+private:
+	FePooledString* Pooled;
 };
 
 class FeStringPool

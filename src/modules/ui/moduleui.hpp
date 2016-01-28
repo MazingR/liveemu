@@ -8,6 +8,18 @@
 #include <rendering/commonrenderer.hpp>
 #include <commonui.hpp>
 
+struct FeUiElementTraversalNode
+{
+	FeUiElement* Current;
+	FeUiElement* Parent;
+
+	FeUiElementTraversalNode() : Parent(NULL) {}
+};
+
+struct FeUiElementTraversalList
+{
+	FeTArray<FeUiElementTraversalNode> Nodes;
+};
 struct FeUiRenderingInstance
 {
 	FeUiElement*				Owner;
@@ -30,6 +42,9 @@ public:
 
 	uint32 LoadUnitTest(uint32 iTest);
 	uint32 UpdateUnitTest(uint32 iTest, const FeDt& fDt);
+	void TraverseElements(FeScriptFile& script, FeUiElementTraversalList& traversal);
+	FeString FetchBindingSourceData(const FeUiBinding& binding);
+	void ApplyBindingToTargetProperty(FeUiRenderingInstance& instance, const FeString& sourceData, const FeUiBinding& targetBinding);
 
 private:
 	FeTArray<FeScriptFile>			ScriptFiles;
@@ -37,27 +52,6 @@ private:
 	FeTArray<FeUiPanel*>			Panels;
 };
 
-
-// forward declares
-struct  FT_LibraryRec_;
-struct  FT_FaceRec_;
-
-namespace FeEFontLoadingState
-{
-	enum Type
-	{
-		Idle,
-		Loading,
-		Loaded,
-		LoadFailed
-	};
-}
-
-struct FeFontData
-{
-	FeResourceId	TextureId;
-	FT_FaceRec_*		FtFontFace;
-};
 //
 //class FeModuleFontsHandler : public FeModule
 //{

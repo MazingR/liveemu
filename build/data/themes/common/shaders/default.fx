@@ -1,45 +1,4 @@
-//--------------------------------------------------------------------------------------
-// Defines
-//--------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------
-// Resources
-//--------------------------------------------------------------------------------------
-Texture2D		texture0			: register(t0);
-SamplerState	samplerTexture0		: register(s0);
-
-
-//--------------------------------------------------------------------------------------
-// Constant buffers
-//--------------------------------------------------------------------------------------
-cbuffer cbPerFrame : register(b0)
-{
-	matrix View;
-	matrix Proj;
-	float Time;
-	float4 Resolution;
-};
-
-cbuffer cbPerObject : register(b1)
-{
-	matrix World;
-};
-
-//--------------------------------------------------------------------------------------
-// Input/Outputs
-//--------------------------------------------------------------------------------------
-struct VS_INPUT
-{
-	float4 Pos : POSITION;
-	float2 Tex : TEXCOORD0;
-};
-
-struct PS_INPUT
-{
-	float4 Pos : SV_POSITION;
-	float2 Tex : TEXCOORD0;
-};
-
+#include "common.fx"
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
@@ -73,6 +32,6 @@ float4 PS(PS_INPUT input) : SV_Target
 	// fColor.r = sin(Time);
 	
 	// float4 fColor = float4(1,0,0,1);
-	return fColor;
+	return float4(0, fColor.r, 0,1);
 	//return 1;
 }

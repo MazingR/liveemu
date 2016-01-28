@@ -1,8 +1,16 @@
 {
+	"Fonts" :
+	[
+		{
+			"Name" : "Font_Default",
+			"Size" : 32,
+			"TrueTypeFile" : "themes/common/fonts/ARCADE_I.TTF"
+		}
+	],
 	"Effects" :
 	[
 		{
-			"Name" : "Default",
+			"Name" : "Effect_Default",
 			"File" : "themes/common/shaders/default.fx"
 		}
 		,{
@@ -30,26 +38,37 @@
 			"Children" : []
 		},
 		{
-			"Effect" : "Default",
+			"Effect" : "Effect_Default",
 			"Transform" : 
 			{
-				"T" : [-0.4,		0.1,	0.0],
-				"S" : [0.2,		0.2,	1.0]
+				"T" : [0.0,		0.0,	0.0],
+				"S" : [0.8,		0.4,	1.0]
 			},
 			"Bindings" :
 			[
 				{
 					"Source" : 
 					{
-						"Type" : "StaticImage",
-						"Path" : ["test/textures/512x512/gamepad-snes.png"],
-						"Property" :"",
-						"Index" :0
+						"Type" : "Source_Static",
+						"Value" :"Font_Default"
 					},
 					"Target" : 
 					{
 						"Path" : [],
-						"Property" :"Texture",
+						"Property" :"Font",
+						"Index" :0
+					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Source_Static",
+						"Value" :"Hello World !"
+					},
+					"Target" : 
+					{
+						"Path" : [],
+						"Property" :"Text",
 						"Index" :0
 					}
 				}
@@ -58,10 +77,10 @@
 			[
 				{
 					"_serialize_type_" : "FeUiPanel",
-					"Effect" : "Default",
+					"Effect" : "Effect_Default",
 					"Transform" : 
 					{
-						"T" : [0.21,		0.0,	-0.01],
+						"T" : [0.0,		0.0,	0.01],
 						"S" : [1.0,		1.0,	1.0]
 					},
 					"Bindings" :
@@ -69,15 +88,13 @@
 						{
 							"Source" : 
 							{
-								"Type" : "StaticImage",
-								"Path" : ["test/textures/512x512/gamepad-xb.png"],
-								"Property" :"",
-								"Index" :0
+								"Type" : "Source_Static",
+								"Value" : "test/textures/512x512/gamepad-snes.png"
 							},
 							"Target" : 
 							{
 								"Path" : [],
-								"Property" :"Texture",
+								"Property" :"Image",
 								"Index" :0
 							}
 						}

@@ -12,6 +12,19 @@
 #define SAVE_CREATED_RESOURCE 1
 #define D3DFAILEDRETURN(func) { HRESULT ___hr = (func); if (___hr!=S_OK) return ___hr; }
 
+extern "C"
+{
+	int z_verbose = 0;
+
+	void z_error(/* should be const */char* message)
+	{
+		FE_LOG(message);
+	}
+}
+
+#include <ft2build.h>
+#include <freetype/freetype.h>
+
 class FeScopeLockedMutex
 {
 public:
@@ -48,206 +61,56 @@ int ResourcesHandlerThreadFunction(void* pData)
 
 uint32 FeModuleRenderResourcesHandler::ProcessThreadedResourcesLoading(bool& bThreadSopped)
 {
-	ResourcesLoadingMap* pResourcesToLoad = NULL;
 	{
-		SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
-		pResourcesToLoad = new ResourcesLoadingMap(ResourcesLoading);
-	}
+		SCOPELOCK(ResourcesLoadingThreadMutex); // <------ Lock Mutex
 
-	ResourcesLoadingMap& resourcesToLoad = *pResourcesToLoad;
-	
-	for (auto& idedResource : resourcesToLoad)
-	{
-		if (bThreadSopped)
-			break;
-
-		FeRenderLoadingResource& resource = idedResource.second;
-		uint32 iRet = FeEReturnCode::Failed;
-
-		switch (resource.Type)
-		{
-			case FeEResourceType::Texture:
-			{
-				iRet = CreateTexture(resource, (FeRenderTextureData*)resource.Interface->GetData());
-			} break;
-		}
-		
-		resource.LoadingState = FE_FAILED(iRet) ? FeEResourceLoadingState::LoadFailed : FeEResourceLoadingState::Loaded;
-
+		ResourcesLoadingMap* pResourcesToLoad = NULL;
 		{
 			SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
-			ResourcesLoading.erase(idedResource.first);
+			pResourcesToLoad = new ResourcesLoadingMap(ResourcesLoading);
 		}
 
+		ResourcesLoadingMap& resourcesToLoad = *pResourcesToLoad;
+
+		for (auto& idedResource : resourcesToLoad)
 		{
-			SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
-			ResourcesLoaded[idedResource.first] = resource;
-		}
-	}
+			if (bThreadSopped)
+				break;
 
-	delete pResourcesToLoad;
+			FeRenderLoadingResource& resource = idedResource.second;
+			uint32 iRet = FeEReturnCode::Failed;
+
+			switch (resource.Type)
+			{
+			case FeEResourceType::Texture:
+			{
+				iRet = LoadTexture(resource, (FeRenderTexture*)resource.Interface->GetData());
+			} break;
+			case FeEResourceType::Font:
+			{
+				iRet = LoadFont(resource, (FeRenderFont*)resource.Interface->GetData());
+			} break;
+			}
+
+			resource.LoadingState = FE_FAILED(iRet) ? FeEResourceLoadingState::LoadFailed : FeEResourceLoadingState::Loaded;
+
+			{
+				SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
+				ResourcesLoading.erase(idedResource.first);
+			}
+
+			{
+				SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
+				ResourcesLoaded[idedResource.first] = resource;
+			}
+		}
+
+		delete pResourcesToLoad;
+	} // <----- ResourcesLoadingThreadMutex
 
 	return FeEReturnCode::Success;
 }
-uint32 FeModuleRenderResourcesHandler::ComputeResourceSizeInMemoryFromFormat(uint32 _iWidth, uint32 _iHeight, uint32 iResourceFormat, bool bHasAlpha)
-{
-	uint32 iWidth = _iWidth;
-	uint32 iHeight = _iHeight;
 
-	uint32 iResourceSize = 0;
-	DXGI_FORMAT iFormat = (DXGI_FORMAT)iResourceFormat;
-	uint32 iPixelBitSize = 0;
-		
-	switch(iFormat)
-	{
-		case DXGI_FORMAT_BC1_TYPELESS				:	iPixelBitSize = 8;		break;
-		case DXGI_FORMAT_BC1_UNORM					:	iPixelBitSize = 8;		break;
-		case DXGI_FORMAT_BC1_UNORM_SRGB				:	iPixelBitSize = 8;		break;
-
-		case DXGI_FORMAT_BC2_TYPELESS				:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_BC2_UNORM					:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_BC2_UNORM_SRGB				:	iPixelBitSize = 16;	break;
-
-		case DXGI_FORMAT_BC3_TYPELESS				:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_BC3_UNORM					:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_BC3_UNORM_SRGB				:	iPixelBitSize = 16;	break;
-
-		case DXGI_FORMAT_BC4_TYPELESS				:	iPixelBitSize = 8;		break;
-		case DXGI_FORMAT_BC4_UNORM					:	iPixelBitSize = 8;		break;
-		case DXGI_FORMAT_BC4_SNORM					:	iPixelBitSize = 8;		break;
-
-		case DXGI_FORMAT_BC5_TYPELESS				:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_BC5_UNORM					:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_BC5_SNORM					:	iPixelBitSize = 16;	break;
-
-		case DXGI_FORMAT_B5G6R5_UNORM				:	iPixelBitSize = 16;	break;
-		case DXGI_FORMAT_B5G5R5A1_UNORM				:	iPixelBitSize = 16;	break;
-
-		case DXGI_FORMAT_BC6H_TYPELESS				:	iPixelBitSize = 0;		break;
-		case DXGI_FORMAT_BC6H_UF16					:	iPixelBitSize = 0;		break;
-		case DXGI_FORMAT_BC6H_SF16					:	iPixelBitSize = 0;		break;
-		case DXGI_FORMAT_BC7_TYPELESS				:	iPixelBitSize = 0;		break;
-		case DXGI_FORMAT_BC7_UNORM					:	iPixelBitSize = 0;		break;
-		case DXGI_FORMAT_BC7_UNORM_SRGB				:	iPixelBitSize = 0;		break;
-
-		default:
-			iPixelBitSize = 0;
-	};
-
-	if (iPixelBitSize != 0) // resource format is compressed
-	{
-		uint32 iSizeMultiple = 256;
-		iWidth = (uint32)ceil((float)(_iWidth / (float)iSizeMultiple)) * iSizeMultiple;
-		iHeight = (uint32)ceil((float)(_iHeight / (float)iSizeMultiple)) * iSizeMultiple;
-		iResourceSize = ((iWidth*iHeight) / 2)*(iPixelBitSize / 8);
-	}
-	else
-	{
-		switch(iFormat)
-		{
-			case DXGI_FORMAT_UNKNOWN					:	iPixelBitSize = 0;		break;
-
-			case DXGI_FORMAT_R32G32B32A32_TYPELESS		:	iPixelBitSize = 32*4;	break;
-			case DXGI_FORMAT_R32G32B32A32_FLOAT			:	iPixelBitSize = 32*4;	break;
-			case DXGI_FORMAT_R32G32B32A32_UINT			:	iPixelBitSize = 32*4;	break;
-			case DXGI_FORMAT_R32G32B32A32_SINT			:	iPixelBitSize = 32*4;	break;
-
-			case DXGI_FORMAT_R32G32B32_TYPELESS			:	iPixelBitSize = 32*3;	break;
-			case DXGI_FORMAT_R32G32B32_FLOAT			:	iPixelBitSize = 32*3;	break;
-			case DXGI_FORMAT_R32G32B32_UINT				:	iPixelBitSize = 32*3;	break;
-			case DXGI_FORMAT_R32G32B32_SINT				:	iPixelBitSize = 32*3;	break;
-
-			case DXGI_FORMAT_R16G16B16A16_TYPELESS		:	iPixelBitSize = 16*4;	break;
-			case DXGI_FORMAT_R16G16B16A16_FLOAT			:	iPixelBitSize = 16*4;	break;
-			case DXGI_FORMAT_R16G16B16A16_UNORM			:	iPixelBitSize = 16*4;	break;
-			case DXGI_FORMAT_R16G16B16A16_UINT			:	iPixelBitSize = 16*4;	break;
-			case DXGI_FORMAT_R16G16B16A16_SNORM			:	iPixelBitSize = 16*4;	break;
-			case DXGI_FORMAT_R16G16B16A16_SINT			:	iPixelBitSize = 16*4;	break;
-
-			case DXGI_FORMAT_R32G32_TYPELESS			:	iPixelBitSize = 32*2;	break;
-			case DXGI_FORMAT_R32G32_FLOAT				:	iPixelBitSize = 32*2;	break;
-			case DXGI_FORMAT_R32G32_UINT				:	iPixelBitSize = 32*2;	break;
-			case DXGI_FORMAT_R32G32_SINT				:	iPixelBitSize = 32*2;	break;
-
-			case DXGI_FORMAT_R32G8X24_TYPELESS			:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_D32_FLOAT_S8X24_UINT		:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS	:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT	:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R10G10B10A2_TYPELESS		:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R10G10B10A2_UNORM			:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R10G10B10A2_UINT			:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R11G11B10_FLOAT			:	iPixelBitSize = 8;		break;
-
-			case DXGI_FORMAT_R8G8B8A8_TYPELESS			:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_R8G8B8A8_UNORM				:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB		:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_R8G8B8A8_UINT				:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_R8G8B8A8_SNORM				:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_R8G8B8A8_SINT				:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-
-			case DXGI_FORMAT_R16G16_TYPELESS			:	iPixelBitSize = 16*2;	break;
-			case DXGI_FORMAT_R16G16_FLOAT				:	iPixelBitSize = 16*2;	break;
-			case DXGI_FORMAT_R16G16_UNORM				:	iPixelBitSize = 16*2;	break;
-			case DXGI_FORMAT_R16G16_UINT				:	iPixelBitSize = 16*2;	break;
-			case DXGI_FORMAT_R16G16_SNORM				:	iPixelBitSize = 16*2;	break;
-			case DXGI_FORMAT_R16G16_SINT				:	iPixelBitSize = 16*2;	break;
-
-			case DXGI_FORMAT_R32_TYPELESS				:	iPixelBitSize = 32;	break;
-			case DXGI_FORMAT_D32_FLOAT					:	iPixelBitSize = 32;	break;
-			case DXGI_FORMAT_R32_FLOAT					:	iPixelBitSize = 32;	break;
-			case DXGI_FORMAT_R32_UINT					:	iPixelBitSize = 32;	break;
-			case DXGI_FORMAT_R32_SINT					:	iPixelBitSize = 32;	break;
-
-			case DXGI_FORMAT_R24G8_TYPELESS				:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_D24_UNORM_S8_UINT			:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R24_UNORM_X8_TYPELESS		:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_X24_TYPELESS_G8_UINT		:	iPixelBitSize = 8;		break;
-
-			case DXGI_FORMAT_R8G8_TYPELESS				:	iPixelBitSize = 8*2;	break;
-			case DXGI_FORMAT_R8G8_UNORM					:	iPixelBitSize = 8*2;	break;
-			case DXGI_FORMAT_R8G8_UINT					:	iPixelBitSize = 8*2;	break;
-			case DXGI_FORMAT_R8G8_SNORM					:	iPixelBitSize = 8*2;	break;
-			case DXGI_FORMAT_R8G8_SINT					:	iPixelBitSize = 8*2;	break;
-
-			case DXGI_FORMAT_R16_TYPELESS				:	iPixelBitSize = 16;	break;
-			case DXGI_FORMAT_R16_FLOAT					:	iPixelBitSize = 16;	break;
-			case DXGI_FORMAT_D16_UNORM					:	iPixelBitSize = 16;	break;
-			case DXGI_FORMAT_R16_UNORM					:	iPixelBitSize = 16;	break;
-			case DXGI_FORMAT_R16_UINT					:	iPixelBitSize = 16;	break;
-			case DXGI_FORMAT_R16_SNORM					:	iPixelBitSize = 16;	break;
-			case DXGI_FORMAT_R16_SINT					:	iPixelBitSize = 16;	break;
-
-			case DXGI_FORMAT_R8_TYPELESS				:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R8_UNORM					:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R8_UINT					:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R8_SNORM					:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R8_SINT					:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_A8_UNORM					:	iPixelBitSize = 8;		break;
-
-			case DXGI_FORMAT_R1_UNORM					:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R9G9B9E5_SHAREDEXP			:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_R8G8_B8G8_UNORM			:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_G8R8_G8B8_UNORM			:	iPixelBitSize = 8;		break;
-
-			case DXGI_FORMAT_B8G8R8A8_UNORM				:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_B8G8R8X8_UNORM				:	iPixelBitSize = 8*4;	break;
-			case DXGI_FORMAT_B8G8R8A8_TYPELESS			:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB		:	iPixelBitSize = 8*(bHasAlpha?4:3);	break;
-			case DXGI_FORMAT_B8G8R8X8_TYPELESS			:	iPixelBitSize = 8*4;	break;
-			case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB		:	iPixelBitSize = 8*4;	break;
-
-			case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:	iPixelBitSize = 8;		break;
-			case DXGI_FORMAT_FORCE_UINT					:	iPixelBitSize = 8;		break;
-
-			default:
-				iPixelBitSize = 0;
-		};
-
-		iResourceSize = (iWidth*iHeight)*(iPixelBitSize / 8);
-	}
-
-	return iResourceSize;
-}
 void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos)
 {
 	infos.LoadedResourcesCount = 0;
@@ -272,9 +135,17 @@ uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 
 	ResourcesLoadingMutex = SDL_CreateMutex();
 	ResourcesLoadedMutex = SDL_CreateMutex();
+	ResourcesLoadingThreadMutex = SDL_CreateMutex();
 
 	LoadingThread = SDL_CreateThread(ResourcesHandlerThreadFunction, "ModuleRenderResourcesHandler", this);
+
+	// Initialize freetype
+	auto error = FT_Init_FreeType(&FtLibrary);
 	
+	if (error)
+	{
+		return FeEReturnCode::Failed;
+	}
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleRenderResourcesHandler::Unload()
@@ -290,6 +161,8 @@ uint32 FeModuleRenderResourcesHandler::Unload()
 }
 uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 {
+	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
+
 	{
 		SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
 
@@ -297,17 +170,18 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 		{
 			FeRenderLoadingResource& resource = it->second;
 
-			FeRenderResource loadedResource;
+			if (resource.Type == FeEResourceType::Font)
+				PostLoadFont(resource, (FeRenderFont*)resource.Interface->GetData());
+
+			FeRenderResource& loadedResource = Resources[it->first];
+
 			loadedResource.LoadingState	= resource.LoadingState;
 			loadedResource.SizeInMemory	= resource.SizeInMemory;
-			
 			resource.Interface->CopyAndAllocateTo(&loadedResource.Interface);
-			
-			Resources[it->first] = loadedResource;
-			ResourcePoolAllocated += loadedResource.SizeInMemory;
 
+			ResourcePoolAllocated += loadedResource.SizeInMemory;
 #if SAVE_CREATED_RESOURCE
-			if (resource.RuntimeCreated && resource.LoadingState == FeEResourceLoadingState::Loaded)
+			if (resource.RuntimeCreated && resource.LoadingState == FeEResourceLoadingState::Loaded && resource.Type == FeEResourceType::Texture)
 #else
 			if (false)
 #endif
@@ -322,7 +196,6 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 
 		ResourcesLoaded.clear();
 	}
-	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
 	for (ResourcesLoadingMapIt it = ResourcesToSave.begin(); it != ResourcesToSave.end(); ++it)
 	{
@@ -331,7 +204,7 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 		FePath savedFile;
 		FeFileTools::GetFullPathChangeExtension(savedFile, resource.Path.Value, "dds");
 
-		FeRenderTextureData* pTextureData = (FeRenderTextureData*)resource.Interface->GetData();
+		FeRenderTexture* pTextureData = (FeRenderTexture*)resource.Interface->GetData();
 		char szFullPath[COMMON_PATH_SIZE];
 		sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, savedFile.Value);
 
@@ -365,37 +238,232 @@ uint32 FeModuleRenderResourcesHandler::UnloadResource(const FeResourceId&)
 }
 uint32 FeModuleRenderResourcesHandler::LoadResource(FeRenderLoadingResource& resource)
 {
-	FeStringTools::ToLower(resource.Path.Value);
-	resource.Id = FeStringTools::GenerateUIntIdFromString(resource.Path.Value);
+	if (resource.Id == 0)
+	{
+		resource.Id = FeStringTools::GenerateUIntIdFromString(resource.Path.Value);
+	}
 
 	if (!GetResource(resource.Id))
 	{
-		SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
+		Resources[resource.Id] = FeRenderResource();
+		FeRenderResource& newResource = Resources[resource.Id];
+		newResource.LoadingState = FeEResourceLoadingState::Loading;
+		newResource.Type = resource.Type;
 
-		ResourcesLoadingMap::const_iterator it = ResourcesLoading.find(resource.Id);
-
-		if (it == ResourcesLoading.end())
 		{
+			SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
+
 			resource.LoadingState = FeEResourceLoadingState::Idle;
-			switch (resource.Type)
+			
+			if (resource.Interface == NULL)
 			{
-			case FeEResourceType::Texture: resource.Interface = FeCreateRenderResourceInterface<FeRenderTextureData>();	break;
-			case FeEResourceType::Font: resource.Interface = FeCreateRenderResourceInterface<FeRenderFontData>();	break;
-			default:
-			{
-				FE_ASSERT(false, "Unknown render resource type !");
-			}
+				switch (resource.Type)
+				{
+				case FeEResourceType::Texture: resource.Interface = FeCreateRenderResourceInterface<FeRenderTexture>();	break;
+				case FeEResourceType::Font: resource.Interface = FeCreateRenderResourceInterface<FeRenderFont>();	break;
+				default:
+				{
+					FE_ASSERT(false, "Unknown render resource type !");
+				}
+				}
 			}
 			ResourcesLoading[resource.Id] = resource;
+		} // <------ Unlock Mutex
+	}
+	return FeEReturnCode::Success;
+}
+uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resource, FeRenderFont* pFont)
+{
+	bool bLoadingFailed = false;
+	pFont->MapTmpData = NULL;
+	pFont->MapDepthPitch = 0;
+	
+	char szFullPath[COMMON_PATH_SIZE];
+	sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, resource.Path.Value);
+	
+	auto error = FT_New_Face(FtLibrary, szFullPath, 0, &pFont->FtFontFace);
+	FT_FaceRec_* face = pFont->FtFontFace;
+
+	if (error == FT_Err_Unknown_File_Format)
+	{
+		FE_LOG("the font file could be opened and read, but it appears that its font format is unsupported");
+		return FeEReturnCode::Failed;
+	}
+	else if (error)
+	{
+		FE_LOG("that the font file could not be opened or read, or that it is broken..");
+		return FeEReturnCode::Failed;
+	}
+
+	uint32 iCharSize = pFont->Size;
+	uint32 iMapWidth	= 0;
+	uint32 iMapHeight	= 0;
+	uint32 iCharInterval = 4;
+	const char szTemplateFontContent[] = {
+"abcdefghijklmnopqrstuvwxyz\
+ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+123456789\
+àéêâùçèûôîµ\
+,;:!?./§%*€$\\&#'{([-|_@)]})=\
+"
+/*
+*/
+	};
+	const uint32 iMaxCharCount = sizeof(szTemplateFontContent);
+
+	char szFontContent[iMaxCharCount];
+
+	uint32 iCharCount = 0;
+	
+	// Compute actual charCount
+	for (size_t iChar = 0; iChar < iMaxCharCount; ++iChar)
+	{
+		/* retrieve glyph index from character code */
+		if (FT_Get_Char_Index(face, szTemplateFontContent[iChar]) == 0)
+			continue;
+
+		szFontContent[iCharCount++] = szTemplateFontContent[iChar];
+	}
+	const uint32 iCharsPerLine = 16;
+
+	while (iMapWidth < (iCharsPerLine*(iCharSize + iCharInterval)))
+		iMapWidth += 2;
+
+	uint32 iCharPerLine = ceil(iMapWidth / (float)(iCharSize + iCharInterval));
+	uint32 iLinesCount = ceil(iCharCount / (float)iCharPerLine);
+
+	while (iMapHeight <(iCharSize*iLinesCount))
+		iMapHeight += 2;
+
+	pFont->MapSize[0] = iMapWidth;
+	pFont->MapSize[1] = 0;
+
+	uint32 iXOffset = 0;
+	uint32 iYOffset = 0;
+	uint32 iDepthPitch = iMapWidth*iMapHeight;
+	
+	error = FT_Set_Char_Size(
+		face,				/* handle to face object           */
+		0,					/* char_width in 1/64th of points  */
+		iCharSize * 64,	/* char_height in 1/64th of points */
+		iMapWidth,			/* horizontal device resolution    */
+		iMapHeight);		/* vertical device resolution      */
+	
+	error = FT_Set_Pixel_Sizes(
+		face,			/* handle to face object */
+		0,				/* pixel_width           */
+		iCharSize);	/* pixel_height          */
+	
+	FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
+
+	pFont->MapTmpData = FE_ALLOCATE(iDepthPitch, RENDERER_HEAP);
+	pFont->MapDepthPitch = iDepthPitch;
+
+	memset(pFont->MapTmpData, 0, iDepthPitch);
+
+	for (size_t iChar = 0; iChar < iCharCount; ++iChar)
+	{
+		FT_UInt  glyph_index;
+	
+		/* retrieve glyph index from character code */
+		glyph_index = FT_Get_Char_Index(face, szFontContent[iChar]);
+	
+		/* load glyph image into the slot (erase previous one) */
+		error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
+		
+		if (error)
+			continue;  /* ignore errors */
+	
+		/* convert to an anti-aliased bitmap */
+		error = FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
+
+		if (error)
+			continue;
+
+		if (!slot->bitmap.buffer)
+			continue;
+
+		char* pOutput = (char*)pFont->MapTmpData;
+
+		// Copy char texture to font atlas map
+		for (uint32 iY = 0; iY < slot->bitmap.rows; ++iY)
+		{
+			uint32 inputBufferIdx = slot->bitmap.pitch*iY;// +slot->bitmap_left;
+			uint32 outputBufferIdx = iMapWidth*(iY + iYOffset + slot->advance.y) + iXOffset;
+			
+			if (outputBufferIdx + slot->bitmap.width > iDepthPitch)
+				break;
+
+			memcpy_s(&pOutput[outputBufferIdx], slot->bitmap.width, &slot->bitmap.buffer[inputBufferIdx], slot->bitmap.width);
+		}
+		iXOffset += slot->bitmap.width + slot->bitmap_left + iCharInterval;
+
+		if (iXOffset > (iMapWidth - iCharSize))
+		{
+			iYOffset += iCharSize;
+			iXOffset = 0;
+
+			pFont->MapSize[1] += iCharSize;
 		}
 	}
+	pFont->MapSize[1] += iCharSize;
 
 	return FeEReturnCode::Success;
 }
-uint32 FeModuleRenderResourcesHandler::CreateTexture(FeRenderLoadingResource& resource, FeRenderTextureData* pTextureData)
+uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& resource, FeRenderFont* pFont)
+{
+	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
+	D3D11_TEXTURE2D_DESC desc;
+	ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
+
+	desc.Width = pFont->MapSize[0];
+	desc.Height = pFont->MapSize[1];
+	desc.MipLevels = desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DYNAMIC;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
+	ID3D11Texture2D *pTexture = NULL;
+
+	auto hr = pD3DDevice->CreateTexture2D(&desc, NULL, &pTexture);
+
+	if (FAILED(hr))
+		return FeEReturnCode::Failed;
+
+	pFont->Texture.D3DResource = reinterpret_cast<ID3D11Resource*>(pTexture);
+
+	D3D11_MAPPED_SUBRESOURCE textureMap;
+	hr = pD3DContext->Map(pTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &textureMap);
+
+	if (FAILED(hr))
+		return FeEReturnCode::Failed;
+
+	//memset(textureMap.pData, 0xFF, textureMap.DepthPitch);
+	char* pOutput = (char*)textureMap.pData;
+	char* pInput = (char*)pFont->MapTmpData;
+
+	uint32 iFontMapWidth = pFont->MapSize[0];
+	uint32 iFontMapHeight = pFont->MapSize[1];
+
+	for (uint32 i = 0; i < iFontMapHeight; ++i)
+		memcpy_s(pOutput + (i*textureMap.RowPitch), iFontMapWidth, pInput + (i*iFontMapWidth), iFontMapWidth);
+
+	pD3DContext->Unmap(pTexture, 0);
+
+	hr = pD3DDevice->CreateShaderResourceView(pTexture, NULL, &pFont->Texture.D3DSRV);
+	if (FAILED(hr))
+		return FeEReturnCode::Failed;
+
+	FE_FREE(pFont->MapTmpData, RENDERER_HEAP);
+
+	return FeEReturnCode::Success;
+}
+uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData)
 {
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
-	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetLoadingThreadContext();
 
 	HRESULT hr;
 	D3DX11_IMAGE_LOAD_INFO loadinfos;
@@ -450,5 +518,19 @@ uint32 FeModuleRenderResourcesHandler::CreateTexture(FeRenderLoadingResource& re
 	else
 	{
 		return FeEReturnCode::Failed;
+	}
+}
+void FeModuleRenderResourcesHandler::UnloadResources()
+{
+	{
+		SCOPELOCK(ResourcesLoadingThreadMutex); // <------ Lock Mutex
+		for (auto& resource : Resources)
+		{
+			if (resource.second.Interface)
+				resource.second.Interface->ReleaseResource();
+		}
+		Resources.clear();
+		ResourcesLoading.clear();
+		ResourcesToSave.clear();
 	}
 }

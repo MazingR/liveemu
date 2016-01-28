@@ -26,7 +26,7 @@ struct ID3D11Texture2D;
 // forward declares of FW1 FontWrapper 
 struct IFW1Factory;
 struct IFW1FontWrapper;
-
+struct  FT_FaceRec_;
 typedef uint32 FeResourceId;
 
 struct FeRenderCamera
@@ -80,7 +80,8 @@ namespace FeEResourceType
 		Texture,
 		Font,
 		Geometry,
-		Sound
+		Sound,
+		Unknown
 	};
 }
 
@@ -90,6 +91,7 @@ public:
 	virtual void CopyTo(FeIRenderResourceInterface* pCopy) = 0;
 	virtual void CopyAndAllocateTo(FeIRenderResourceInterface** pCopy) = 0;
 	virtual void Release()=0;
+	virtual void ReleaseResource() = 0;
 	
 	virtual void* GetData() = 0;
 };
@@ -109,7 +111,12 @@ public:
 	}
 	void Release()
 	{
+		
 		FE_DELETE(FeRenderResourceInterface<T>, this, RENDERER_HEAP);
+	}
+	void ReleaseResource()
+	{
+		Data.Release();
 	}
 
 	void* GetData()
@@ -130,14 +137,35 @@ static FeRenderResourceInterface<T>* FeCreateRenderResourceInterface()
 	return FE_NEW(FeRenderResourceInterface<T>, RENDERER_HEAP);
 }
 
-struct FeRenderTextureData
+struct FeRenderTexture
 {
 	ID3D11Resource*					D3DResource;
 	ID3D11ShaderResourceView*		D3DSRV;
+
+	FeRenderTexture() :
+		D3DResource(NULL),
+		D3DSRV(NULL) {}
+
+	void Release();
 };
-struct FeRenderFontData
+
+
+class FeRenderFont
 {
-	FeRenderTextureData				TextureData;
+public:
+	FeRenderTexture		Texture;
+	FT_FaceRec_*		FtFontFace;
+	void*				MapTmpData;
+	uint32				MapDepthPitch;
+	FeSize				MapSize;
+	uint32				Size;
+	FePath				TrueTypeFile;
+
+	FeRenderFont() :
+		FtFontFace(NULL),
+		MapTmpData(NULL) {}
+
+	void Release();
 };
 
 struct FeRenderResource
@@ -147,6 +175,8 @@ struct FeRenderResource
 	uint32							SizeInMemory;
 	bool							RuntimeCreated;
 	FeIRenderResourceInterface*		Interface;
+
+	FeRenderResource() : Interface(NULL) {}
 };
 typedef void(*FeResourceLoadingCallbackFunc) (FeRenderResource* pResource, void* pUserData);
 
@@ -161,6 +191,8 @@ struct FeRenderLoadingResource : public FeRenderResource
 	FePath						Path;
 	FeResourceId				Id;
 	FeResourceLoadingCallback	LoadingFinishedCallback;
+
+	FeRenderLoadingResource() : Id(0) {}
 };
 struct FeRenderViewport
 {

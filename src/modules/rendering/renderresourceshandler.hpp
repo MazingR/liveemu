@@ -3,9 +3,12 @@
 #include <commonrenderer.hpp>
 #include <common/application.hpp>
 
+uint32 ComputeResourceSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iResourceFormat, bool bHasAlpha);
+
 // forward declares
 struct SDL_mutex;
 struct SDL_Thread;
+struct  FT_LibraryRec_;
 
 struct FeModuleRenderResourcesHandlerDebugInfos
 {
@@ -27,17 +30,18 @@ public:
 
 	void ComputeDebugInfos(FeModuleRenderResourcesHandlerDebugInfos& infos);
 	uint32 ProcessThreadedResourcesLoading(bool& bThreadSopped);
+	void UnloadResources();
 private:
-	static uint32 ComputeResourceSizeInMemoryFromFormat(uint32 iWidth, uint32 iHeight, uint32 iResourceFormat, bool bHasAlpha);
-
 	typedef std::map<FeResourceId, FeRenderResource> ResourcesMap;
 	typedef ResourcesMap::iterator ResourcesMapIt;
 
 	typedef std::map<FeResourceId, FeRenderLoadingResource> ResourcesLoadingMap;
 	typedef ResourcesLoadingMap::iterator ResourcesLoadingMapIt;
 
-	uint32 CreateTexture(FeRenderLoadingResource& resource, FeRenderTextureData* pTextureData);
-	uint32 SaveTexture(FeRenderLoadingResource& resource, FeRenderTextureData* pTextureData);
+	uint32 LoadTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData);
+	uint32 LoadFont(FeRenderLoadingResource& resource, FeRenderFont* pTextureData);
+	uint32 PostLoadFont(FeRenderLoadingResource& resource, FeRenderFont* pTextureData);
+	uint32 SaveTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData);
 
 
 	SDL_Thread*			LoadingThread;
@@ -47,6 +51,7 @@ private:
 	ResourcesLoadingMap	ResourcesToSave;
 	ResourcesLoadingMap	ResourcesLoading;
 
+	SDL_mutex*			ResourcesLoadingThreadMutex;
 	SDL_mutex*			ResourcesLoadingMutex;
 
 	ResourcesLoadingMap	ResourcesLoaded;
@@ -54,4 +59,6 @@ private:
 
 	size_t				ResourcePoolAllocated;
 	size_t				ResourcePoolLimit;
+
+	FT_LibraryRec_*		FtLibrary;
 };

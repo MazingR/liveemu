@@ -39,6 +39,7 @@
 typedef unsigned int THeapId;
 #define INIT_HEAP_ID ((THeapId)-1)
 
+typedef unsigned char uint8;
 typedef short unsigned int uint16;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
