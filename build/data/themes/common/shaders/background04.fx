@@ -9,9 +9,9 @@
 #define SIZE_DELTA 0.156f
 #define SIZE_MAX 0.5f
 
-#define INTENSITY 0.5045f
-#define AMBIENT 0.01f
-#define SATURATON 0.1f
+#define INTENSITY 0.8045f
+#define AMBIENT 0.03f
+#define SATURATON 0.2f
 
 float rand(float2 co)
 {
@@ -35,7 +35,7 @@ float4 mainImage( in float2 pos )
 	float3 fColorC = float3(0.f, 1.0f, 0.0f);
 	float3 fColorD = float3(0.6f, 0.6f, 0.0f);
 	
-	float4 fColor = float4(lerp(fColorB, fColorD, sin(fTime)*0.5f + 0.5f), 1.f)*SATURATON + AMBIENT;
+	float4 fColor = float4(lerp(fColorC, fColorD, sin(fTime)*0.5f + 0.5f), 1.f)*SATURATON + AMBIENT;
 	
 	for (int i=0; i<SPHERES_COUNT; ++i)
 	{

@@ -192,6 +192,7 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 			continue; // effect not found !
 
 		pEffect->BindGeometryInstance(geomInstance, pResourcesHandler);
+		bool bCull = false;
 
 		// Set resources (textures)
 		for (uint32 iTextureIdx = 0; iTextureIdx < pEffect->GetTextureLevels() ; ++iTextureIdx)
@@ -224,13 +225,19 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 						RenderDebugInfos.FrameBindTextureCount++;
 					}
 				}
+				else
+				{
+					bBinded = true;
+				}
 			}
 			if (!bBinded)
 			{
-				static ID3D11ShaderResourceView* pNull = NULL;
-				pContext->PSSetShaderResources(iTextureIdx, 1, &pNull);
+				bCull = true;
 			}
 		}
+		
+		if (bCull)
+			continue;
 
 		if (geomInstance.Geometry != iLastGeometryId)
 		{

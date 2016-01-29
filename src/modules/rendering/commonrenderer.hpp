@@ -3,6 +3,7 @@
 #include <common/common.hpp>
 #include <common/tarray.hpp>
 #include <common/maths.hpp>
+#include <map>
 
 #define DEBUG_STRING_SIZE 2048
 #define RENDERER_HEAP 1
@@ -22,6 +23,7 @@ struct ID3D11PixelShader;
 struct ID3D11InputLayout;
 struct ID3D11RenderTargetView;
 struct ID3D11Texture2D;
+struct ID3D11BlendState;
 
 // forward declares of FW1 FontWrapper 
 struct IFW1Factory;
@@ -111,7 +113,6 @@ public:
 	}
 	void Release()
 	{
-		
 		FE_DELETE(FeRenderResourceInterface<T>, this, RENDERER_HEAP);
 	}
 	void ReleaseResource()
@@ -149,7 +150,15 @@ struct FeRenderTexture
 	void Release();
 };
 
-
+struct FeRenderFontChar
+{
+	uint32 Top;
+	uint32 Left;
+	uint32 OffsetTop;
+	uint32 OffsetLeft;
+	uint32 Width;
+	uint32 Height;
+};
 class FeRenderFont
 {
 public:
@@ -159,7 +168,11 @@ public:
 	uint32				MapDepthPitch;
 	FeSize				MapSize;
 	uint32				Size;
+	uint32				Space;
+	uint32				Interval;
 	FePath				TrueTypeFile;
+
+	std::map<uint8, FeRenderFontChar> Chars;
 
 	FeRenderFont() :
 		FtFontFace(NULL),
@@ -229,8 +242,9 @@ struct FeRenderGeometryInstance
 {
 	FeResourceId					Geometry;
 	FeResourceId					Effect;
-	FeTArray<FeResourceId>			Textures;
 	FeGeometryTransform				Transform;
+	FeVector4						UserData;
+	FeTArray<FeResourceId>			Textures;
 
 	FeRenderGeometryInstance()
 	{

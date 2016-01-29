@@ -175,14 +175,15 @@ uint32 FeDeserialize(FeSerializerValue& value, FeTPtr<T>* pOutput, const char* _
 	return FeJsonParser::DeserializeObject(*pOutput->Ptr, jsonProperty);
 }
 
+uint32 FeDeserialize(FeSerializerValue& value, bool*		pOutput, const char* _sPropertyName);
 uint32 FeDeserialize(FeSerializerValue& value, int*			pOutput, const char* _sPropertyName);
-uint32 FeDeserialize(FeSerializerValue& value, float*			pOutput, const char* _sPropertyName);
-uint32 FeDeserialize(FeSerializerValue& value, uint32*			pOutput, const char* _sPropertyName);
-uint32 FeDeserialize(FeSerializerValue& value, FePath*			pOutput, const char* _sPropertyName);
-uint32 FeDeserialize(FeSerializerValue& value, FeVector3*		pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, float*		pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, uint32*		pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FePath*		pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FeVector3*	pOutput, const char* _sPropertyName);
 uint32 FeDeserialize(FeSerializerValue& value, FeColor*		pOutput, const char* _sPropertyName);
 uint32 FeDeserialize(FeSerializerValue& value, FeTransform*	pOutput, const char* _sPropertyName);
-uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _sPropertyName);
+uint32 FeDeserialize(FeSerializerValue& value, FeString*	pOutput, const char* _sPropertyName);
 
 // -------------------------------------------------------------------------------------------------------------------------
 // Enum declaration preprocessing for serialization

@@ -16,10 +16,18 @@ FE_DECLARE_CLASS_BOTTOM(FeUiPanel)
 class FeUiFont : public FeSerializable
 {
 public:
+	FeUiFont()
+	{
+		Size = 32;
+		Space = 16;
+		Interval = 1;
+	}
 #define FeUiFont_Properties(_d)	\
 	_d(FeString, Name)			\
 	_d(FePath, TrueTypeFile)	\
 	_d(uint32, Size)			\
+	_d(uint32, Space)			\
+	_d(uint32, Interval)		\
 
 	FE_DECLARE_CLASS_BODY(FeUiFont_Properties, FeUiFont, FeSerializable)
 };

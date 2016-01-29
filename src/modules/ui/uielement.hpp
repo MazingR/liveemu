@@ -4,6 +4,18 @@
 #include <common/serializable.hpp>
 #include <common/maths.hpp>
 
+struct FeETargetPropertyType
+{
+	enum Type
+	{
+		Text,
+		Font,
+		Image,
+		Other,
+	};
+};
+
+
 #define FeEUiElementState_Values(_d)		\
 		_d(FeEUiElementState, Visible)		\
 		_d(FeEUiElementState, Collapsed)	\
@@ -21,7 +33,6 @@ FE_DECLARE_ENUM(FeEUiBindingType, FeEUiBindingType_Values)
 class FeUiBinding : public FeSerializable
 {
 public:
-
 #define FeUiBinding_Properties(_d)				\
 		_d(FeTArray<FeString>,		Path)		\
 		_d(FeString,				Property)	\
@@ -58,6 +69,7 @@ public:
 		_d(FeEUiElementState::Type,			State)			\
 		_d(FeTArray<FeTPtr<FeUiElement>>,	Children)		\
 		_d(FeString,						Effect)			\
+		_d(FeString,						FontEffect)		\
 		_d(FeString,						Font)			\
 		_d(FeTArray<FeUiDataBinding>,		Bindings)		\
 

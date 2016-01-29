@@ -10,6 +10,7 @@
 
 typedef gmtl::Vec2i FeSize;
 
+typedef gmtl::Vec2f FeVector2;
 typedef gmtl::Vec3f FeVector3;
 typedef gmtl::Vec4f FeColor;
 typedef gmtl::Matrix33f FeMatrix3;

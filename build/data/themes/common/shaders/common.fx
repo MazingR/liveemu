@@ -8,12 +8,12 @@
 Texture2D		texture0			: register(t0);
 SamplerState	samplerTexture0		: register(s0)
 {
-	// MipFilter = POINT;
-	// MinFilter = POINT;
-	// MagFilter = POINT;
-	// AddressU = Border;
-	// AddressV = Border;
-	// BorderColor = 0;
+	MipFilter = POINT;
+	MinFilter = POINT;
+	MagFilter = POINT;
+	AddressU = Border;
+	AddressV = Border;
+	BorderColor = 0;
 };
 
 
@@ -32,6 +32,7 @@ cbuffer cbPerFrame : register(b0)
 cbuffer cbPerObject : register(b1)
 {
 	matrix World;
+	float4 UserData;
 };
 
 //--------------------------------------------------------------------------------------

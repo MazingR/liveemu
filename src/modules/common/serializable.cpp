@@ -18,6 +18,16 @@ bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const ch
 	return false;
 }
 
+uint32 FeDeserialize(FeSerializerValue& value, bool* pOutput, const char* _sPropertyName)
+{
+	FeSerializerValue jsonProperty;
+
+	if (FetchProperty(value, jsonProperty, _sPropertyName))
+		*pOutput = jsonProperty.GetBool();
+
+	return FeEReturnCode::Success;
+}
+
 uint32 FeDeserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;

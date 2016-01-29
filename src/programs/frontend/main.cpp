@@ -25,8 +25,8 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		
 		init.WindowsCmdShow = appInit.WindowsCmdShow;
 		init.WindowsInstance = (HINSTANCE)appInit.WindowsInstance;
-		init.Width = 800;
-		init.Height = 800;
+		init.Width = 1280;
+		init.Height = 720;
 
 		SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, init.Width, init.Height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
 		if (window == nullptr)

@@ -177,7 +177,6 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 
 			loadedResource.LoadingState	= resource.LoadingState;
 			loadedResource.SizeInMemory	= resource.SizeInMemory;
-			resource.Interface->CopyAndAllocateTo(&loadedResource.Interface);
 
 			ResourcePoolAllocated += loadedResource.SizeInMemory;
 #if SAVE_CREATED_RESOURCE
@@ -187,10 +186,6 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 #endif
 			{
 				ResourcesToSave[it->first] = resource;
-			}
-			else
-			{
-				resource.Interface->Release();
 			}
 		}
 
@@ -219,7 +214,6 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 			FE_LOG("Save converted resource %s", resource.Path.Value);
 		}
 
-		resource.Interface->Release();
 		ResourcesToSave.erase(it);
 
 		break; //  process one file per frame
@@ -247,27 +241,28 @@ uint32 FeModuleRenderResourcesHandler::LoadResource(FeRenderLoadingResource& res
 	{
 		Resources[resource.Id] = FeRenderResource();
 		FeRenderResource& newResource = Resources[resource.Id];
-		newResource.LoadingState = FeEResourceLoadingState::Loading;
+		newResource.LoadingState = FeEResourceLoadingState::Idle;
 		newResource.Type = resource.Type;
+		newResource.Interface = resource.Interface;
 
 		{
 			SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
-
-			resource.LoadingState = FeEResourceLoadingState::Idle;
 			
-			if (resource.Interface == NULL)
+			if (newResource.Interface == NULL)
 			{
 				switch (resource.Type)
 				{
-				case FeEResourceType::Texture: resource.Interface = FeCreateRenderResourceInterface<FeRenderTexture>();	break;
-				case FeEResourceType::Font: resource.Interface = FeCreateRenderResourceInterface<FeRenderFont>();	break;
+				case FeEResourceType::Texture: newResource.Interface = FeCreateRenderResourceInterface<FeRenderTexture>();	break;
+				case FeEResourceType::Font: newResource.Interface = FeCreateRenderResourceInterface<FeRenderFont>();	break;
 				default:
 				{
 					FE_ASSERT(false, "Unknown render resource type !");
 				}
 				}
 			}
+			
 			ResourcesLoading[resource.Id] = resource;
+			ResourcesLoading[resource.Id].Interface = newResource.Interface;
 		} // <------ Unlock Mutex
 	}
 	return FeEReturnCode::Success;
@@ -396,6 +391,17 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 
 			memcpy_s(&pOutput[outputBufferIdx], slot->bitmap.width, &slot->bitmap.buffer[inputBufferIdx], slot->bitmap.width);
 		}
+		FeRenderFontChar charData;
+
+		charData.Left		= iXOffset;
+		charData.Top		= iYOffset;
+		charData.OffsetLeft = slot->bitmap_left;
+		charData.OffsetTop	= slot->bitmap_top;
+		charData.Width		= slot->bitmap.width;
+		charData.Height		= slot->bitmap.rows;
+
+		pFont->Chars[szFontContent[iChar]] = charData;
+
 		iXOffset += slot->bitmap.width + slot->bitmap_left + iCharInterval;
 
 		if (iXOffset > (iMapWidth - iCharSize))
@@ -527,7 +533,10 @@ void FeModuleRenderResourcesHandler::UnloadResources()
 		for (auto& resource : Resources)
 		{
 			if (resource.second.Interface)
+			{
 				resource.second.Interface->ReleaseResource();
+				resource.second.Interface->Release();
+			}
 		}
 		Resources.clear();
 		ResourcesLoading.clear();

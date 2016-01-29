@@ -10,8 +10,14 @@
 
 struct FeUiRenderingInstance
 {
-	FeUiElement*						Owner;
-	FeRenderGeometryInstance			Geometry;
+	FeUiElement*				Owner;
+	FeRenderGeometryInstance	Geometry;
+	
+	FeResourceId				FontResource;
+
+	FeUiRenderingInstance() : 
+		Owner(NULL),
+		FontResource(NULL) {}
 };
 
 struct FeUiElementTraversalNode
@@ -19,11 +25,18 @@ struct FeUiElementTraversalNode
 	FeUiElement*						Current;
 	FeUiElement*						Parent;
 	FeTArray<FeUiElementTraversalNode*>	Children;
+
 	FeUiRenderingInstance*				RenderInstance;
 
 	FeUiElementTraversalNode() : Parent(NULL) {}
 };
-
+struct FeUiDefferedApplyBinding
+{
+	FeString					SourceData;
+	FeUiElementTraversalNode*	TraversalNode;
+	const FeUiBinding*			BindingTarget;
+	FeETargetPropertyType::Type TargetPropertyType;
+};
 struct FeUiElementTraversalList
 {
 	FeTArray<FeUiElementTraversalNode> Nodes;
@@ -42,17 +55,28 @@ public:
 	virtual uint32 Update(const FeDt& fDt) override;
 
 	uint32 ReloadScripts();
+
+private:
 	uint32 LoadUnitTest(uint32 iTest);
 	uint32 UpdateUnitTest(uint32 iTest, const FeDt& fDt);
 	void TraverseElements(FeScriptFile& script, FeUiElementTraversalList& traversal);
 	FeString FetchBindingSourceData(const FeUiBinding& binding);
-	void ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, const FeString& sourceData, const FeUiBinding& targetBinding);
-
+	uint32 ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, const FeString& sourceData, const FeUiBinding& targetBinding, FeETargetPropertyType::Type type);
+	FeETargetPropertyType::Type GetTargetPropertyType(const FeUiBinding& targetBinding);
+	void ComputeRenderingInstances();
+	void ApplyBindingByType(FeETargetPropertyType::Type type);
+	uint32 GenerateTextRenderingNodes(FeUiElementTraversalNode& node, const FeString& sourceData);
 private:
 	FeTArray<FeScriptFile>			ScriptFiles;
 	FeTArray<FeUiRenderingInstance> RenderingInstances;
+	
 	FeTArray<FeUiPanel*>			Panels;
+	FeTArray<FeRenderEffect*>		Effects;
+	FeTArray<FeUiFont*>				Fonts;
+
 	FeUiElementTraversalList		TraversalList;
+
+	FeTArray<FeUiDefferedApplyBinding> DefferedApplyBindingData;
 };
 
 //

@@ -4,6 +4,8 @@
 		{
 			"Name" : "Font_Default",
 			"Size" : 64,
+			"Interval" : 1,
+			"Space" : 16,
 			"TrueTypeFile" : "themes/common/fonts/ARCADE_I.TTF"
 		},
 		{
@@ -28,6 +30,13 @@
 			"Name" : "Effect_Default",
 			"TextureLevels" : 1,
 			"File" : "themes/common/shaders/default.fx"
+		},
+		{
+			"Name" : "Effect_Default_Font",
+			"TextureLevels" : 1,
+			"UseAlphaBlending" : true,
+			"File" : "themes/common/shaders/default_font.fx",
+			"Type" : "Font"
 		}
 		,{
 			"Name" : "Background_02",
@@ -48,7 +57,7 @@
 	"Panels" :
 	[
 		{
-			"Effect" : "Background_04",
+			"Effect" : "Background_03",
 			"Transform" : 
 			{
 				"T" : [0.0,		0.0,	0.1],
@@ -58,10 +67,11 @@
 		},
 		{
 			"Effect" : "Effect_Default",
+			"FontEffect" : "Effect_Default_Font",
 			"Transform" : 
 			{
 				"T" : [0.0,		0.0,	0.0],
-				"S" : [0.8,		0.4,	1.0]
+				"S" : [1.0,		1.0,	1.0]
 			},
 			"Bindings" :
 			[
@@ -82,7 +92,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"Hello World !"
+						"Value" :"Heeelooo Wooorld !"
 					},
 					"Target" : 
 					{
@@ -95,7 +105,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" : "test/textures/512x512/gamepad-snes.png"
+						"Value" : "test/textures/boxfronts/game_1873482493.dds"
 					},
 					"Target" : 
 					{
@@ -113,8 +123,8 @@
 					"Effect" : "Effect_Default",
 					"Transform" : 
 					{
-						"T" : [0.0,		-0.3,	-0.01],
-						"S" : [1.0,		0.5,	1.0]
+						"T" : [0.5,		0.1,	0.01],
+						"S" : [0.3,		0.8,	1.0]
 					}
 				}
 			]

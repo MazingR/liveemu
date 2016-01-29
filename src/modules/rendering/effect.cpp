@@ -16,7 +16,7 @@ struct FeCBPerFrame
 struct FeCBPerObject
 {
 	XMMATRIX MatrixWorld;
-	
+	XMVECTOR UserData;
 };
 
 uint32 FeRenderEffect::CompileShaderFromFile(const char* szFileName, const char* szEntryPoint, const char* szShaderModel, void** ppBlobOut)
@@ -67,6 +67,8 @@ void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderView
 	//cbPerFrame.MatrixProj = XMMatrixPerspectiveFovLH(XM_PIDIV4, ((float)viewport.Width / (float)viewport.Height), 0.01f, 100.0f);
 	cbPerFrame.MatrixProj = XMMatrixOrthographicLH(1.0f, 1.0f, -1.0f, 1.0f);
 	cbPerFrame.MatrixView = XMMatrixIdentity();// XMMatrixLookAtLH(Eye, At, Up);
+	cbPerFrame.MatrixView._41 = -0.5f;
+	cbPerFrame.MatrixView._42 = -0.5f;
 
 	cbPerFrame.MatrixProj = XMMatrixTranspose(cbPerFrame.MatrixProj);
 	cbPerFrame.MatrixView = XMMatrixTranspose(cbPerFrame.MatrixView);
@@ -93,11 +95,16 @@ void FeRenderEffect::EndFrame()
 void FeRenderEffect::BindGeometryInstance(const FeRenderGeometryInstance geometryInstance, const FeModuleRenderResourcesHandler* resouresHandler)
 {
 	ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
-
 	FeCBPerObject data;
 	data.MatrixWorld = XMMatrixTranspose(geometryInstance.Transform.Matrix.getData());
+
+	if (Type == FeERenderEffectType::Font)
+	{
+		const float* pUserData = geometryInstance.UserData.getData();
+		data.UserData = XMVectorSet(pUserData[0], pUserData[1], pUserData[2], pUserData[3]);
+	}
 	pContext->UpdateSubresource(CBPerObject.Buffer, 0, NULL, &data, 0, 0);
-		
+	
 	// todo: bind other constants
 }
 void FeRenderEffect::Bind()
@@ -112,8 +119,14 @@ void FeRenderEffect::Bind()
 	pContext->VSSetConstantBuffers(1, 1, &CBPerObject.Buffer);
 
 	pContext->PSSetConstantBuffers(0, 1, &CBPerFrame.Buffer);
+	pContext->PSSetConstantBuffers(1, 1, &CBPerObject.Buffer);
 
 	pContext->PSSetSamplers(0, 1, &Samplers[0].State);
+
+	if (UseAlphaBlending)
+		pContext->OMSetBlendState(BlendState, 0, 0xffffffff);
+	else
+		pContext->OMSetBlendState(NULL, 0, 0xffffffff);
 }
 uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 {
@@ -162,42 +175,65 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	hr = pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, (ID3D11PixelShader**)&PixelShader);
 	pPSBlob->Release();
 	if (FAILED(hr)) return FeEReturnCode::Rendering_CreateShaderFailed;
-		
+
 	// Create the constant buffers
-	D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(bd));
+	{
+		D3D11_BUFFER_DESC desc;
+		ZeroMemory(&desc, sizeof(desc));
 
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(FeCBPerFrame);
-	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bd.CPUAccessFlags = 0;
-	hr = pD3DDevice->CreateBuffer(&bd, NULL, &CBPerFrame.Buffer);
-	if (FAILED(hr))
-		return FeEReturnCode::Failed;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.ByteWidth = sizeof(FeCBPerFrame);
+		desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		desc.CPUAccessFlags = 0;
+		hr = pD3DDevice->CreateBuffer(&desc, NULL, &CBPerFrame.Buffer);
+		if (FAILED(hr))
+			return FeEReturnCode::Failed;
 
-	bd.ByteWidth = sizeof(FeCBPerObject);
-	hr = pD3DDevice->CreateBuffer(&bd, NULL, &CBPerObject.Buffer);
-	if (FAILED(hr))
-		return FeEReturnCode::Failed;
+		desc.ByteWidth = sizeof(FeCBPerObject);
+		hr = pD3DDevice->CreateBuffer(&desc, NULL, &CBPerObject.Buffer);
 
+		if (FAILED(hr))
+			return FeEReturnCode::Failed;
+	}
 	// Create the sample state
-	Samplers.Reserve(1);
-	FeRenderSampler& sampler = Samplers.Add();
+	{
+		Samplers.Reserve(1);
+		FeRenderSampler& sampler = Samplers.Add();
 
-	D3D11_SAMPLER_DESC sampDesc;
-	ZeroMemory(&sampDesc, sizeof(sampDesc));
-	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	sampDesc.MinLOD = 0;
-	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = pD3DDevice->CreateSamplerState(&sampDesc, &sampler.State);
+		D3D11_SAMPLER_DESC desc;
+		ZeroMemory(&desc, sizeof(desc));
 
-	if (FAILED(hr))
-		return FeEReturnCode::Failed;
+		desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		desc.MinLOD = 0;
+		desc.MaxLOD = D3D11_FLOAT32_MAX;
+		hr = pD3DDevice->CreateSamplerState(&desc, &sampler.State);
 
+		if (FAILED(hr))
+			return FeEReturnCode::Failed;
+	}
+	// Create blend state
+	{
+		D3D11_BLEND_DESC desc;
+		ZeroMemory(&desc, sizeof(desc));
+
+		D3D11_RENDER_TARGET_BLEND_DESC& targetDesc = desc.RenderTarget[0];
+		targetDesc.BlendEnable = true;
+		targetDesc.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		targetDesc.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		targetDesc.BlendOp = D3D11_BLEND_OP_ADD;
+		targetDesc.SrcBlendAlpha = D3D11_BLEND_ZERO;
+		targetDesc.DestBlendAlpha = D3D11_BLEND_ZERO;
+		targetDesc.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		targetDesc.RenderTargetWriteMask = 0x0F;
+
+		hr = pD3DDevice->CreateBlendState(&desc, &BlendState);
+		if (FAILED(hr))
+			return FeEReturnCode::Failed;
+	}
 
 	return FeEReturnCode::Success;
 }

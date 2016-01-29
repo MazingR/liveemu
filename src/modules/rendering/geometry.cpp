@@ -59,7 +59,7 @@ uint32 FeGeometryHelper::ComputeStaticGeometry()
 	StaticGeometryData.SetZeroMemory();
 		
 	{
-		float fOffset = 0.5f;
+		float fOffset = 0.0f;
 
 		// Create vertex buffer
 		Vertex_T0 vertexData[] =
@@ -108,6 +108,8 @@ uint32 FeGeometryHelper::CreateGeometry(void* vertexBuffer, uint32 iVertexCount,
 }
 void FeGeometryHelper::ComputeAffineTransform(FeGeometryTransform& output, FeVector3 vTranslate, FeRotation vRotate, FeVector3 vScale)
 {
+	vTranslate[1] = 1.0f - vTranslate[1];
+
 	output.Matrix = FeMatrix::FromTranslation(vTranslate);
 	output.Matrix = output.Matrix*FeMatrix::FromRotation(vRotate);
 	output.Matrix = output.Matrix*FeMatrix::FromScale(vScale);
