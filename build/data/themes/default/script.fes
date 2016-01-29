@@ -3,26 +3,45 @@
 	[
 		{
 			"Name" : "Font_Default",
-			"Size" : 32,
+			"Size" : 64,
 			"TrueTypeFile" : "themes/common/fonts/ARCADE_I.TTF"
+		},
+		{
+			"Name" : "Font_Default1",
+			"Size" : 64,
+			"TrueTypeFile" : "themes/common/fonts/ka1.TTF"
+		},
+		{
+			"Name" : "Font_Default2",
+			"Size" : 64,
+			"TrueTypeFile" : "themes/common/fonts/CaviarDreams.TTF"
+		},
+		{
+			"Name" : "Font_Default3",
+			"Size" : 64,
+			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
 		}
 	],
 	"Effects" :
 	[
 		{
 			"Name" : "Effect_Default",
+			"TextureLevels" : 1,
 			"File" : "themes/common/shaders/default.fx"
 		}
 		,{
 			"Name" : "Background_02",
+			"TextureLevels" : 0,
 			"File" : "themes/common/shaders/background02.fx"
 		}
 		,{
 			"Name" : "Background_03",
+			"TextureLevels" : 0,
 			"File" : "themes/common/shaders/background03.fx"
 		}
 		,{
 			"Name" : "Background_04",
+			"TextureLevels" : 0,
 			"File" : "themes/common/shaders/background04.fx"
 		}
 	],
@@ -71,35 +90,32 @@
 						"Property" :"Text",
 						"Index" :0
 					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Source_Static",
+						"Value" : "test/textures/512x512/gamepad-snes.png"
+					},
+					"Target" : 
+					{
+						"Path" : ["Header"],
+						"Property" :"Image",
+						"Index" :0
+					}
 				}
 			],
 			"Children" : 
 			[
 				{
+					"Name" : "Header",
 					"_serialize_type_" : "FeUiPanel",
 					"Effect" : "Effect_Default",
 					"Transform" : 
 					{
-						"T" : [0.0,		0.0,	0.01],
-						"S" : [1.0,		1.0,	1.0]
-					},
-					"Bindings" :
-					[
-						{
-							"Source" : 
-							{
-								"Type" : "Source_Static",
-								"Value" : "test/textures/512x512/gamepad-snes.png"
-							},
-							"Target" : 
-							{
-								"Path" : [],
-								"Property" :"Image",
-								"Index" :0
-							}
-						}
-					],
-					"Children" : []
+						"T" : [0.0,		-0.3,	-0.01],
+						"S" : [1.0,		0.5,	1.0]
+					}
 				}
 			]
 		}

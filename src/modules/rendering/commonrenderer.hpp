@@ -176,7 +176,7 @@ struct FeRenderResource
 	bool							RuntimeCreated;
 	FeIRenderResourceInterface*		Interface;
 
-	FeRenderResource() : Interface(NULL) {}
+	FeRenderResource() : Interface(NULL), SizeInMemory(0) {}
 };
 typedef void(*FeResourceLoadingCallbackFunc) (FeRenderResource* pResource, void* pUserData);
 

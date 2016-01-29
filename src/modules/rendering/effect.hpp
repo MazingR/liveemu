@@ -34,6 +34,7 @@ private:
 	#define FeRenderEffect_Properties(_d)		\
 		_d(FeString,					Name)	\
 		_d(FePath,						File)	\
+		_d(uint32,						TextureLevels)\
 
 	FE_DECLARE_CLASS_BODY(FeRenderEffect_Properties, FeRenderEffect, FeSerializable)
 };

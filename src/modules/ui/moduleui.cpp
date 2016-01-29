@@ -40,6 +40,7 @@ void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList
 			childNode.Parent = pElement;
 
 			uiElements.push(&childNode);
+			pNode->Children.Add(&childNode);
 		}
 	}
 }
@@ -53,6 +54,7 @@ uint32 FeModuleUi::ReloadScripts()
 	ScriptFiles.Clear();
 	RenderingInstances.Clear();
 	Panels.Clear();
+	TraversalList.Nodes.Clear();
 
 	pResourcesHandler->UnloadResources();
 
@@ -81,11 +83,9 @@ uint32 FeModuleUi::ReloadScripts()
 			ScriptFiles.PopBack();
 		}
 	}
-	FeUiElementTraversalList traversal;
-
 	for (auto& script : ScriptFiles)
 	{
-		TraverseElements(script, traversal);
+		TraverseElements(script, TraversalList); // add all ui elments to flat list
 
 		// Create font resrouces
 		for (auto& uiFont : script.GetFonts())
@@ -105,12 +105,13 @@ uint32 FeModuleUi::ReloadScripts()
 	}
 
 	// Pre compute rendering instances
-	for (auto& uiNode : traversal.Nodes)
+	for (auto& uiNode : TraversalList.Nodes)
 	{
 		FeUiElement* pCurrent = uiNode.Current;
 		FeUiElement* pParent = uiNode.Parent;
 
-		FeUiRenderingInstance& renderingInstance = RenderingInstances.Add();
+		FeUiRenderingInstance& renderingInstance = RenderingInstances.Add(); // create rendering instance
+		uiNode.RenderInstance = &renderingInstance;
 
 		renderingInstance.Owner = pCurrent;
 		renderingInstance.Geometry.Effect = pCurrent->GetEffect().Id();
@@ -121,7 +122,7 @@ uint32 FeModuleUi::ReloadScripts()
 		FeRotation	r = pCurrent->GetTransform().Rotation;
 		FeVector3	s = pCurrent->GetTransform().Scale;
 
-		if (pParent)
+		if (pParent) // compute world transformation using parent m matrix
 		{
 			auto& pT = pParent->GetTransform().Translation;
 			auto& pR = pParent->GetTransform().Rotation;
@@ -137,27 +138,27 @@ uint32 FeModuleUi::ReloadScripts()
 		FeGeometryHelper::ComputeAffineTransform(renderingInstance.Geometry.Transform, t, r, s);
 	}
 	
-	for (auto& renderingInstance : RenderingInstances)
+	// Apply data binding (texture, font, text,...)
+	for (auto& uiNode : TraversalList.Nodes)
 	{
-		for (auto& dataBind : renderingInstance.Owner->GetBindings())
+		for (auto& dataBind : uiNode.Current->GetBindings())
 		{
 			FeString sourceData = FetchBindingSourceData(dataBind.GetSource());
 
 			if (!sourceData.IsEmpty())
 			{
-				ApplyBindingToTargetProperty(renderingInstance, sourceData, dataBind.GetTarget());
+				ApplyBindingToTargetProperty(uiNode, sourceData, dataBind.GetTarget());
 			}
 		}
 	}
 
 	return FeEReturnCode::Success;
 }
-void FeModuleUi::ApplyBindingToTargetProperty(FeUiRenderingInstance& instance, const FeString& sourceData, const FeUiBinding& targetBinding)
+void FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, const FeString& sourceData, const FeUiBinding& targetBinding)
 {
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 
-	FeUiElement* pRootElement = instance.Owner;
-	FeUiElement* pTargetElement = instance.Owner;
+	FeUiElementTraversalNode* pTarget = &node;
 	
 	const FeTArray<FeString>& targetPath = targetBinding.GetPath();
 	const FeString& targetProperty = targetBinding.GetProperty();
@@ -171,12 +172,12 @@ void FeModuleUi::ApplyBindingToTargetProperty(FeUiRenderingInstance& instance, c
 		{
 			bool bFoundElement = false;
 
-			for (auto& child : pTargetElement->GetChildren())
+			for (auto& child : pTarget->Children)
 			{
-				if (child->GetName() == targetPath[iDepth])
+				if (child->Current->GetName() == targetPath[iDepth])
 				{
 					iDepth++;
-					pTargetElement = child.Ptr;
+					pTarget = child;
 					bFoundElement = true;
 					break;
 				}
@@ -220,10 +221,12 @@ void FeModuleUi::ApplyBindingToTargetProperty(FeUiRenderingInstance& instance, c
 			resource.Type = iPropId == ETargetProperty::Font ? FeEResourceType::Font : FeEResourceType::Texture;
 			pResourcesHandler->LoadResource(resource); // schedule resource loading
 
-			if (instance.Geometry.Textures.GetSize() < (targetBinding.GetIndex() + 1))
-				instance.Geometry.Textures.Resize(targetBinding.GetIndex() + 1);
+			FeRenderGeometryInstance& geomInstance = pTarget->RenderInstance->Geometry;
 
-			instance.Geometry.Textures.SetAt(targetBinding.GetIndex(), resource.Id);
+			if (geomInstance.Textures.GetSize() < (targetBinding.GetIndex() + 1))
+				geomInstance.Textures.Resize(targetBinding.GetIndex() + 1);
+
+			geomInstance.Textures.SetAt(targetBinding.GetIndex(), resource.Id);
 
 		} break;
 		case ETargetProperty::Text:

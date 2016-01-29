@@ -194,34 +194,41 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 		pEffect->BindGeometryInstance(geomInstance, pResourcesHandler);
 
 		// Set resources (textures)
-		for (uint32 iTextureIdx = 0; iTextureIdx < geomInstance.Textures.GetSize(); ++iTextureIdx)
+		for (uint32 iTextureIdx = 0; iTextureIdx < pEffect->GetTextureLevels() ; ++iTextureIdx)
 		{
-			const FeResourceId& textureId = geomInstance.Textures[iTextureIdx];
-			
-			if (lastBindedTextures[iTextureIdx] != textureId)
-			{
-				lastBindedTextures[iTextureIdx] = textureId;
-				const FeRenderResource* pResource = pResourcesHandler->GetResource(textureId);
+			bool bBinded = false;
 
-				if (pResource && pResource->LoadingState == FeEResourceLoadingState::Loaded)
+			if (geomInstance.Textures.GetSize() > iTextureIdx)
+			{
+				const FeResourceId& textureId = geomInstance.Textures[iTextureIdx];
+
+				if (lastBindedTextures[iTextureIdx] != textureId)
 				{
-					if (pResource->Type == FeEResourceType::Texture)
+					lastBindedTextures[iTextureIdx] = textureId;
+					const FeRenderResource* pResource = pResourcesHandler->GetResource(textureId);
+
+					if (pResource && pResource->LoadingState == FeEResourceLoadingState::Loaded)
 					{
-						FeRenderTexture* pTexData = (FeRenderTexture*)pResource->Interface->GetData();
-						pContext->PSSetShaderResources(iTextureIdx, 1, &pTexData->D3DSRV);
+						if (pResource->Type == FeEResourceType::Texture)
+						{
+							FeRenderTexture* pTexData = (FeRenderTexture*)pResource->Interface->GetData();
+							pContext->PSSetShaderResources(iTextureIdx, 1, &pTexData->D3DSRV);
+							bBinded = true;
+						}
+						else if (pResource->Type == FeEResourceType::Font)
+						{
+							FeRenderFont* pFontData = (FeRenderFont*)pResource->Interface->GetData();
+							pContext->PSSetShaderResources(iTextureIdx, 1, &pFontData->Texture.D3DSRV);
+							bBinded = true;
+						}
+						RenderDebugInfos.FrameBindTextureCount++;
 					}
-					else if (pResource->Type == FeEResourceType::Font)
-					{
-						FeRenderFont* pFontData = (FeRenderFont*)pResource->Interface->GetData();
-						pContext->PSSetShaderResources(iTextureIdx, 1, &pFontData->Texture.D3DSRV);
-					}
-					RenderDebugInfos.FrameBindTextureCount++;
 				}
-				else
-				{
-					ID3D11ShaderResourceView* pNull = NULL;
-					pContext->PSSetShaderResources(iTextureIdx, 1, &pNull);
-				}
+			}
+			if (!bBinded)
+			{
+				static ID3D11ShaderResourceView* pNull = NULL;
+				pContext->PSSetShaderResources(iTextureIdx, 1, &pNull);
 			}
 		}
 

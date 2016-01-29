@@ -13,7 +13,7 @@ public:
 };
 FE_DECLARE_CLASS_BOTTOM(FeUiPanel)
 
-class FeUiFont : public FeUiElement
+class FeUiFont : public FeSerializable
 {
 public:
 #define FeUiFont_Properties(_d)	\
@@ -21,7 +21,7 @@ public:
 	_d(FePath, TrueTypeFile)	\
 	_d(uint32, Size)			\
 
-	FE_DECLARE_CLASS_BODY(FeUiFont_Properties, FeUiFont, FeUiElement)
+	FE_DECLARE_CLASS_BODY(FeUiFont_Properties, FeUiFont, FeSerializable)
 };
 FE_DECLARE_CLASS_BOTTOM(FeUiFont)
 

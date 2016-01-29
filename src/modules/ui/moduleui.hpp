@@ -8,10 +8,18 @@
 #include <rendering/commonrenderer.hpp>
 #include <commonui.hpp>
 
+struct FeUiRenderingInstance
+{
+	FeUiElement*						Owner;
+	FeRenderGeometryInstance			Geometry;
+};
+
 struct FeUiElementTraversalNode
 {
-	FeUiElement* Current;
-	FeUiElement* Parent;
+	FeUiElement*						Current;
+	FeUiElement*						Parent;
+	FeTArray<FeUiElementTraversalNode*>	Children;
+	FeUiRenderingInstance*				RenderInstance;
 
 	FeUiElementTraversalNode() : Parent(NULL) {}
 };
@@ -19,11 +27,6 @@ struct FeUiElementTraversalNode
 struct FeUiElementTraversalList
 {
 	FeTArray<FeUiElementTraversalNode> Nodes;
-};
-struct FeUiRenderingInstance
-{
-	FeUiElement*				Owner;
-	FeRenderGeometryInstance	Geometry;
 };
 
 struct FeModuleUiInit : public FeModuleInit
@@ -39,17 +42,17 @@ public:
 	virtual uint32 Update(const FeDt& fDt) override;
 
 	uint32 ReloadScripts();
-
 	uint32 LoadUnitTest(uint32 iTest);
 	uint32 UpdateUnitTest(uint32 iTest, const FeDt& fDt);
 	void TraverseElements(FeScriptFile& script, FeUiElementTraversalList& traversal);
 	FeString FetchBindingSourceData(const FeUiBinding& binding);
-	void ApplyBindingToTargetProperty(FeUiRenderingInstance& instance, const FeString& sourceData, const FeUiBinding& targetBinding);
+	void ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, const FeString& sourceData, const FeUiBinding& targetBinding);
 
 private:
 	FeTArray<FeScriptFile>			ScriptFiles;
 	FeTArray<FeUiRenderingInstance> RenderingInstances;
 	FeTArray<FeUiPanel*>			Panels;
+	FeUiElementTraversalList		TraversalList;
 };
 
 //
