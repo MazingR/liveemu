@@ -6,7 +6,7 @@
 #define FE_LOCALLOG(fmt, ...) FE_LOG("[MemoryManager] "fmt, __VA_ARGS__) 
 
 #define MEMALIGNEMENT 16
-#define DEFAULT_HEAP_SIZE 128
+#define DEFAULT_HEAP_SIZE 16
 #define MEM_PAGE_SIZE_KB 512
 
 bool g_IsMemoryManagerInit = false;
@@ -64,7 +64,7 @@ void *FeCallocHook(size_t nmemb, size_t size, int iHeapId)
 	return calloc(nmemb, size);
 #endif
 }
-void *FeReallocHook(void *ptr, size_t size, int iHeapId)
+void *FeReallocHook(void *ptr, size_t size, int iHeapId, int iCopy = 1)
 {
 #if HOOK_MALLOC
 	if (g_IsMemoryManagerInit)
@@ -73,7 +73,9 @@ void *FeReallocHook(void *ptr, size_t size, int iHeapId)
 
 		if (ptr)
 		{
-			memcpy(output, ptr, size);
+			if (iCopy)
+				memcpy(output, ptr, size);
+
 			FeMemoryManager::StaticInstance.Free(ptr, iHeapId);
 		}
 		return output;

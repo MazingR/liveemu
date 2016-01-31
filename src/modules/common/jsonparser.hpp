@@ -4,6 +4,11 @@
 #include "filesystem.hpp"
 #include "string.hpp"
 
+#define JSON_HEAP 1
+
+#define RAPIDJSON_NEW(x) FeNew<x>(JSON_HEAP)
+#define RAPIDJSON_DELETE(x) FeDelete(x, JSON_HEAP)
+
 #if HOOK_MALLOC
 
 	#undef malloc
@@ -17,10 +22,10 @@
 	#undef realloc
 	#undef free
 
-	#define malloc(size)		std_FeMallocHook(size, DEFAULT_HEAP)
-	#define calloc(nmemb, size)	std_FeCallocHook(nmemb, size, DEFAULT_HEAP)
-	#define realloc(ptr, size)	std_FeReallocHook(ptr, size, DEFAULT_HEAP)
-	#define free(ptr)			std_FeFreeHook(ptr, DEFAULT_HEAP)
+	#define malloc(size)		std_FeMallocHook(size, JSON_HEAP)
+	#define calloc(nmemb, size)	std_FeCallocHook(nmemb, size, JSON_HEAP)
+	#define realloc(ptr, size)	std_FeReallocHook(ptr, size, JSON_HEAP,1)
+	#define free(ptr)			std_FeFreeHook(ptr, JSON_HEAP)
 
 	#pragma warning(disable: 4244)
 	#include <rapidjson/document.h>
@@ -32,10 +37,10 @@
 	#undef realloc
 	#undef free
 
-	#define malloc(size)		FeMallocHook(size, DEFAULT_HEAP)
-	#define calloc(nmemb, size)	FeCallocHook(nmemb, size, DEFAULT_HEAP)
-	#define realloc(ptr, size)	FeReallocHook(ptr, size, DEFAULT_HEAP)
-	#define free(ptr)			FeFreeHook(ptr, DEFAULT_HEAP)
+	#define malloc(size)		FeMallocHook(size, JSON_HEAP)
+	#define calloc(nmemb, size)	FeCallocHook(nmemb, size, JSON_HEAP)
+	#define realloc(ptr, size)	FeReallocHook(ptr, size, JSON_HEAP, 1)
+	#define free(ptr)			FeFreeHook(ptr, JSON_HEAP)
 
 #else
 	#pragma warning(disable: 4244)
@@ -47,7 +52,7 @@
 typedef rapidjson::Value FeSerializerValue;
 class FeSerializable;
 
-typedef FeSerializable*(*FeCreateObjectFunc) ();
+typedef FeSerializable*(*FeCreateObjectFunc) (uint32 iHeapId);
 
 struct FeFactory
 {
@@ -59,7 +64,7 @@ class FeCObjectsFactory
 {
 public:
 	void RegisterFactory(const char* sTypeName, FeCreateObjectFunc createFunc);
-	FeSerializable* CreateObjectFromFactory(const char* sTypeName);
+	FeSerializable* CreateObjectFromFactory(const char* sTypeName, uint32 iHeapId);
 
 	typedef std::map<uint32, FeFactory> FactoriesMap;
 	typedef FactoriesMap::iterator FactoriesMapIt;
@@ -103,7 +108,7 @@ FeCObjectsFactory& GetObjectsFactory();
 template<typename T>
 struct FeTFactory
 {
-	static FeSerializable* CreateInstance() { return FE_NEW(T, 1); }
+	static FeSerializable* CreateInstance(uint32 iHeapId) { return FE_NEW(T, iHeapId); }
 
 	FeTFactory()
 	{
@@ -114,13 +119,13 @@ struct FeTFactory
 namespace FeJsonParser
 {
 	template<class T>
-	uint32 DeserializeObject(T& output, const FePath& path)
+	uint32 DeserializeObject(T& output, const FePath& path, uint32 iHeapId)
 	{
-		return DeserializeObject(output, path.Value);
+		return DeserializeObject(output, path.Value, iHeapId);
 	}
 	
 	template<class T>
-	uint32 DeserializeObject(T& output, const char* path)
+	uint32 DeserializeObject(T& output, const char* path, uint32 iHeapId)
 	{
 		char* szContent;
 		size_t iFileSize;
@@ -160,11 +165,11 @@ namespace FeJsonParser
 
 		FE_FREE(szContent, 1);
 
-		return DeserializeObject(output, d);
+		return DeserializeObject(output, d, iHeapId);
 	}
 
 	template<class T>
-	uint32 DeserializeObject(T& output, FeSerializerValue& value)
+	uint32 DeserializeObject(T& output, FeSerializerValue& value, uint32 iHeapId)
 	{
 		FeSerializable* pOutput = dynamic_cast<FeSerializable*>(&output);
 		FE_ASSERT(pOutput, "Trying to deserialize non FeSerializable type !");
@@ -172,25 +177,19 @@ namespace FeJsonParser
 		if (!pOutput)
 			return FeEReturnCode::Failed;
 
-		(*pOutput).Deserialize(value);
+		(*pOutput).Deserialize(value, iHeapId);
 
 		return FeEReturnCode::Success;
 	}
 
-	//template<>
-	//uint32 DeserializeObject(FeSerializable*& output, FeSerializerValue& value)
-	//{
-	//	return output->Deserialize(value);
-	//}
-
 	template<class T>
-	uint32 SerializeObject(const T& input, const FePath& path)
+	uint32 SerializeObject(const T& input, const FePath& path, uint32 iHeapId)
 	{
 		return SerializeObject(input, path.Value);
 	}
 	
 	template<class T>
-	uint32 SerializeObject(const T& input, const char* path)
+	uint32 SerializeObject(const T& input, const char* path, uint32 iHeapId)
 	{
 		rapidjson::Document d;
 

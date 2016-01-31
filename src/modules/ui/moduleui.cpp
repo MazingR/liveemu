@@ -108,9 +108,41 @@ uint32 FeModuleUi::ReloadScripts()
 
 	pResourcesHandler->UnloadResources();
 
+	FeTArray<FePath> dbFiles;
+	dbFiles.SetHeapId(UI_HEAP);
+	FeFileTools::ListFilesRecursive(dbFiles, "db", ".*\\.json");
+
+	DataFiles.SetHeapId(JSON_HEAP);
+	DataFiles.Clear();
+	DataFiles.Reserve(dbFiles.GetSize());
+
+	for (auto& file : dbFiles)
+	{
+		FeDataFile& dataFile = DataFiles.Add();
+
+		auto iRes = FeJsonParser::DeserializeObject(dataFile, file, JSON_HEAP);
+		if (iRes != FeEReturnCode::Success)
+			DataFiles.PopBack();
+	}
+
+//	for (auto& game : Games)
+//	{
+//		FE_LOG("\nGame :\
+//\n%s\t%s\
+//\n%s\t%s\
+//\n%s\t%s\
+//\n%s\t%s\
+//", 
+//"Title", game.GetTitle().Cstr(),
+//"Developer", game.GetDeveloper().Cstr(),
+//"Platform", game.GetPlatform().Cstr(),
+//"Overview", game.GetOverview().Cstr()
+//			);
+//	}
+
 	// Load scripts from files
 	FeTArray<FePath> files;
-	files.SetHeapId(RENDERER_HEAP);
+	files.SetHeapId(UI_HEAP);
 
 	FeFileTools::ListFilesRecursive(files, "themes/common", ".*\\.fes");
 	FeFileTools::ListFilesRecursive(files, "themes/default", ".*\\.fes"); // load default theme
@@ -120,7 +152,7 @@ uint32 FeModuleUi::ReloadScripts()
 	for (auto& file : files)
 	{
 		FeScriptFile& scriptFile = ScriptFiles.Add();
-		auto iRes = FeJsonParser::DeserializeObject(scriptFile, file);
+		auto iRes = FeJsonParser::DeserializeObject(scriptFile, file, UI_HEAP);
 
 		if (iRes == FeEReturnCode::Success)
 		{
@@ -159,6 +191,7 @@ uint32 FeModuleUi::ReloadScripts()
 			pFontData->Size = uiFont.GetSize();
 			pFontData->Interval = uiFont.GetInterval();
 			pFontData->Space = uiFont.GetSpace();
+			pFontData->LineSpace = uiFont.GetLineSpace();
 			pFontData->TrueTypeFile = uiFont.GetTrueTypeFile();
 
 			pResourcesHandler->LoadResource(resource);
@@ -327,6 +360,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	FeVector2 vRes(1.0f / (float)resolution.w, 1.0f / (float)resolution.h);
 	FeVector2 vMapSize(1.0f / (float)pFontData->MapSize[0], 1.0f / (float)pFontData->MapSize[1]);
 	float fSize = pFontData->Size*vRes[1];
+	float fLineSpace = pFontData->LineSpace*vRes[1];
 	float fSpace = pFontData->Space*vRes[0];
 	float fInterval = pFontData->Interval*vRes[0];
 
@@ -340,6 +374,13 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 		if (szChar == ' ')
 		{
 			tOffset[0] += fSpace;
+			continue;
+		}
+
+		if (szChar == '\n')
+		{
+			tOffset[0] = 0;
+			tOffset[1] += fSize + fLineSpace;
 			continue;
 		}
 

@@ -4,7 +4,7 @@
 
 FeCObjectsFactory FeObjectsFactory;
 
-FeSerializable* FeCObjectsFactory::CreateObjectFromFactory(const char* sTypeName)
+FeSerializable* FeCObjectsFactory::CreateObjectFromFactory(const char* sTypeName, uint32 iHeapId)
 {
 	FeSerializable* pResult = NULL;
 	uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
@@ -12,7 +12,7 @@ FeSerializable* FeCObjectsFactory::CreateObjectFromFactory(const char* sTypeName
 	
 	if (it != Factories.end())
 	{
-		return it->second.CreateFunc();
+		return it->second.CreateFunc(iHeapId);
 	}
 	return NULL;
 }

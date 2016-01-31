@@ -122,8 +122,8 @@ uint32 FeApplication::Run()
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
 	FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
-	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Render");
-	FeMemoryManager::StaticInstance.CreateHeapMBytes(64, "Ui");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(31, "Render");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Ui");
 	FeFileTools::SetRootDir("../data");
 
 	FeApplication& app = FeApplication::StaticInstance;

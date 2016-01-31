@@ -30,9 +30,6 @@
 #define CONFIGSTR "Release"
 #endif
 
-#undef DEFAULT_HEAP
-#define DEFAULT_HEAP (unsigned int)-1
-
 #include <newhook.hpp>
 #include <mallochook.hpp>
 
@@ -127,7 +124,7 @@ inline T* FeNewA(size_t count, THeapId iHeapId = DEFAULT_HEAP)
 	return (T*)ptr;
 }
 template<typename T>
-void FeDelete(void* ptr, THeapId iHeapId = DEFAULT_HEAP)
+void FeDelete(T* ptr, THeapId iHeapId = DEFAULT_HEAP)
 {
 	((T*)(ptr))->~T();
 	FeNewFree(ptr, iHeapId);

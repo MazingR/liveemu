@@ -18,7 +18,7 @@ bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const ch
 	return false;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, bool* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, bool* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -28,7 +28,7 @@ uint32 FeDeserialize(FeSerializerValue& value, bool* pOutput, const char* _sProp
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, int* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -38,7 +38,7 @@ uint32 FeDeserialize(FeSerializerValue& value, int* pOutput, const char* _sPrope
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, uint32* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, uint32* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -48,7 +48,7 @@ uint32 FeDeserialize(FeSerializerValue& value, uint32* pOutput, const char* _sPr
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, float* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, float* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -58,7 +58,7 @@ uint32 FeDeserialize(FeSerializerValue& value, float* pOutput, const char* _sPro
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, FeVector3* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeVector3* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -71,7 +71,7 @@ uint32 FeDeserialize(FeSerializerValue& value, FeVector3* pOutput, const char* _
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, FeColor* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeColor* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -85,7 +85,7 @@ uint32 FeDeserialize(FeSerializerValue& value, FeColor* pOutput, const char* _sP
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, FePath* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FePath* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -95,7 +95,7 @@ uint32 FeDeserialize(FeSerializerValue& value, FePath* pOutput, const char* _sPr
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, FeTransform* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeTransform* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 
@@ -127,7 +127,7 @@ uint32 FeDeserialize(FeSerializerValue& value, FeTransform* pOutput, const char*
 	return FeEReturnCode::Success;
 }
 
-uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _sPropertyName, uint32 iHeapId)
 {
 	FeSerializerValue jsonProperty;
 

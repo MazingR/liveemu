@@ -5,6 +5,7 @@
 			"Name" : "Font_Default0",
 			"Size" : 32,
 			"Interval" : 1,
+			"LineSpace" : 2,
 			"Space" : 8,
 			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
 		},
@@ -12,13 +13,14 @@
 			"Name" : "Font_Default1",
 			"Size" : 32,
 			"Interval" : 1,
+			"LineSpace" : 5,
 			"Space" : 8,
 			"TrueTypeFile" : "themes/common/fonts/ka1.TTF"
 		},
 		{
 			"Name" : "Font_Default2",
 			"Size" : 64,
-			"TrueTypeFile" : "themes/common/fonts/CaviarDreams.TTF"
+			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
 		},
 		{
 			"Name" : "Font_Default3",
@@ -42,7 +44,7 @@
 			"FontEffect" : "Effect_Default_Font",
 			"Transform" : 
 			{
-				"T" : [0.0,		0.0,	0.0],
+				"T" : [0.25,		0.0,	0.0],
 				"S" : [1.0,		1.0,	1.0]
 			},
 			"Bindings" :
@@ -64,7 +66,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"I'm writing stuff !"
+						"Value" :"I'm writing stuff !\nand it's cool.\noh yeah !"
 					},
 					"Target" : 
 					{
@@ -95,7 +97,7 @@
 					"Effect" : "Effect_Default",
 					"Transform" : 
 					{
-						"T" : [0.5,		0.1,	0.01],
+						"T" : [0.2,		0.2,	0.01],
 						"S" : [0.3,		0.8,	1.0]
 					}
 				}
@@ -125,10 +127,10 @@
 					}
 				},
 				{
-					"Source" : 
+					"Source" :
 					{
 						"Type" : "Source_Static",
-						"Value" :"Me too !"
+						"Value" :"Here is \nanother line."
 					},
 					"Target" : 
 					{

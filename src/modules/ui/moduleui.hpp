@@ -78,6 +78,8 @@ private:
 	FeUiElementTraversalList		TraversalList;
 
 	FeTArray<FeUiDefferedApplyBinding> DefferedApplyBindingData;
+
+	FeTArray<FeDataFile>			DataFiles;
 };
 
 //

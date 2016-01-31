@@ -140,6 +140,7 @@ public:
 	FeSize				MapSize;
 	uint32				Size;
 	uint32				Space;
+	uint32				LineSpace;
 	uint32				Interval;
 	FePath				TrueTypeFile;
 

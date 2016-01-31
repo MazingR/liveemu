@@ -39,8 +39,12 @@ void FeStringPool::DeleteString(FeString* pStr)
 	if (pStr->Pooled)
 	{
 		FePooledString& pooledStr = *pStr->Pooled;
+		pStr->Pooled = NULL;
 
 		FE_ASSERT(pooledStr.RefCount > 0, "Invalid pooled string ref count !");
+		if (pooledStr.RefCount == 0)
+			return;
+
 		pooledStr.RefCount--;
 
 		if (pooledStr.RefCount == 0)
@@ -53,6 +57,10 @@ void FeStringPool::DeleteString(FeString* pStr)
 }
 FeString FeStringPool::CreateString(const char* szValue)
 {
+	size_t iLen = strlen(szValue);
+	if (!iLen)
+		return FeString();
+
 	uint32 iId = FeStringTools::GenerateUIntIdFromString(szValue);
 	static StringPoolMapIt itEnd = Pool.end();
 
@@ -65,10 +73,13 @@ FeString FeStringPool::CreateString(const char* szValue)
 	Pool[iId] = FePooledString();
 
 	FePooledString* pooledStr = &Pool[iId];
-	size_t iLen = strlen(szValue) + 1;
 
+	iLen++; // add one char for end of str
 	pooledStr->Cstr = FE_NEW_ARRAY(char, iLen, 1);
-	sprintf_s(pooledStr->Cstr, iLen, szValue);
+	
+	memcpy_s(pooledStr->Cstr, iLen, szValue, iLen);
+	pooledStr->Cstr[iLen] = '\0';
+	//sprintf_s(pooledStr->Cstr, iLen, szValue);
 
 	pooledStr->Id = iId;
 	pooledStr->Size = iLen;

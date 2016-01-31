@@ -9,7 +9,7 @@ extern "C" {
 
 	void *FeMallocHook(size_t size, int iHeapId);
 	void *FeCallocHook(size_t nmemb, size_t size, int iHeapId);
-	void *FeReallocHook(void *ptr, size_t size, int iHeapId);
+	void *FeReallocHook(void *ptr, size_t size, int iHeapIdiCopy, int iCopy);
 	void FeFreeHook(void *ptr, int iHeapId);
 
 #ifdef __cplusplus

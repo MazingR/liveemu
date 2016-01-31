@@ -21,6 +21,7 @@ public:
 		Size = 32;
 		Space = 16;
 		Interval = 1;
+		LineSpace = 2;
 	}
 #define FeUiFont_Properties(_d)	\
 	_d(FeString, Name)			\
@@ -28,6 +29,7 @@ public:
 	_d(uint32, Size)			\
 	_d(uint32, Space)			\
 	_d(uint32, Interval)		\
+	_d(uint32, LineSpace)		\
 
 	FE_DECLARE_CLASS_BODY(FeUiFont_Properties, FeUiFont, FeSerializable)
 };
@@ -41,6 +43,32 @@ public:
 	_d(FeNTArray<FeRenderEffect>,	Effects)	\
 	_d(FeNTArray<FeUiFont>,			Fonts)		\
 
-	FE_DECLARE_CLASS_BODY(FeScriptFile_Properties, FeUiElement, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeScriptFile_Properties, FeScriptFile, FeSerializable)
 };
 FE_DECLARE_CLASS_BOTTOM(FeScriptFile)
+
+class FeDataGame : public FeSerializable
+{
+public:
+#define FeDataGame_Properties(_d)				\
+	_d(FeString,				Title)			\
+	_d(FeString,				Platform)		\
+	_d(uint32,					Players)		\
+	_d(FeString,				Publisher)		\
+	_d(FeString,				Developer)		\
+	_d(FeNTArray<FeString>,		GenresList)		\
+	_d(FeString,				Overview)		\
+
+	FE_DECLARE_CLASS_BODY(FeDataGame_Properties, FeDataGame, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeDataGame)
+
+class FeDataFile : public FeSerializable
+{
+public:
+#define FeDataFile_Properties(_d)				\
+	_d(FeNTArray<FeDataGame>,		Games)		\
+
+	FE_DECLARE_CLASS_BODY(FeDataFile_Properties, FeDataFile, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeDataFile)
