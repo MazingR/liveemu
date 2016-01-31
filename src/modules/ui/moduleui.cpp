@@ -6,6 +6,8 @@
 #include <common/maths.hpp>
 #include <queue>
 
+#define UI_HEAP 2
+
 void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
 {
 	FeSetLastError("");
@@ -15,6 +17,8 @@ void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath
 void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList& traversal)
 {
 	std::queue<FeUiElementTraversalNode*> uiElements;
+
+	// Count entries first
 
 	for (auto& panel : script.GetPanels())
 	{
@@ -52,13 +56,14 @@ void FeModuleUi::ComputeRenderingInstances()
 		FeUiElement* pCurrent = uiNode.Current;
 		FeUiElement* pParent = uiNode.Parent;
 
-		FeUiRenderingInstance& renderingInstance = RenderingInstances.Add(); // create rendering instance
-		uiNode.RenderInstance = &renderingInstance;
+		FeUiRenderingInstance* pRenderingInstance = FE_NEW(FeUiRenderingInstance, UI_HEAP); // create rendering instance
+		RenderingInstances.Add(pRenderingInstance);
+		uiNode.RenderInstance = pRenderingInstance;
 
-		renderingInstance.Owner = pCurrent;
-		renderingInstance.Geometry.Effect = pCurrent->GetEffect().Id();
-		renderingInstance.Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-		//renderingInstance.Geometry.Textures.Clear();
+		pRenderingInstance->Owner = pCurrent;
+		pRenderingInstance->Geometry.Effect = pCurrent->GetEffect().Id();
+		pRenderingInstance->Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		//pRenderingInstance->Geometry.Textures.Clear();
 
 		FeVector3	t = pCurrent->GetTransform().Translation;
 		FeRotation	r = pCurrent->GetTransform().Rotation;
@@ -77,7 +82,7 @@ void FeModuleUi::ComputeRenderingInstances()
 				s[i] *= pS[i];
 			}
 		}
-		FeGeometryHelper::ComputeAffineTransform(renderingInstance.Geometry.Transform, t, r, s);
+		FeGeometryHelper::ComputeAffineTransform(pRenderingInstance->Geometry.Transform, t, r, s);
 	}
 
 }
@@ -87,9 +92,16 @@ uint32 FeModuleUi::ReloadScripts()
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 
 	// Clear stuff
-	pRenderingModule->UnloadEffects();
+	pRenderingModule->UnloadEffects(); 
 	ScriptFiles.Clear();
+	
+	for (auto pInstance : RenderingInstances)
+	{
+		FE_DELETE(FeUiRenderingInstance, pInstance, UI_HEAP);
+	}
 	RenderingInstances.Clear();
+	RenderingInstances.SetHeapId(UI_HEAP);
+
 	RenderingInstances.Reserve(1024);
 	Panels.Clear();
 	TraversalList.Nodes.Clear();
@@ -102,6 +114,8 @@ uint32 FeModuleUi::ReloadScripts()
 
 	FeFileTools::ListFilesRecursive(files, "themes/common", ".*\\.fes");
 	FeFileTools::ListFilesRecursive(files, "themes/default", ".*\\.fes"); // load default theme
+
+	ScriptFiles.Reserve(files.GetSize());
 
 	for (auto& file : files)
 	{
@@ -135,12 +149,13 @@ uint32 FeModuleUi::ReloadScripts()
 		for (auto& uiFont : script.GetFonts())
 		{
 			FeRenderLoadingResource resource;
-			resource.Type = FeEResourceType::Font;
+			resource.Resource = FE_NEW(FeRenderFont, RENDERER_HEAP);
 			resource.Path = uiFont.GetTrueTypeFile();
-			
+			resource.Type = FeEResourceType::Font;
 			resource.Id = FeStringTools::GenerateUIntIdFromString(uiFont.GetName().Cstr());
-			resource.Interface = FeCreateRenderResourceInterface<FeRenderFont>();
-			auto* pFontData = (FeRenderFont*)resource.Interface->GetData();
+
+			auto* pFontData = (FeRenderFont*)resource.Resource;
+
 			pFontData->Size = uiFont.GetSize();
 			pFontData->Interval = uiFont.GetInterval();
 			pFontData->Space = uiFont.GetSpace();
@@ -154,6 +169,16 @@ uint32 FeModuleUi::ReloadScripts()
 	ApplyBindingByType(FeETargetPropertyType::Image);
 	ApplyBindingByType(FeETargetPropertyType::Other);
 	ApplyBindingByType(FeETargetPropertyType::Text);
+
+	for (auto pInstance : RenderingInstances)
+	{
+		if (pInstance->FontResource)
+		{
+			if (pInstance->Geometry.Textures[0] == 0 &&
+				pInstance->Geometry.Textures[1] == 0)
+				pInstance->IsCulled = true;
+		}
+	}
 
 	return FeEReturnCode::Success;
 }
@@ -235,8 +260,9 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 				}
 			}
 			if (!bFoundElement)
+			{
 				FE_LOG("Couldn't find target element from binding path !");
-			
+			}
 			if (!bFoundElement)
 				return FeEReturnCode::Failed;
 		}
@@ -250,13 +276,16 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 		{
 			FeRenderLoadingResource resource;
 			resource.Path.Set(sourceData.Cstr());
+			resource.Resource = FE_NEW(FeRenderTexture, RENDERER_HEAP);
 			resource.Type = FeEResourceType::Texture;
 			pResourcesHandler->LoadResource(resource); // schedule resource loading
 			
-			if (geomInstance.Textures.GetSize() < (targetBinding.GetIndex() + 1))
-				geomInstance.Textures.Resize(targetBinding.GetIndex() + 1);
+			//if (geomInstance.Textures.GetSize() < (targetBinding.GetIndex() + 1))
+			//	geomInstance.Textures.Resize(targetBinding.GetIndex() + 1);
 
-			geomInstance.Textures.SetAt(targetBinding.GetIndex(), resource.Id);
+			//geomInstance.Textures.SetAt(targetBinding.GetIndex(), resource.Id);
+
+			geomInstance.Textures[targetBinding.GetIndex()] = resource.Id;
 
 		} break;
 		case FeETargetPropertyType::Font:
@@ -287,7 +316,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	if (!pResource || pResource->LoadingState != FeEResourceLoadingState::Loaded)
 		return FeEReturnCode::Failed;
 
-	auto* pFontData = (FeRenderFont*)pResource->Interface->GetData();
+	auto* pFontData = (FeRenderFont*)pResource;
 	const char* szText = sourceData.Cstr();
 	
 	uint32 iTextLen = strlen(szText);
@@ -324,13 +353,15 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 			charData.Width*vMapSize[0],
 			charData.Height*vMapSize[1]);
 
-		FeUiRenderingInstance& renderingInstance = RenderingInstances.Add(); // create rendering instance
+		FeUiRenderingInstance* pRenderingInstance = FE_NEW(FeUiRenderingInstance, UI_HEAP); // create rendering instance
+		RenderingInstances.Add(pRenderingInstance);
 
-		renderingInstance.Owner = pCurrent;
-		renderingInstance.Geometry.Effect = pCurrent->GetFontEffect().Id();
-		renderingInstance.Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-		renderingInstance.Geometry.Textures.Add(pTarget->RenderInstance->FontResource);
-		renderingInstance.Geometry.UserData = vCharData;
+		pRenderingInstance->Owner = pCurrent;
+		pRenderingInstance->Geometry.Effect = pCurrent->GetFontEffect().Id();
+		pRenderingInstance->Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		//pRenderingInstance->Geometry.Textures.Add(pTarget->RenderInstance->FontResource);
+		pRenderingInstance->Geometry.Textures[0] = pTarget->RenderInstance->FontResource;
+		pRenderingInstance->Geometry.UserData = vCharData;
 
 		float fCharWidth = charData.Width *vRes[0];
 		float fCharHeight = charData.Height * vRes[1];
@@ -347,7 +378,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 
 		tOffset[0] += s[0] + charData.OffsetLeft*vRes[0] + fInterval;
 
-		FeGeometryHelper::ComputeAffineTransform(renderingInstance.Geometry.Transform, t, r, s);
+		FeGeometryHelper::ComputeAffineTransform(pRenderingInstance->Geometry.Transform, t, r, s);
 	}
 	return FeEReturnCode::Success;
 }
@@ -398,9 +429,10 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 	FeRenderBatch& renderBatch = pRenderingModule->CreateRenderBatch();
 	renderBatch.GeometryInstances.Reserve(RenderingInstances.GetSize());
 
-	for (auto& instance : RenderingInstances)
+	for (auto pInstance : RenderingInstances)
 	{
-		renderBatch.GeometryInstances.Add(instance.Geometry);
+		if (!pInstance->IsCulled)
+			renderBatch.GeometryInstances.Add(pInstance->Geometry);
 		//FE_ASSERT(instance.Geometry.Textures.GetSize() < 8, "");
 	}
 

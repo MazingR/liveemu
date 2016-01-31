@@ -12,12 +12,13 @@ struct FeUiRenderingInstance
 {
 	FeUiElement*				Owner;
 	FeRenderGeometryInstance	Geometry;
-	
 	FeResourceId				FontResource;
+	bool						IsCulled;
 
 	FeUiRenderingInstance() : 
 		Owner(NULL),
-		FontResource(NULL) {}
+		FontResource(NULL),
+		IsCulled(false){}
 };
 
 struct FeUiElementTraversalNode
@@ -67,8 +68,8 @@ private:
 	void ApplyBindingByType(FeETargetPropertyType::Type type);
 	uint32 GenerateTextRenderingNodes(FeUiElementTraversalNode& node, const FeString& sourceData);
 private:
-	FeTArray<FeScriptFile>			ScriptFiles;
-	FeTArray<FeUiRenderingInstance> RenderingInstances;
+	FeNTArray<FeScriptFile>			ScriptFiles;
+	FeTArray<FeUiRenderingInstance*> RenderingInstances;
 	
 	FeTArray<FeUiPanel*>			Panels;
 	FeTArray<FeRenderEffect*>		Effects;

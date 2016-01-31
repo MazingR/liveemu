@@ -16,9 +16,21 @@ struct FeModuleRenderResourcesHandlerDebugInfos
 	uint32 ResourcesPoolSize;
 	uint32 LoadedResourcesCountSizeInMemory;
 };
-
 class FeModuleRenderResourcesHandler : public FeModule
 {
+
+	typedef std::map<FeResourceId, FeRenderLoadingResource> ResourcesLoadingMap;
+	typedef ResourcesLoadingMap::iterator ResourcesLoadingMapIt;
+	typedef std::map<FeResourceId, FeRenderResource*> ResourcesMap;
+	typedef ResourcesMap::iterator ResourcesMapIt;
+
+	struct LockedLoadingResourcesMap
+	{
+		SDL_mutex*			Mutex;
+		ResourcesLoadingMap	Resources;
+	};
+	
+
 public:
 	virtual uint32 Load(const FeModuleInit*) override;
 	virtual uint32 Unload() override;
@@ -32,30 +44,15 @@ public:
 	uint32 ProcessThreadedResourcesLoading(bool& bThreadSopped);
 	void UnloadResources();
 private:
-	typedef std::map<FeResourceId, FeRenderResource> ResourcesMap;
-	typedef ResourcesMap::iterator ResourcesMapIt;
-
-	typedef std::map<FeResourceId, FeRenderLoadingResource> ResourcesLoadingMap;
-	typedef ResourcesLoadingMap::iterator ResourcesLoadingMapIt;
-
 	uint32 LoadTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData);
 	uint32 LoadFont(FeRenderLoadingResource& resource, FeRenderFont* pTextureData);
 	uint32 PostLoadFont(FeRenderLoadingResource& resource, FeRenderFont* pTextureData);
 	uint32 SaveTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData);
 
-
+	std::map<FeEResourceLoadingState::Type, LockedLoadingResourcesMap> LoadingResources;
 	SDL_Thread*			LoadingThread;
-		
+	SDL_mutex*			LoadingThreadMutex;
 	ResourcesMap		Resources;
-	
-	ResourcesLoadingMap	ResourcesToSave;
-	ResourcesLoadingMap	ResourcesLoading;
-
-	SDL_mutex*			ResourcesLoadingThreadMutex;
-	SDL_mutex*			ResourcesLoadingMutex;
-
-	ResourcesLoadingMap	ResourcesLoaded;
-	SDL_mutex*			ResourcesLoadedMutex;
 
 	size_t				ResourcePoolAllocated;
 	size_t				ResourcePoolLimit;

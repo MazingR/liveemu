@@ -65,7 +65,9 @@ namespace FeEResourceLoadingState
 		Idle,
 		Loading,
 		Loaded,
-		LoadFailed
+		Saving,
+		LoadFailed,
+		Count
 	};
 }
 typedef uint32 FeResourceId;
@@ -87,67 +89,36 @@ namespace FeEResourceType
 	};
 }
 
-class FeIRenderResourceInterface
+struct FeRenderResource
 {
-public:
-	virtual void CopyTo(FeIRenderResourceInterface* pCopy) = 0;
-	virtual void CopyAndAllocateTo(FeIRenderResourceInterface** pCopy) = 0;
-	virtual void Release()=0;
-	virtual void ReleaseResource() = 0;
-	
-	virtual void* GetData() = 0;
+	FeEResourceLoadingState::Type	LoadingState;
+	uint32							SizeInMemory;
+	bool							RuntimeCreated;
+
+	FeRenderResource() : 
+		SizeInMemory(0)
+	{}
+
+	virtual void Release() = 0;
+	virtual ID3D11Resource* GetD3DResource(uint32 iIdx) const = 0;
+	virtual ID3D11ShaderResourceView* GetD3DSRV(uint32 iIdx) const = 0;
+
 };
+typedef void(*FeResourceLoadingCallbackFunc) (FeRenderResource* pResource, void* pUserData);
 
-template<typename T>
-class FeRenderResourceInterface : public FeIRenderResourceInterface
-{
-public:
-	void CopyTo(FeIRenderResourceInterface* pCopy)
-	{
-		memcpy_s(pCopy, sizeof(FeRenderResourceInterface<T>), this, sizeof(FeRenderResourceInterface<T>));
-	}
-	void CopyAndAllocateTo(FeIRenderResourceInterface** pCopy)
-	{
-		*pCopy = FE_NEW(FeRenderResourceInterface<T>, RENDERER_HEAP);
-		CopyTo(*pCopy);
-	}
-	void Release()
-	{
-		FE_DELETE(FeRenderResourceInterface<T>, this, RENDERER_HEAP);
-	}
-	void ReleaseResource()
-	{
-		Data.Release();
-	}
-
-	void* GetData()
-	{
-		return &Data;
-	}
-
-	T* GetTData()
-	{
-		return &Data;
-	}
-	T Data;
-};
-
-template<typename T>
-static FeRenderResourceInterface<T>* FeCreateRenderResourceInterface()
-{
-	return FE_NEW(FeRenderResourceInterface<T>, RENDERER_HEAP);
-}
-
-struct FeRenderTexture
+struct FeRenderTexture : public FeRenderResource
 {
 	ID3D11Resource*					D3DResource;
 	ID3D11ShaderResourceView*		D3DSRV;
 
 	FeRenderTexture() :
 		D3DResource(NULL),
-		D3DSRV(NULL) {}
+		D3DSRV(NULL)
+	{}
 
 	void Release();
+	ID3D11Resource* GetD3DResource(uint32 iIdx) const;
+	ID3D11ShaderResourceView* GetD3DSRV(uint32 iIdx) const;
 };
 
 struct FeRenderFontChar
@@ -159,7 +130,7 @@ struct FeRenderFontChar
 	uint32 Width;
 	uint32 Height;
 };
-class FeRenderFont
+class FeRenderFont : public FeRenderResource
 {
 public:
 	FeRenderTexture		Texture;
@@ -176,22 +147,13 @@ public:
 
 	FeRenderFont() :
 		FtFontFace(NULL),
-		MapTmpData(NULL) {}
+		MapTmpData(NULL)
+	{}
 
 	void Release();
+	ID3D11Resource* GetD3DResource(uint32 iIdx) const;
+	ID3D11ShaderResourceView* GetD3DSRV(uint32 iIdx) const;
 };
-
-struct FeRenderResource
-{
-	FeEResourceType::Type			Type;
-	FeEResourceLoadingState::Type	LoadingState;
-	uint32							SizeInMemory;
-	bool							RuntimeCreated;
-	FeIRenderResourceInterface*		Interface;
-
-	FeRenderResource() : Interface(NULL), SizeInMemory(0) {}
-};
-typedef void(*FeResourceLoadingCallbackFunc) (FeRenderResource* pResource, void* pUserData);
 
 struct FeResourceLoadingCallback
 {
@@ -199,13 +161,37 @@ struct FeResourceLoadingCallback
 	void*							UserData;
 };
 
-struct FeRenderLoadingResource : public FeRenderResource
+class FeRenderLoadingResource
 {
+private:
+
+	template<typename T>
+	FeRenderResource* AllocateResource()
+	{
+		return FE_NEW(T, RENDERER_HEAP);
+	}
+public:
 	FePath						Path;
 	FeResourceId				Id;
 	FeResourceLoadingCallback	LoadingFinishedCallback;
+	FeRenderResource*			Resource;
+	FeEResourceType::Type		Type;
 
-	FeRenderLoadingResource() : Id(0) {}
+	FeRenderLoadingResource() : 
+		Id(0),
+		Resource(NULL)
+	{}
+
+	void CreateResource()
+	{
+		FE_ASSERT(Resource == NULL, "resource already created !");
+
+		switch (Type)
+		{
+		case FeEResourceType::Font:		Resource = AllocateResource<FeRenderFont>();	break;
+		case FeEResourceType::Texture:	Resource = AllocateResource<FeRenderTexture>();	break;
+		}
+	}
 };
 struct FeRenderViewport
 {
@@ -244,13 +230,17 @@ struct FeRenderGeometryInstance
 	FeResourceId					Effect;
 	FeGeometryTransform				Transform;
 	FeVector4						UserData;
-	FeTArray<FeResourceId>			Textures;
+
+	FeResourceId			Textures[2];
+	//FeTArray<FeResourceId>			Textures;
 
 	FeRenderGeometryInstance()
 	{
-		Textures.SetHeapId(RENDERER_HEAP);
-		Textures.Reserve(1);
-		Textures.Clear();
+		memset(Textures, 0, sizeof(Textures));
+
+		//Textures.SetHeapId(RENDERER_HEAP);
+		//Textures.Reserve(1);
+		//Textures.Clear();
 	}
 };
 namespace FeEGemetryDataType

@@ -165,3 +165,6 @@ struct FePath
 	}
 	inline void Set(const char* str);
 };
+
+#define SafeDelete(ptr) {if (ptr) delete ptr; }
+#define SafeDeleteArray(ptr) {if (ptr) delete[] ptr; }

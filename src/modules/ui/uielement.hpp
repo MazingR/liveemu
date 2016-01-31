@@ -34,7 +34,7 @@ class FeUiBinding : public FeSerializable
 {
 public:
 #define FeUiBinding_Properties(_d)				\
-		_d(FeTArray<FeString>,		Path)		\
+		_d(FeNTArray<FeString>,		Path)		\
 		_d(FeString,				Property)	\
 		_d(uint32,					Index)		\
 		_d(FeString,				Value)		\
@@ -67,11 +67,11 @@ public:
 		_d(FeString,						Name)			\
 		_d(FeTransform,						Transform)		\
 		_d(FeEUiElementState::Type,			State)			\
-		_d(FeTArray<FeTPtr<FeUiElement>>,	Children)		\
+		_d(FeNTArray<FeTPtr<FeUiElement>>,	Children)		\
 		_d(FeString,						Effect)			\
 		_d(FeString,						FontEffect)		\
 		_d(FeString,						Font)			\
-		_d(FeTArray<FeUiDataBinding>,		Bindings)		\
+		_d(FeNTArray<FeUiDataBinding>,		Bindings)		\
 
 	FE_DECLARE_CLASS_BODY(FeUiElement_Properties, FeUiElement, FeSerializable)
 };

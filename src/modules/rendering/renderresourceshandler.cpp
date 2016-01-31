@@ -62,12 +62,12 @@ int ResourcesHandlerThreadFunction(void* pData)
 uint32 FeModuleRenderResourcesHandler::ProcessThreadedResourcesLoading(bool& bThreadSopped)
 {
 	{
-		SCOPELOCK(ResourcesLoadingThreadMutex); // <------ Lock Mutex
+		SCOPELOCK(LoadingThreadMutex); // <------ Lock Mutex
 
 		ResourcesLoadingMap* pResourcesToLoad = NULL;
 		{
-			SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
-			pResourcesToLoad = new ResourcesLoadingMap(ResourcesLoading);
+			SCOPELOCK(LoadingResources[FeEResourceLoadingState::Loading].Mutex); // <------ Lock Mutex
+			pResourcesToLoad = new ResourcesLoadingMap(LoadingResources[FeEResourceLoadingState::Loading].Resources);
 		}
 
 		ResourcesLoadingMap& resourcesToLoad = *pResourcesToLoad;
@@ -84,24 +84,24 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedResourcesLoading(bool& bTh
 			{
 			case FeEResourceType::Texture:
 			{
-				iRet = LoadTexture(resource, (FeRenderTexture*)resource.Interface->GetData());
+				iRet = LoadTexture(resource, (FeRenderTexture*)resource.Resource);
 			} break;
 			case FeEResourceType::Font:
 			{
-				iRet = LoadFont(resource, (FeRenderFont*)resource.Interface->GetData());
+				iRet = LoadFont(resource, (FeRenderFont*)resource.Resource);
 			} break;
 			}
 
-			resource.LoadingState = FE_FAILED(iRet) ? FeEResourceLoadingState::LoadFailed : FeEResourceLoadingState::Loaded;
+			resource.Resource->LoadingState = FE_FAILED(iRet) ? FeEResourceLoadingState::LoadFailed : FeEResourceLoadingState::Loaded;
 
 			{
-				SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
-				ResourcesLoading.erase(idedResource.first);
+				SCOPELOCK(LoadingResources[FeEResourceLoadingState::Loading].Mutex); // <------ Lock Mutex
+				LoadingResources[FeEResourceLoadingState::Loading].Resources.erase(idedResource.first);
 			}
 
 			{
-				SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
-				ResourcesLoaded[idedResource.first] = resource;
+				SCOPELOCK(LoadingResources[FeEResourceLoadingState::Loaded].Mutex); // <------ Lock Mutex
+				LoadingResources[FeEResourceLoadingState::Loaded].Resources[idedResource.first] = resource;
 			}
 		}
 
@@ -119,12 +119,12 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 	
 	for (ResourcesMapIt it = Resources.begin(); it != Resources.end(); ++it)
 	{
-		FeRenderResource& resource = it->second;
+		FeRenderResource* pResource = it->second;
 
-		if (resource.LoadingState == FeEResourceLoadingState::Loaded)
+		if (pResource->LoadingState == FeEResourceLoadingState::Loaded)
 		{
 			infos.LoadedResourcesCount++;
-			infos.LoadedResourcesCountSizeInMemory += resource.SizeInMemory;
+			infos.LoadedResourcesCountSizeInMemory += pResource->SizeInMemory;
 		}
 	}
 }
@@ -133,10 +133,12 @@ uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 	ResourcePoolLimit = 256*(1024*1024);
 	ResourcePoolAllocated = 0;
 
-	ResourcesLoadingMutex = SDL_CreateMutex();
-	ResourcesLoadedMutex = SDL_CreateMutex();
-	ResourcesLoadingThreadMutex = SDL_CreateMutex();
-
+	for (uint32 i = 0; i < FeEResourceLoadingState::Count; ++i)
+	{
+		LoadingResources[(FeEResourceLoadingState::Type)(i)] = LockedLoadingResourcesMap();
+		LoadingResources[(FeEResourceLoadingState::Type)(i)].Mutex = SDL_CreateMutex();
+	}
+	LoadingThreadMutex = SDL_CreateMutex();
 	LoadingThread = SDL_CreateThread(ResourcesHandlerThreadFunction, "ModuleRenderResourcesHandler", this);
 
 	// Initialize freetype
@@ -154,8 +156,8 @@ uint32 FeModuleRenderResourcesHandler::Unload()
 	int iReturned;
 	SDL_WaitThread(LoadingThread, &iReturned);
 
-	SDL_DestroyMutex(ResourcesLoadingMutex);
-	SDL_DestroyMutex(ResourcesLoadedMutex);
+	for (uint32 i = 0; i < FeEResourceLoadingState::Count; ++i)
+		SDL_DestroyMutex(LoadingResources[(FeEResourceLoadingState::Type)(i)].Mutex);
 
 	return FeEReturnCode::Success;
 }
@@ -164,42 +166,42 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
 	{
-		SCOPELOCK(ResourcesLoadedMutex); // <------ Lock Mutex
+		SCOPELOCK(LoadingResources[FeEResourceLoadingState::Loaded].Mutex); // <------ Lock Mutex
 
-		for (ResourcesLoadingMapIt it = ResourcesLoaded.begin(); it != ResourcesLoaded.end(); ++it)
+		ResourcesLoadingMap& loadedResources = LoadingResources[FeEResourceLoadingState::Loaded].Resources;
+
+		for (ResourcesLoadingMapIt it = loadedResources.begin(); it != loadedResources.end(); ++it)
 		{
-			FeRenderLoadingResource& resource = it->second;
+			FeRenderLoadingResource& loadingResource = it->second;
+			FeRenderResource* pResource = loadingResource.Resource;
 
-			if (resource.Type == FeEResourceType::Font)
-				PostLoadFont(resource, (FeRenderFont*)resource.Interface->GetData());
+			if (loadingResource.Type == FeEResourceType::Font)
+				PostLoadFont(loadingResource, (FeRenderFont*)pResource);
 
-			FeRenderResource& loadedResource = Resources[it->first];
-
-			loadedResource.LoadingState	= resource.LoadingState;
-			loadedResource.SizeInMemory	= resource.SizeInMemory;
-
-			ResourcePoolAllocated += loadedResource.SizeInMemory;
+			ResourcePoolAllocated += pResource->SizeInMemory;
 #if SAVE_CREATED_RESOURCE
-			if (resource.RuntimeCreated && resource.LoadingState == FeEResourceLoadingState::Loaded && resource.Type == FeEResourceType::Texture)
+			if (pResource->RuntimeCreated && pResource->LoadingState == FeEResourceLoadingState::Loaded && loadingResource.Type == FeEResourceType::Texture)
 #else
 			if (false)
 #endif
 			{
-				ResourcesToSave[it->first] = resource;
+				LoadingResources[FeEResourceLoadingState::Saving].Resources[it->first] = loadingResource;
 			}
 		}
 
-		ResourcesLoaded.clear();
+		loadedResources.clear();
 	}
 
-	for (ResourcesLoadingMapIt it = ResourcesToSave.begin(); it != ResourcesToSave.end(); ++it)
+	ResourcesLoadingMap& savingResources = LoadingResources[FeEResourceLoadingState::Saving].Resources;
+
+	for (ResourcesLoadingMapIt it = savingResources.begin(); it != savingResources.end(); ++it)
 	{
 		FeRenderLoadingResource& resource = it->second;
 
 		FePath savedFile;
 		FeFileTools::GetFullPathChangeExtension(savedFile, resource.Path.Value, "dds");
 
-		FeRenderTexture* pTextureData = (FeRenderTexture*)resource.Interface->GetData();
+		FeRenderTexture* pTextureData = (FeRenderTexture*)resource.Resource;
 		char szFullPath[COMMON_PATH_SIZE];
 		sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, savedFile.Value);
 
@@ -214,7 +216,7 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 			FE_LOG("Save converted resource %s", resource.Path.Value);
 		}
 
-		ResourcesToSave.erase(it);
+		savingResources.erase(it);
 
 		break; //  process one file per frame
 	}
@@ -223,7 +225,7 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 const FeRenderResource* FeModuleRenderResourcesHandler::GetResource(const FeResourceId& resourceId) const
 {
 	ResourcesMap::const_iterator it = Resources.find(resourceId);
-	return (it != Resources.end()) ? &it->second : NULL;
+	return (it != Resources.end()) ? it->second : NULL;
 }
 uint32 FeModuleRenderResourcesHandler::UnloadResource(const FeResourceId&)
 {
@@ -232,37 +234,22 @@ uint32 FeModuleRenderResourcesHandler::UnloadResource(const FeResourceId&)
 }
 uint32 FeModuleRenderResourcesHandler::LoadResource(FeRenderLoadingResource& resource)
 {
-	if (resource.Id == 0)
-	{
+	if (resource.Id == 0) // compute resource sting id
 		resource.Id = FeStringTools::GenerateUIntIdFromString(resource.Path.Value);
-	}
 
 	if (!GetResource(resource.Id))
 	{
-		Resources[resource.Id] = FeRenderResource();
-		FeRenderResource& newResource = Resources[resource.Id];
-		newResource.LoadingState = FeEResourceLoadingState::Idle;
-		newResource.Type = resource.Type;
-		newResource.Interface = resource.Interface;
+		if (NULL == resource.Resource)
+			resource.CreateResource(); // allocate resource
+
+		FE_ASSERT(resource.Resource, "couldn't created render resource !");
+
+		Resources[resource.Id] = resource.Resource;
+		resource.Resource->LoadingState = FeEResourceLoadingState::Loading;
 
 		{
-			SCOPELOCK(ResourcesLoadingMutex); // <------ Lock Mutex
-			
-			if (newResource.Interface == NULL)
-			{
-				switch (resource.Type)
-				{
-				case FeEResourceType::Texture: newResource.Interface = FeCreateRenderResourceInterface<FeRenderTexture>();	break;
-				case FeEResourceType::Font: newResource.Interface = FeCreateRenderResourceInterface<FeRenderFont>();	break;
-				default:
-				{
-					FE_ASSERT(false, "Unknown render resource type !");
-				}
-				}
-			}
-			
-			ResourcesLoading[resource.Id] = resource;
-			ResourcesLoading[resource.Id].Interface = newResource.Interface;
+			SCOPELOCK(LoadingResources[FeEResourceLoadingState::Loading].Mutex); // <------ Lock Mutex
+			LoadingResources[FeEResourceLoadingState::Loading].Resources[resource.Id] = resource;
 		} // <------ Unlock Mutex
 	}
 	return FeEReturnCode::Success;
@@ -290,26 +277,23 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 		return FeEReturnCode::Failed;
 	}
 
-	uint32 iCharSize = pFont->Size;
-	uint32 iMapWidth	= 0;
-	uint32 iMapHeight	= 0;
-	uint32 iCharInterval = 4;
-	const char szTemplateFontContent[] = {
-"abcdefghijklmnopqrstuvwxyz\
-ABCDEFGHIJKLMNOPQRSTUVWXYZ\
-123456789\
-àéêâùçèûôîµ\
-,;:!?./§%*€$\\&#'{([-|_@)]})=\
-"
-/*
-*/
-	};
-	const uint32 iMaxCharCount = sizeof(szTemplateFontContent);
+	const char szTemplateFontContent[] = 
+	{	"abcdefghijklmnopqrstuvwxyz\
+		ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+		123456789\
+		àéêâùçèûôîµ\
+		,;:!?./§%*€$\\&#'{([-|_@)]})="	};
 
+	uint32 iCharSize			= pFont->Size;
+	uint32 iMapWidth			= 0;
+	uint32 iMapHeight			= 0;
+	uint32 iCharInterval		= 4; 
+	uint32 iCharCount			= 0;
+	const uint32 iCharsPerLine	= 16;
+	const uint32 iMaxCharCount	= sizeof(szTemplateFontContent);
+	
 	char szFontContent[iMaxCharCount];
 
-	uint32 iCharCount = 0;
-	
 	// Compute actual charCount
 	for (size_t iChar = 0; iChar < iMaxCharCount; ++iChar)
 	{
@@ -319,8 +303,7 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 
 		szFontContent[iCharCount++] = szTemplateFontContent[iChar];
 	}
-	const uint32 iCharsPerLine = 16;
-
+	
 	while (iMapWidth < (iCharsPerLine*(iCharSize + iCharInterval)))
 		iMapWidth += 2;
 
@@ -487,6 +470,9 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& reso
 		fullPath = ddsPath;
 #endif
 	D3DX11GetImageInfoFromFile(fullPath.Value, NULL, &imgInfos, &hr);
+	
+	if (FAILED(hr))
+		return FeEReturnCode::Failed;
 
 	uint32 iForcedFormat = DXGI_FORMAT_BC3_UNORM;//DXGI_FORMAT_B8G8R8A8_UNORM DXGI_FORMAT_BC3_UNORM
 	uint32 iResize = 1;
@@ -506,11 +492,11 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& reso
 	loadinfos.MipFilter = D3DX11_FILTER_LINEAR;
 	loadinfos.pSrcInfo = &imgInfos;
 
-	resource.SizeInMemory = ComputeResourceSizeInMemoryFromFormat(loadinfos.Width, loadinfos.Height, loadinfos.Format, true);
+	pTextureData->SizeInMemory = ComputeResourceSizeInMemoryFromFormat(loadinfos.Width, loadinfos.Height, loadinfos.Format, true);
 
-	if (resource.SizeInMemory + ResourcePoolAllocated <= ResourcePoolLimit)
+	if (pTextureData->SizeInMemory + ResourcePoolAllocated <= ResourcePoolLimit)
 	{
-		resource.RuntimeCreated = loadinfos.Format != imgInfos.Format;
+		pTextureData->RuntimeCreated = loadinfos.Format != imgInfos.Format;
 
 		D3DX11CreateTextureFromFile(pD3DDevice, fullPath.Value, &loadinfos, NULL, &pTextureData->D3DResource, &hr);
 
@@ -529,17 +515,16 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& reso
 void FeModuleRenderResourcesHandler::UnloadResources()
 {
 	{
-		SCOPELOCK(ResourcesLoadingThreadMutex); // <------ Lock Mutex
+		SCOPELOCK(LoadingThreadMutex); // <------ Lock Mutex
+
 		for (auto& resource : Resources)
-		{
-			if (resource.second.Interface)
-			{
-				resource.second.Interface->ReleaseResource();
-				resource.second.Interface->Release();
-			}
-		}
+			resource.second->Release();
+		
 		Resources.clear();
-		ResourcesLoading.clear();
-		ResourcesToSave.clear();
-	}
+
+		// clear all loading resource maps
+		for (uint32 i = 0; i < FeEResourceLoadingState::Count; ++i)
+			LoadingResources[(FeEResourceLoadingState::Type)(i)].Resources.clear();
+	
+	}// <------ Unlock Mutex
 }

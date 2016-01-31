@@ -28,6 +28,7 @@ public:
 		, EffectiveSize(0)
 		, HeapId(iHeapId)
 	{
+		CanExpand = true;
 		if (_iSize>0)
 			Reserve(_iSize);
 	}
@@ -35,6 +36,7 @@ public:
 		: BaseAdress(NULL)
 		, HeapId(iHeapId)
 	{
+		CanExpand = true;
 		Size = _copy.Size;
 		EffectiveSize = Size;
 		BaseAdress = FE_NEW_ARRAY(T, Size, HeapId);
@@ -178,6 +180,8 @@ public:
 
 		if (Size > EffectiveSize)
 		{
+			FE_ASSERT(CanExpand, "can't resize this array !!");
+
 			U oldsize = EffectiveSize;
 
 			// U type must be unsigned !
@@ -373,6 +377,8 @@ private:
 	U	Size;
 	U	EffectiveSize;
 	THeapId HeapId;
+protected:
+	bool CanExpand;
 };
 	
 template <class TKey, class TValue, class U=uint32>
@@ -503,4 +509,18 @@ private:
 		
 	FeTArray<KeyEntry, U> Keys;
 	FeTArray<TValue, U> Values;
+};
+
+template <class T, class U = uint32>
+class FeNTArray : public FeTArray<T, U>
+{
+public:
+	FeNTArray(U _iSize = 0, THeapId iHeapId = DEFAULT_HEAP) : FeTArray(_iSize, iHeapId)
+	{
+		CanExpand = false;
+	}
+	FeNTArray(const FeTArray& _copy, THeapId iHeapId) : FeTArray(_copy, iHeapId)
+	{
+		CanExpand = false;
+	}
 };

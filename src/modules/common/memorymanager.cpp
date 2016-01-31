@@ -6,7 +6,7 @@
 #define FE_LOCALLOG(fmt, ...) FE_LOG("[MemoryManager] "fmt, __VA_ARGS__) 
 
 #define MEMALIGNEMENT 16
-#define DEFAULT_HEAP_SIZE 16
+#define DEFAULT_HEAP_SIZE 128
 #define MEM_PAGE_SIZE_KB 512
 
 bool g_IsMemoryManagerInit = false;

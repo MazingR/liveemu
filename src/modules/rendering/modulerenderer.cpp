@@ -199,7 +199,7 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 		{
 			bool bBinded = false;
 
-			if (geomInstance.Textures.GetSize() > iTextureIdx)
+			if (geomInstance.Textures[iTextureIdx])// geomInstance.Textures.GetSize() > iTextureIdx)
 			{
 				const FeResourceId& textureId = geomInstance.Textures[iTextureIdx];
 
@@ -210,18 +210,10 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 
 					if (pResource && pResource->LoadingState == FeEResourceLoadingState::Loaded)
 					{
-						if (pResource->Type == FeEResourceType::Texture)
-						{
-							FeRenderTexture* pTexData = (FeRenderTexture*)pResource->Interface->GetData();
-							pContext->PSSetShaderResources(iTextureIdx, 1, &pTexData->D3DSRV);
-							bBinded = true;
-						}
-						else if (pResource->Type == FeEResourceType::Font)
-						{
-							FeRenderFont* pFontData = (FeRenderFont*)pResource->Interface->GetData();
-							pContext->PSSetShaderResources(iTextureIdx, 1, &pFontData->Texture.D3DSRV);
-							bBinded = true;
-						}
+						ID3D11ShaderResourceView* pSRV = pResource->GetD3DSRV(0);
+
+						pContext->PSSetShaderResources(iTextureIdx, 1, &pSRV);
+						bBinded = true;
 						RenderDebugInfos.FrameBindTextureCount++;
 					}
 				}

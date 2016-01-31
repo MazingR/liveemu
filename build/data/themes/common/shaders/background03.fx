@@ -6,6 +6,7 @@
 
 #define SPEED 0.01f
 #define CIRCLES_COUNT 15
+#define SATURATION 0.5f
 
 void mainImage( out float4 fragColor, in float2 fragCoord )
 {
@@ -36,7 +37,7 @@ void mainImage( out float4 fragColor, in float2 fragCoord )
 		
 		// render
 		float f = length(uv-pos)/rad;
-		f = sqrt(clamp(1.0-f*f,0.0,1.0));
+		f = sqrt(clamp(1.0-f*f,0.0,1.0))*SATURATION;
 		color -= col.zyx *(1.0-smoothstep( rad*0.95, rad, dis )) * f;
 	}
 

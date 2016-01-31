@@ -2,15 +2,17 @@
 	"Fonts" :
 	[
 		{
-			"Name" : "Font_Default",
-			"Size" : 64,
+			"Name" : "Font_Default0",
+			"Size" : 32,
 			"Interval" : 1,
-			"Space" : 16,
-			"TrueTypeFile" : "themes/common/fonts/ARCADE_I.TTF"
+			"Space" : 8,
+			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
 		},
 		{
 			"Name" : "Font_Default1",
-			"Size" : 64,
+			"Size" : 32,
+			"Interval" : 1,
+			"Space" : 8,
 			"TrueTypeFile" : "themes/common/fonts/ka1.TTF"
 		},
 		{
@@ -22,36 +24,6 @@
 			"Name" : "Font_Default3",
 			"Size" : 64,
 			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
-		}
-	],
-	"Effects" :
-	[
-		{
-			"Name" : "Effect_Default",
-			"TextureLevels" : 1,
-			"File" : "themes/common/shaders/default.fx"
-		},
-		{
-			"Name" : "Effect_Default_Font",
-			"TextureLevels" : 1,
-			"UseAlphaBlending" : true,
-			"File" : "themes/common/shaders/default_font.fx",
-			"Type" : "Font"
-		}
-		,{
-			"Name" : "Background_02",
-			"TextureLevels" : 0,
-			"File" : "themes/common/shaders/background02.fx"
-		}
-		,{
-			"Name" : "Background_03",
-			"TextureLevels" : 0,
-			"File" : "themes/common/shaders/background03.fx"
-		}
-		,{
-			"Name" : "Background_04",
-			"TextureLevels" : 0,
-			"File" : "themes/common/shaders/background04.fx"
 		}
 	],
 	"Panels" :
@@ -79,7 +51,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"Font_Default"
+						"Value" :"Font_Default1"
 					},
 					"Target" : 
 					{
@@ -92,11 +64,11 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"Heeelooo Wooorld !"
+						"Value" :"I'm writing stuff !"
 					},
 					"Target" : 
 					{
-						"Path" : [],
+						"Path" : ["Header"],
 						"Property" :"Text",
 						"Index" :0
 					}
@@ -128,6 +100,78 @@
 					}
 				}
 			]
+		},
+		{
+			"Effect" : "Effect_Default",
+			"FontEffect" : "Effect_Default_Font",
+			"Transform" : 
+			{
+				"T" : [0.0,		0.4,	0.0],
+				"S" : [0.2,		0.2,	1.0]
+			},
+			"Bindings" :
+			[
+				{
+					"Source" : 
+					{
+						"Type" : "Source_Static",
+						"Value" :"Font_Default2"
+					},
+					"Target" : 
+					{
+						"Path" : [],
+						"Property" :"Font",
+						"Index" :0
+					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Source_Static",
+						"Value" :"Me too !"
+					},
+					"Target" : 
+					{
+						"Path" : [],
+						"Property" :"Text",
+						"Index" :0
+					}
+				}
+			],
+			"Children" : 
+			[
+			]
+		}
+	],
+	"Effects" :
+	[
+		{
+			"Name" : "Effect_Default",
+			"TextureLevels" : 1,
+			"UseAlphaBlending" : true,
+			"File" : "themes/common/shaders/default.fx"
+		},
+		{
+			"Name" : "Effect_Default_Font",
+			"TextureLevels" : 1,
+			"UseAlphaBlending" : true,
+			"File" : "themes/common/shaders/default_font.fx",
+			"Type" : "Font"
+		}
+		,{
+			"Name" : "Background_02",
+			"TextureLevels" : 0,
+			"File" : "themes/common/shaders/background02.fx"
+		}
+		,{
+			"Name" : "Background_03",
+			"TextureLevels" : 0,
+			"File" : "themes/common/shaders/background03.fx"
+		}
+		,{
+			"Name" : "Background_04",
+			"TextureLevels" : 0,
+			"File" : "themes/common/shaders/background04.fx"
 		}
 	]
 }

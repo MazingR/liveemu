@@ -135,7 +135,7 @@ public:
 bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const char* sPropertyName);
 
 template<typename T>
-uint32 FeDeserialize(FeSerializerValue& value, FeTArray<T>* pOutput, const char* _sPropertyName)
+uint32 FeDeserialize(FeSerializerValue& value, FeNTArray<T>* pOutput, const char* _sPropertyName)
 {
 	FeSerializerValue jsonProperty;
 
