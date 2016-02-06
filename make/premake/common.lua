@@ -22,19 +22,12 @@ newoption
 	description = "Choose which project to generate.",
 	allowed = 
 	{
-		{	"program_frontend",	"Runtime program"	},
-		{	"program_editor",	"Editor program"	},
-		
-		{	"modules",			"Module libraries (rendering, ui, ...)" },
-		
-		{	"emulators",		"Emulator projects" },
+		{	"frontend",	"Runtime program and dependencies"	},
 		
 		{	"emulator_mame",	"Emulator Mame (Arcade)" },
 		{	"emulator_demul",	"Emulator Demul (Sega Dreamcast, Naomi, Atomiswave)" },
 		{	"emulator_dolphin",	"Emulator Dolphin (Nintendo Gamecube, Wii)" },
-		{	"emulator_yabause",	"Emulator Yabause (Sega Saturn)" },
-		
-		{	"all",				"All projects (progams + modules + externals)" }
+		{	"emulator_yabause",	"Emulator Yabause (Sega Saturn)" }
 	}
 }
 
@@ -211,12 +204,36 @@ function GenerateProject(config, groupName, projectName)
 	end
 end
 
-function GenerateProjects(config)
-	
-	for groupName,groupData in orderedPairs(groups) do
-		for projectName,projectData in orderedPairs(groupData) do
-			print ("["..config.."] : "..projectName)
-			GenerateProject(config, groupName, projectName)
-		end
+function GenerateGroupProjects(config, groupName)
+	local groupData = groups[groupName]
+	for projectName,projectData in orderedPairs(groupData) do
+		print ("["..config.."] : "..projectName)
+		GenerateProject(config, groupName, projectName)
 	end
+end
+
+function GenerateProjects(config)
+	if _OPTIONS["projects"]=="frontend" then
+		startproject "frontend"
+		
+		GenerateGroupProjects(config, "sdk_sdl")
+		GenerateGroupProjects(config, "externals")
+		GenerateGroupProjects(config, "modules")
+		
+		GenerateGroupProjects(config, "runtime")
+	elseif _OPTIONS["projects"]=="emulator_mame" then
+		startproject "mame"
+		GenerateGroupProjects(config, "emulator_mame")
+	end
+end
+
+
+function main()
+	configurations { "Debug", "Release" }
+	c_workspaceName = "Liveemu_".._OPTIONS["projects"]
+	
+	workspace(c_workspaceName)
+	GenerateProjects("Debug")
+	workspace(c_workspaceName)
+	GenerateProjects("Release")
 end

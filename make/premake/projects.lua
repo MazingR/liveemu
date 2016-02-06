@@ -2,21 +2,20 @@ groups =
 {
 	emulator_mame = 
 	{
-		-- mame = 
-		-- {
-			-- name = "emulator_mame",
-			-- kind = c_projectKindStaticLib,
-			-- srcPath = 
-			-- {
-				-- c_externals_root.."emulators/common/mame/src/**.inl",
-				-- c_externals_root.."emulators/common/mame/src/**.h",
-				-- c_externals_root.."emulators/common/mame/src/**.hpp",
-				-- c_externals_root.."emulators/common/mame/src/**.c",
-				-- c_externals_root.."emulators/common/mame/src/**.cpp"
-			-- },
-			-- defines = nil,
-			-- targetname = "mame"
-		-- }
+		mame = 
+		{
+			name = "emulator_mame",
+			kind = c_projectKindStaticLib,
+			srcPath = 
+			{
+				c_externals_root.."emulators/common/mame/src/**.inl",
+				c_externals_root.."emulators/common/mame/src/**.h",
+				c_externals_root.."emulators/common/mame/src/**.hpp",
+				c_externals_root.."emulators/common/mame/src/**.c",
+				c_externals_root.."emulators/common/mame/src/**.cpp"
+			},
+			targetname = "mame"
+		}
 	},
 	sdk_sdl = 
 	{
