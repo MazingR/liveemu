@@ -48,6 +48,7 @@ function ProjectHas(_project, tag)
 end
 
 c_src_root = "../../src/"
+c_externals_root = "../../../liveemu_externals/"
 c_projectKindConsoleApp	="ConsoleApp"
 c_projectKindWindowedApp="WindowedApp"
 c_projectKindSharedLib	="SharedLib"

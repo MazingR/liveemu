@@ -115,6 +115,15 @@ inline T* FeNew(THeapId iHeapId = DEFAULT_HEAP)
 	return (T*)ptr;
 }
 template<typename T>
+inline T* FeNew(const T& other, THeapId iHeapId = DEFAULT_HEAP)
+{
+	void* ptr = FeNewAllocate(sizeof(T), iHeapId);
+	new (ptr)T;
+
+	return (T*)ptr;
+}
+
+template<typename T>
 inline T* FeNewA(size_t count, THeapId iHeapId = DEFAULT_HEAP)
 {
 	void* ptr = FeNewAllocate(sizeof(T)*count, iHeapId);

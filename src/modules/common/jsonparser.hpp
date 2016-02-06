@@ -6,7 +6,7 @@
 
 #define JSON_HEAP 1
 
-#define RAPIDJSON_NEW(x) FeNew<x>(JSON_HEAP)
+#define RAPIDJSON_NEW(x) FeNew(x, JSON_HEAP)
 #define RAPIDJSON_DELETE(x) FeDelete(x, JSON_HEAP)
 
 #if HOOK_MALLOC
