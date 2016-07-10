@@ -22,7 +22,8 @@ newoption
 	description = "Choose which project to generate.",
 	allowed = 
 	{
-		{	"frontend",	"Runtime program and dependencies"	},
+		{	"frontend",			"Runtime program and dependencies"	},
+		{	"externals",		"External libraries"	},
 		
 		{	"emulator_mame",	"Emulator Mame (Arcade)" },
 		{	"emulator_demul",	"Emulator Demul (Sega Dreamcast, Naomi, Atomiswave)" },
@@ -166,7 +167,7 @@ function ProcessDependencies(config, prj)
 			if ProjectHas(dependency, "links") then 			links  { dependency["links"] }					end
 			if ProjectHas(dependency, "libdirs") then 			libdirs  { dependency["libdirs"] }				end
 			
-			links  {dependency["name"], GetProjectTargetFullName(config, dependency) }
+			links  {dependency["targetname"], GetProjectTargetFullName(config, dependency) }
 			libdirs { GetProjectTargetDir(config, dependency) }
 			
 			ProcessDependencies(config, dependency)
@@ -216,11 +217,11 @@ function GenerateProjects(config)
 	if _OPTIONS["projects"]=="frontend" then
 		startproject "frontend"
 		
+		GenerateGroupProjects(config, "modules")
+		GenerateGroupProjects(config, "runtime")
+	elseif _OPTIONS["projects"]=="externals" then
 		GenerateGroupProjects(config, "sdk_sdl")
 		GenerateGroupProjects(config, "externals")
-		GenerateGroupProjects(config, "modules")
-		
-		GenerateGroupProjects(config, "runtime")
 	elseif _OPTIONS["projects"]=="emulator_mame" then
 		startproject "mame"
 		GenerateGroupProjects(config, "emulator_mame")

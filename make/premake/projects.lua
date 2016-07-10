@@ -58,6 +58,20 @@ groups =
 	},
 	externals = 
 	{
+		sqllite = 
+		{
+			name = "external_sqllite",
+			kind = c_projectKindStaticLib,
+			dependencyInclude = { c_externals_root.."libraries/common/sqllite/src" },
+			includedirs = { c_externals_root.."libraries/common/sqllite/src" },
+			srcPath = 
+			{
+				c_externals_root.."libraries/common/sqllite/src/**.c",
+				c_externals_root.."libraries/common/sqllite/src/**.h",
+			},
+			defines = {},
+			targetname = "sqllite",
+		},
 		fontwrapper = 
 		{
 			kind = c_projectKindExternal,
@@ -81,7 +95,7 @@ groups =
 		},
 		freetype = 
 		{
-		name = "external_freetype",
+			name = "external_freetype",
 			kind = c_projectKindStaticLib,
 			dependencyInclude = { c_externals_root.."libraries/common/freetype/include" },
 			srcPath = 
@@ -175,6 +189,7 @@ groups =
 			{
 				{"sdk_sdl", "sdl"},
 				{"externals", "freetype"},
+				{"externals", "sqllite"},
 			},
 		},
 		renderer = 
