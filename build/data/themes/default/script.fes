@@ -3,28 +3,10 @@
 	[
 		{
 			"Name" : "Font_Default0",
-			"Size" : 32,
+			"Size" : 18,
 			"Interval" : 1,
 			"LineSpace" : 2,
 			"Space" : 8,
-			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
-		},
-		{
-			"Name" : "Font_Default1",
-			"Size" : 32,
-			"Interval" : 1,
-			"LineSpace" : 5,
-			"Space" : 8,
-			"TrueTypeFile" : "themes/common/fonts/ka1.TTF"
-		},
-		{
-			"Name" : "Font_Default2",
-			"Size" : 64,
-			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
-		},
-		{
-			"Name" : "Font_Default3",
-			"Size" : 64,
 			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
 		}
 	],
@@ -44,8 +26,8 @@
 			"FontEffect" : "Effect_Default_Font",
 			"Transform" : 
 			{
-				"T" : [0.25,		0.0,	0.0],
-				"S" : [1.0,		1.0,	1.0]
+				"T" : [0.25,	0.0,	0.0],
+				"S" : [0.5,		1.0,	1.0]
 			},
 			"Bindings" :
 			[
@@ -53,7 +35,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"Font_Default1"
+						"Value" :"Font_Default0"
 					},
 					"Target" : 
 					{
@@ -66,7 +48,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"I'm writing stuff !\nand it's cool.\noh yeah !"
+						"Value" :"Unique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nUnique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nUnique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nUnique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nThe Skill System applies to both Hero and Troops, where Troops are able to attack, defend or heal to support Hero. Besides, Heroes have unique skills to make different effects by using skill combos, throwing the enemies to the sky and stomp to the floor for AoE attacks.\n\nRPG Mode gives full control to the Hero on third person view like normal Role Playing Games. RTS Mode is a special bird eye view for gamers to control and command all Troops. Gamers are able to switch between modes and gain access function to the desired mode.\n\nTroops are groups who join battle with Hero and obey the leader's command. They can be categorized to close combat, ranged attack and supportive combat. There are also special troops such as machines, vehicles and flying troops to be owned by gamers. Troops can be leveled up, evolved and combined to become stronger and effective in battle."
 					},
 					"Target" : 
 					{
@@ -108,7 +90,7 @@
 			"FontEffect" : "Effect_Default_Font",
 			"Transform" : 
 			{
-				"T" : [0.0,		0.4,	0.0],
+				"T" : [0.0,		0.0,	0.0],
 				"S" : [0.2,		0.2,	1.0]
 			},
 			"Bindings" :
@@ -117,7 +99,7 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"Font_Default2"
+						"Value" :"Font_Default0"
 					},
 					"Target" : 
 					{

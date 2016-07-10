@@ -29,7 +29,7 @@ class FeScopeLockedMutex
 {
 public:
 	SDL_mutex* Mutex;
-	
+
 	FeScopeLockedMutex(SDL_mutex* pMutex)
 	{
 		Mutex = pMutex;
@@ -55,7 +55,7 @@ int ResourcesHandlerThreadFunction(void* pData)
 		pThis->ProcessThreadedResourcesLoading(StopThread);
 		SDL_Delay(100);
 	}
-	
+
 	return 0;
 }
 
@@ -116,7 +116,7 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 	infos.LoadedResourcesCount = 0;
 	infos.LoadedResourcesCountSizeInMemory = 0;
 	infos.ResourcesPoolSize = ResourcePoolLimit;
-	
+
 	for (ResourcesMapIt it = Resources.begin(); it != Resources.end(); ++it)
 	{
 		FeRenderResource* pResource = it->second;
@@ -130,7 +130,7 @@ void FeModuleRenderResourcesHandler::ComputeDebugInfos(FeModuleRenderResourcesHa
 }
 uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 {
-	ResourcePoolLimit = 256*(1024*1024);
+	ResourcePoolLimit = 256 * (1024 * 1024);
 	ResourcePoolAllocated = 0;
 
 	for (uint32 i = 0; i < FeEResourceLoadingState::Count; ++i)
@@ -143,7 +143,7 @@ uint32 FeModuleRenderResourcesHandler::Load(const FeModuleInit*)
 
 	// Initialize freetype
 	auto error = FT_Init_FreeType(&FtLibrary);
-	
+
 	if (error)
 	{
 		return FeEReturnCode::Failed;
@@ -259,10 +259,10 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 	bool bLoadingFailed = false;
 	pFont->MapTmpData = NULL;
 	pFont->MapDepthPitch = 0;
-	
+
 	char szFullPath[COMMON_PATH_SIZE];
 	sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, resource.Path.Value);
-	
+
 	auto error = FT_New_Face(FtLibrary, szFullPath, 0, &pFont->FtFontFace);
 	FT_FaceRec_* face = pFont->FtFontFace;
 
@@ -276,34 +276,61 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 		FE_LOG("that the font file could not be opened or read, or that it is broken..");
 		return FeEReturnCode::Failed;
 	}
+	struct ReplaceGroup
+	{
+		char Character;
+		FeTArray<char> Replaced;
+
+		ReplaceGroup(){}
+
+		ReplaceGroup(char master, char a)
+		{
+			Character = master;
+			Replaced.Add(a);
+		}
+		ReplaceGroup(char master, char a, char b) : ReplaceGroup(master, a)				{ Replaced.Add(b); }
+		ReplaceGroup(char master, char a, char b, char c) : ReplaceGroup(master, a, b)			{ Replaced.Add(c); }
+		ReplaceGroup(char master, char a, char b, char c, char d) : ReplaceGroup(master, a, b, c)		{ Replaced.Add(d); }
+		ReplaceGroup(char master, char a, char b, char c, char d, char e) : ReplaceGroup(master, a, b, c, d)	{ Replaced.Add(e); }
+	};
+	FeTArray<ReplaceGroup> replaceGroups;
+
+	//replaceGroups.Add(ReplaceGroup('e', 'é', 'ê', 'è'));
+	//replaceGroups.Add(ReplaceGroup('a', 'à', 'â'));
+	//replaceGroups.Add(ReplaceGroup('u', 'ù', 'û', 'ü'));
+	//replaceGroups.Add(ReplaceGroup('c', 'ç'));
+	//replaceGroups.Add(ReplaceGroup('o', 'ô', 'ö'));
+	//replaceGroups.Add(ReplaceGroup('i', 'î', 'ï'));
 
 	const char szTemplateFontContent[] = 
 	{	"abcdefghijklmnopqrstuvwxyz\
 		ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 		123456789\
-		àéêâùçèûôîµ\
-		,;:!?./§%*€$\\&#'{([-|_@)]})="	};
+		??????????\
+		,;:!?./?%*?$\\&#'{([-|_@)]})="	};
 
-	uint32 iCharSize			= pFont->Size;
-	uint32 iMapWidth			= 0;
-	uint32 iMapHeight			= 0;
-	uint32 iCharInterval		= 4; 
-	uint32 iCharCount			= 0;
-	const uint32 iCharsPerLine	= 16;
-	const uint32 iMaxCharCount	= sizeof(szTemplateFontContent);
-	
+	uint32 iCharSize = pFont->Size;
+	uint32 iMapWidth = 0;
+	uint32 iMapHeight = 0;
+	uint32 iCharInterval = 4;
+	uint32 iCharCount = 0;
+	const uint32 iCharsPerLine = 16;
+	const uint32 iMaxCharCount = sizeof(szTemplateFontContent);
+
 	char szFontContent[iMaxCharCount];
 
 	// Compute actual charCount
 	for (size_t iChar = 0; iChar < iMaxCharCount; ++iChar)
 	{
+		char cChar = szTemplateFontContent[iChar];
+
 		/* retrieve glyph index from character code */
-		if (FT_Get_Char_Index(face, szTemplateFontContent[iChar]) == 0)
+		if (FT_Get_Char_Index(face, cChar) == 0)
 			continue;
 
-		szFontContent[iCharCount++] = szTemplateFontContent[iChar];
+		szFontContent[iCharCount++] = cChar;
 	}
-	
+
 	while (iMapWidth < (iCharsPerLine*(iCharSize + iCharInterval)))
 		iMapWidth += 2;
 
@@ -319,19 +346,19 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 	uint32 iXOffset = 0;
 	uint32 iYOffset = 0;
 	uint32 iDepthPitch = iMapWidth*iMapHeight;
-	
+
 	error = FT_Set_Char_Size(
 		face,				/* handle to face object           */
 		0,					/* char_width in 1/64th of points  */
 		iCharSize * 64,	/* char_height in 1/64th of points */
 		iMapWidth,			/* horizontal device resolution    */
 		iMapHeight);		/* vertical device resolution      */
-	
+
 	error = FT_Set_Pixel_Sizes(
 		face,			/* handle to face object */
 		0,				/* pixel_width           */
 		iCharSize);	/* pixel_height          */
-	
+
 	FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
 
 	pFont->MapTmpData = FE_ALLOCATE(iDepthPitch, RENDERER_HEAP);
@@ -342,16 +369,16 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 	for (size_t iChar = 0; iChar < iCharCount; ++iChar)
 	{
 		FT_UInt  glyph_index;
-	
+
 		/* retrieve glyph index from character code */
 		glyph_index = FT_Get_Char_Index(face, szFontContent[iChar]);
-	
+
 		/* load glyph image into the slot (erase previous one) */
 		error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
-		
+
 		if (error)
 			continue;  /* ignore errors */
-	
+
 		/* convert to an anti-aliased bitmap */
 		error = FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL);
 
@@ -368,7 +395,7 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 		{
 			uint32 inputBufferIdx = slot->bitmap.pitch*iY;// +slot->bitmap_left;
 			uint32 outputBufferIdx = iMapWidth*(iY + iYOffset + slot->advance.y) + iXOffset;
-			
+
 			if (outputBufferIdx + slot->bitmap.width > iDepthPitch)
 				break;
 
@@ -376,14 +403,24 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 		}
 		FeRenderFontChar charData;
 
-		charData.Left		= iXOffset;
-		charData.Top		= iYOffset;
+		charData.Left = iXOffset;
+		charData.Top = iYOffset;
 		charData.OffsetLeft = slot->bitmap_left;
-		charData.OffsetTop	= slot->bitmap_top;
-		charData.Width		= slot->bitmap.width;
-		charData.Height		= slot->bitmap.rows;
+		charData.OffsetTop = slot->bitmap_top;
+		charData.Width = slot->bitmap.width;
+		charData.Height = slot->bitmap.rows;
 
 		pFont->Chars[szFontContent[iChar]] = charData;
+		for (auto& replaceGroup : replaceGroups)
+		{
+			if (replaceGroup.Character == szFontContent[iChar])
+			{
+				for (auto& replaced : replaceGroup.Replaced)
+				{
+					pFont->Chars[replaced] = charData;
+				}
+			}
+		}
 
 		iXOffset += slot->bitmap.width + slot->bitmap_left + iCharInterval;
 
@@ -458,19 +495,19 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& reso
 	D3DX11_IMAGE_LOAD_INFO loadinfos;
 	D3DX11_IMAGE_INFO imgInfos;
 	ZeroMemory(&loadinfos, sizeof(D3DX11_IMAGE_LOAD_INFO));
-	
+
 	FePath fullPath;
 	sprintf_s(fullPath.Value, "%s%s", FeFileTools::GetRootDir().Value, resource.Path.Value);
 
 #if USE_DDS_IF_EXISTS
 	FePath ddsPath;
 	FeFileTools::GetFullPathChangeExtension(ddsPath, fullPath.Value, "dds");
-	
+
 	if (FeFileTools::FileExists(ddsPath))
 		fullPath = ddsPath;
 #endif
 	D3DX11GetImageInfoFromFile(fullPath.Value, NULL, &imgInfos, &hr);
-	
+
 	if (FAILED(hr))
 		return FeEReturnCode::Failed;
 
@@ -519,12 +556,12 @@ void FeModuleRenderResourcesHandler::UnloadResources()
 
 		for (auto& resource : Resources)
 			resource.second->Release();
-		
+
 		Resources.clear();
 
 		// clear all loading resource maps
 		for (uint32 i = 0; i < FeEResourceLoadingState::Count; ++i)
 			LoadingResources[(FeEResourceLoadingState::Type)(i)].Resources.clear();
-	
+
 	}// <------ Unlock Mutex
 }

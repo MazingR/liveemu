@@ -110,7 +110,7 @@ uint32 FeModuleUi::ReloadScripts()
 
 	FeTArray<FePath> dbFiles;
 	dbFiles.SetHeapId(UI_HEAP);
-	FeFileTools::ListFilesRecursive(dbFiles, "db", ".*\\.json");
+	FeFileTools::ListFilesRecursive(dbFiles, "test/data", ".*\\.json");
 
 	DataFiles.SetHeapId(JSON_HEAP);
 	DataFiles.Clear();
@@ -124,21 +124,25 @@ uint32 FeModuleUi::ReloadScripts()
 		if (iRes != FeEReturnCode::Success)
 			DataFiles.PopBack();
 	}
+	for (auto & dataFile : DataFiles)
+	{
+		for (auto& game : dataFile.GetGames())
+		{
+			FE_LOG("Game\t%s",game.GetTitle().Cstr());
 
-//	for (auto& game : Games)
-//	{
-//		FE_LOG("\nGame :\
-//\n%s\t%s\
-//\n%s\t%s\
-//\n%s\t%s\
-//\n%s\t%s\
-//", 
-//"Title", game.GetTitle().Cstr(),
-//"Developer", game.GetDeveloper().Cstr(),
-//"Platform", game.GetPlatform().Cstr(),
-//"Overview", game.GetOverview().Cstr()
-//			);
-//	}
+			//FE_LOG("\nGame :\
+			//	   \n%s\t%s\
+			//	   \n%s\t%s\
+			//	   \n%s\t%s\
+			//	   \n%s\t%s\
+			//	   ",
+			//	   "Title", game.GetTitle().Cstr(),
+			//	   "Developer", game.GetDeveloper().Cstr(),
+			//	   "Platform", game.GetPlatform().Cstr(),
+			//	   "Overview", game.GetOverview().Cstr()
+			//	   );
+		}
+	}
 
 	// Load scripts from files
 	FeTArray<FePath> files;
@@ -344,8 +348,9 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	auto pRenderer = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
 	FeUiElementTraversalNode* pTarget = &node;
+	
 	const FeRenderResource* pResource = pResourcesHandler->GetResource(pTarget->RenderInstance->FontResource);
-
+	
 	if (!pResource || pResource->LoadingState != FeEResourceLoadingState::Loaded)
 		return FeEReturnCode::Failed;
 
@@ -363,17 +368,31 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	float fLineSpace = pFontData->LineSpace*vRes[1];
 	float fSpace = pFontData->Space*vRes[0];
 	float fInterval = pFontData->Interval*vRes[0];
-
+	float fLineSizeX = pCurrent->GetTransform().Scale.mData[0];
+	
 	FeRotation	r;
 	FeVector3 tOffset;
 
 	for (uint32 iCharIdx = 0; iCharIdx < iTextLen; ++iCharIdx)
 	{
 		char szChar = szText[iCharIdx];
-
+		
 		if (szChar == ' ')
 		{
-			tOffset[0] += fSpace;
+			uint32 iNextSpace = FeStringTools::IndexOf(szText, ' ', iCharIdx + 1, iTextLen);
+			if (iNextSpace == (uint32)-1)
+				iNextSpace = iTextLen;
+
+			if ((iNextSpace - iCharIdx)*fSpace + tOffset[0] > fLineSizeX)
+			{
+				tOffset[0] = 0;
+				tOffset[1] += fSize + fLineSpace;
+			}
+			else
+			{
+				tOffset[0] += fSpace;
+			}
+
 			continue;
 		}
 
@@ -406,18 +425,17 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 
 		float fCharWidth = charData.Width *vRes[0];
 		float fCharHeight = charData.Height * vRes[1];
+
+		float fCharX = charData.OffsetLeft*vRes[0];
+		float fCharY = fSize-charData.OffsetTop*vRes[1];
 		
 		FeVector3	t = pCurrent->GetTransform().Translation;
 		FeVector3	s(fCharWidth, fCharHeight, 1.0f);
 
-		t[0] += tOffset[0] + charData.OffsetLeft*vRes[0];
-		t[1] += tOffset[1];
+		t[0] += tOffset[0] + fCharX;
+		t[1] += tOffset[1] + fCharY;
 
-		t[1] += fSize-charData.OffsetTop*vRes[1];
-		//t[1] += fSize;
-		//t[1] -= fSize;
-
-		tOffset[0] += s[0] + charData.OffsetLeft*vRes[0] + fInterval;
+		tOffset[0] += fCharWidth + fInterval;
 
 		FeGeometryHelper::ComputeAffineTransform(pRenderingInstance->Geometry.Transform, t, r, s);
 	}

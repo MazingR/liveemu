@@ -241,6 +241,6 @@ void FeMemoryManager::OnFree(MemHeap& heap, void* _ptr)
 {
 	MapAllocationsIt it = heap.Allocations.find((size_t)_ptr);
 	FE_LOCALASSERT(it != heap.Allocations.end(), "Allocation not found !?");
-	heap.DebugInfos.Allocated -= it->second;
+ 	heap.DebugInfos.Allocated -= it->second;
 	heap.Allocations.erase(it);
 }
