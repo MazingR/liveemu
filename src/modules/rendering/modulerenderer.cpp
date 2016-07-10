@@ -52,8 +52,6 @@ uint32 FeModuleRendering::LoadEffects(const FeTArray<FeRenderEffect>& effects)
 }
 uint32 FeModuleRendering::Load(const FeModuleInit* initBase)
 {
-	RegisteredRenderBatches.SetHeapId(RENDERER_HEAP);
-
 	auto init = (FeModuleRenderingInit*)initBase;
 
 	RenderInit = *init;
@@ -116,10 +114,9 @@ uint32 FeModuleRendering::Update(const FeDt& fDt)
 	BeginRender();
 	{
 		// Render all registered batches
-		for (  auto& batch : RegisteredRenderBatches)
+		for (auto& batch : RegisteredRenderBatches)
 		{
 			RenderBatch(batch, fDt);
-			batch.GeometryInstances.Clear();
 		}
 		RenderDebugText(fDt);
 	}
@@ -140,7 +137,7 @@ void FeModuleRendering::BeginRender()
 	RenderDebugInfos.FrameBindTextureCount = 0;
 
 	for (uint32 i = 0; i < RegisteredRenderBatches.GetSize(); ++i)
-		RegisteredRenderBatches[i].Viewport->Clear();
+		RegisteredRenderBatches[i]->Viewport->Clear();
 		
 }
 void FeModuleRendering::EndRender()
@@ -151,12 +148,12 @@ void FeModuleRendering::EndRender()
 		
 	RegisteredRenderBatches.Clear();
 }
-void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
+void FeModuleRendering::RenderBatch(const FeRenderBatch* batch, const FeDt& fDt)
 {
 	// Clear the back buffer
-	batch.Viewport->Bind();
+	batch->Viewport->Bind();
 
-	FeTArray<FeRenderGeometryInstance>& instances = batch.GeometryInstances;
+	const FeTArray<FeRenderGeometryInstance>& instances = batch->GeometryInstances;
 
 	FeResourceId iLastEffectId = 0;
 	FeResourceId iLastGeometryId = 0;
@@ -173,12 +170,12 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 
 	for (auto& effect : Effects)
 	{
-		effect.second.BeginFrame(camera, *batch.Viewport, fDt.TotalSeconds);
+		effect.second.BeginFrame(camera, *batch->Viewport, fDt.TotalSeconds);
 	}
 
 	for (uint32 iInstanceIdx = 0; iInstanceIdx < instances.GetSize(); ++iInstanceIdx)
 	{
-		FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
+		const FeRenderGeometryInstance& geomInstance = instances[iInstanceIdx];
 		
 		if (geomInstance.Effect != iLastEffectId && Effects.find(geomInstance.Effect) != Effects.end())
 		{
@@ -221,6 +218,12 @@ void FeModuleRendering::RenderBatch(FeRenderBatch& batch, const FeDt& fDt)
 				{
 					bBinded = true;
 				}
+			}
+			else
+			{
+				static ID3D11ShaderResourceView* nullViews[1] = { 0 };
+
+				pContext->PSSetShaderResources(iTextureIdx, 1, nullViews);
 			}
 			if (!bBinded)
 			{
@@ -394,10 +397,14 @@ void FeModuleRendering::SwitchDebugRenderTextMode()
 {
 	CurrentDebugTextMode = (FeEDebugRenderTextMode::Type)((CurrentDebugTextMode + 1) % FeEDebugRenderTextMode::Count);
 }
-FeRenderBatch& FeModuleRendering::CreateRenderBatch()
+FeRenderBatch* FeModuleRendering::CreateRenderBatch()
 {
-	FeRenderBatch& renderBatch = RegisteredRenderBatches.Add();
-	renderBatch.Viewport = &DefaultViewport;
+	FeRenderBatch* renderBatch = FE_NEW(FeRenderBatch, RENDERER_HEAP);
+	renderBatch->Viewport = &DefaultViewport;
 
 	return renderBatch;
+}
+void FeModuleRendering::RegisterRenderBatch(FeRenderBatch* batch)
+{
+	RegisteredRenderBatches.Add(batch);
 }

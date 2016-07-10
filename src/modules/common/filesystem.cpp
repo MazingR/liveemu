@@ -87,13 +87,8 @@ uint32 FeModuleFilesManager::Update(const FeDt& fDt)
 }
 
 void FeModuleFilesManager::WatchDirectory(const char* szPath, FeFileChangeEvent onFileChanged, void* pUserData)
-{
-	WatchedDirectory& watchedDir = WatchedDirs.Add();
-	watchedDir.OnFileChangeEvent = onFileChanged;
-	watchedDir.FileEventUserData = pUserData;
-	watchedDir.Path.Set(szPath);
-	
-	watchedDir.Handle = CreateFile(
+{	
+	HANDLE handle = CreateFile(
 		szPath, // pointer to the directory containing the tex files
 		FILE_LIST_DIRECTORY | GENERIC_READ,                // access (read-write) mode
 		FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,  // share mode
@@ -102,14 +97,23 @@ void FeModuleFilesManager::WatchDirectory(const char* szPath, FeFileChangeEvent 
 		FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, // file attributes
 		NULL); // file with attributes to copy
 
-	watchedDir.WatchHandle = FindFirstChangeNotification(watchedDir.Path.Value, TRUE, FILE_CHANGE_FLAGS);
+	FePath watchPath;
+	watchPath.Set(szPath);
 
-	if (watchedDir.Handle == INVALID_HANDLE_VALUE)
+	HANDLE watchhandle = FindFirstChangeNotification(watchPath.Value, TRUE, FILE_CHANGE_FLAGS);
+
+	if (handle == INVALID_HANDLE_VALUE || watchhandle == INVALID_HANDLE_VALUE)
 	{
 		FE_ASSERT(false,  "WatchDirectory function failed [%d].\n", GetLastError());
-		WatchedDirs.PopBack(); // remove the element we just added
 		return;
 	}
+
+	WatchedDirectory& watchedDir = WatchedDirs.Add();
+	watchedDir.OnFileChangeEvent = onFileChanged;
+	watchedDir.FileEventUserData = pUserData;
+	watchedDir.Path.Set(szPath);
+	watchedDir.Handle = handle;
+	watchedDir.WatchHandle = watchhandle;
 }
 
 uint32 sdl_file_write(const char* filename, const char* szContent)

@@ -8,28 +8,21 @@
 #include <rendering/commonrenderer.hpp>
 #include <commonui.hpp>
 
-struct FeUiRenderingInstance
-{
-	FeUiElement*				Owner;
-	FeRenderGeometryInstance	Geometry;
-	FeResourceId				FontResource;
-	bool						IsCulled;
-
-	FeUiRenderingInstance() : 
-		Owner(NULL),
-		FontResource(NULL),
-		IsCulled(false){}
-};
+struct FeRenderBatch;
 
 struct FeUiElementTraversalNode
 {
-	FeUiElement*						Current;
-	FeUiElement*						Parent;
+	FeUiElement*				Current;
+	FeUiElement*				Parent;
+
+	FeResourceId				FontResource;
+	bool						IsCulled;
+
 	FeTArray<FeUiElementTraversalNode*>	Children;
 
-	FeUiRenderingInstance*				RenderInstance;
+	FeRenderGeometryInstance*			GeometryInstance;
 
-	FeUiElementTraversalNode() : Parent(NULL) {}
+	FeUiElementTraversalNode() : Parent(NULL), Current(NULL), GeometryInstance(NULL) {}
 };
 struct FeUiDefferedApplyBinding
 {
@@ -68,8 +61,8 @@ private:
 	void ApplyBindingByType(FeETargetPropertyType::Type type);
 	uint32 GenerateTextRenderingNodes(FeUiElementTraversalNode& node, const FeString& sourceData);
 private:
-	FeNTArray<FeScriptFile>			ScriptFiles;
-	FeTArray<FeUiRenderingInstance*> RenderingInstances;
+	FeNTArray<FeScriptFile>				ScriptFiles;
+	FeTArray<FeRenderBatch>				RenderBatches;
 	
 	FeTArray<FeUiPanel*>			Panels;
 	FeTArray<FeRenderEffect*>		Effects;

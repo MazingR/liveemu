@@ -86,10 +86,16 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedResourcesLoading(bool& bTh
 			{
 				iRet = LoadTexture(resource, (FeRenderTexture*)resource.Resource);
 			} break;
+			case FeEResourceType::RenderTargetTexture:
+			{
+				iRet = LoadRenderTargetTexture(resource, (FeRenderTargetTexture*)resource.Resource);
+			} break;
 			case FeEResourceType::Font:
 			{
 				iRet = LoadFont(resource, (FeRenderFont*)resource.Resource);
 			} break;
+			default:
+				FE_ASSERT(false, "Uknown resource type!");
 			}
 
 			resource.Resource->LoadingState = FE_FAILED(iRet) ? FeEResourceLoadingState::LoadFailed : FeEResourceLoadingState::Loaded;
@@ -442,14 +448,14 @@ uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& res
 	D3D11_TEXTURE2D_DESC desc;
 	ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
 
-	desc.Width = pFont->MapSize[0];
-	desc.Height = pFont->MapSize[1];
-	desc.MipLevels = desc.ArraySize = 1;
-	desc.Format = DXGI_FORMAT_R8_UNORM;
-	desc.SampleDesc.Count = 1;
-	desc.Usage = D3D11_USAGE_DYNAMIC;
-	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	desc.Width				= pFont->MapSize[0];
+	desc.Height				= pFont->MapSize[1];
+	desc.MipLevels			= desc.ArraySize = 1;
+	desc.Format				= DXGI_FORMAT_R8_UNORM;
+	desc.SampleDesc.Count	= 1;
+	desc.Usage				= D3D11_USAGE_DYNAMIC;
+	desc.BindFlags			= D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags		= D3D11_CPU_ACCESS_WRITE;
 
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
 	ID3D11Texture2D *pTexture = NULL;
@@ -468,6 +474,7 @@ uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& res
 		return FeEReturnCode::Failed;
 
 	//memset(textureMap.pData, 0xFF, textureMap.DepthPitch);
+
 	char* pOutput = (char*)textureMap.pData;
 	char* pInput = (char*)pFont->MapTmpData;
 
@@ -484,6 +491,45 @@ uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& res
 		return FeEReturnCode::Failed;
 
 	FE_FREE(pFont->MapTmpData, RENDERER_HEAP);
+
+	return FeEReturnCode::Success;
+}
+uint32 FeModuleRenderResourcesHandler::LoadRenderTargetTexture(FeRenderLoadingResource& resource, FeRenderTargetTexture* pTextureData)
+{
+	ID3D11DeviceContext* pD3DContext = FeModuleRendering::GetDevice().GetImmediateContext();
+	D3D11_TEXTURE2D_DESC desc;
+	ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
+
+	desc.Width = pTextureData->Width;
+	desc.Height = pTextureData->Height;
+	desc.MipLevels = desc.ArraySize = 1;
+	desc.Format = pTextureData->Channels == 1 ? DXGI_FORMAT_R8_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+
+	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
+	ID3D11Texture2D *pTexture = NULL;
+
+	pTextureData->SizeInMemory = ComputeResourceSizeInMemoryFromFormat(desc.Width, desc.Height, desc.Format, true);
+
+	if (pTextureData->SizeInMemory + ResourcePoolAllocated <= ResourcePoolLimit)
+	{
+		auto hr = pD3DDevice->CreateTexture2D(&desc, NULL, &pTexture);
+		pTextureData->Texture.D3DResource = reinterpret_cast<ID3D11Resource*>(pTexture);
+		pTextureData->Texture.RuntimeCreated = true;
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pD3DDevice->CreateShaderResourceView(pTextureData->Texture.D3DResource, NULL, &pTextureData->Texture.D3DSRV);
+		}
+
+		return SUCCEEDED(hr) ? FeEReturnCode::Success : FeEReturnCode::Failed;
+	}
+	else
+	{
+		return FeEReturnCode::Failed;
+	}
 
 	return FeEReturnCode::Success;
 }

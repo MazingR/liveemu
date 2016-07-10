@@ -95,6 +95,7 @@ void FeRenderEffect::EndFrame()
 void FeRenderEffect::BindGeometryInstance(const FeRenderGeometryInstance geometryInstance, const FeModuleRenderResourcesHandler* resouresHandler)
 {
 	ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
+
 	FeCBPerObject data;
 	data.MatrixWorld = XMMatrixTranspose(geometryInstance.Transform.Matrix.getData());
 

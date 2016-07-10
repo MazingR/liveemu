@@ -43,6 +43,9 @@ void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList
 			childNode.Current = child.Ptr;
 			childNode.Parent = pElement;
 
+			if (childNode.Current->GetFontEffect().IsEmpty())
+				childNode.Current->SetFontEffect(childNode.Parent->GetFontEffect());
+
 			uiElements.push(&childNode);
 			pNode->Children.Add(&childNode);
 		}
@@ -51,18 +54,21 @@ void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList
 void FeModuleUi::ComputeRenderingInstances()
 {
 	// Pre compute rendering instances
-	for (auto& uiNode : TraversalList.Nodes)
+	for (auto& node : TraversalList.Nodes)
 	{
-		FeUiElement* pCurrent = uiNode.Current;
-		FeUiElement* pParent = uiNode.Parent;
+		FeUiElement* pCurrent = node.Current;
+		FeUiElement* pParent = node.Parent;
 
-		FeUiRenderingInstance* pRenderingInstance = FE_NEW(FeUiRenderingInstance, UI_HEAP); // create rendering instance
-		RenderingInstances.Add(pRenderingInstance);
-		uiNode.RenderInstance = pRenderingInstance;
+		FeRenderGeometryInstance& geomInstance = RenderBatches[0].GeometryInstances.Add();
+		geomInstance.Reset();
+		
+		// two sided ref
+		node.GeometryInstance = &geomInstance;
+		geomInstance.Owner = &node;
 
-		pRenderingInstance->Owner = pCurrent;
-		pRenderingInstance->Geometry.Effect = pCurrent->GetEffect().Id();
-		pRenderingInstance->Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		geomInstance.Effect = pCurrent->GetEffect().Id();
+		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+
 		//pRenderingInstance->Geometry.Textures.Clear();
 
 		FeVector3	t = pCurrent->GetTransform().Translation;
@@ -80,9 +86,12 @@ void FeModuleUi::ComputeRenderingInstances()
 				t[i] += pT[i];
 				r[i] += pR[i];
 				s[i] *= pS[i];
+
+				if (s[i] == 0)
+					__debugbreak();
 			}
 		}
-		FeGeometryHelper::ComputeAffineTransform(pRenderingInstance->Geometry.Transform, t, r, s);
+		FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, t, r, s);
 	}
 
 }
@@ -92,17 +101,22 @@ uint32 FeModuleUi::ReloadScripts()
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 
 	// Clear stuff
+	for (auto& batch : RenderBatches)
+	{
+		batch.GeometryInstances.Clear();
+	}
+
 	pRenderingModule->UnloadEffects(); 
 	ScriptFiles.Clear();
-	
-	for (auto pInstance : RenderingInstances)
-	{
-		FE_DELETE(FeUiRenderingInstance, pInstance, UI_HEAP);
-	}
-	RenderingInstances.Clear();
-	RenderingInstances.SetHeapId(UI_HEAP);
 
-	RenderingInstances.Reserve(1024);
+	RenderBatches.Clear();
+	RenderBatches.Reserve(64);
+	RenderBatches.Add(); // Defeault batch
+
+	RenderBatches[0].GeometryInstances.Reserve(1024);
+
+	RenderBatches[0].Viewport = &pRenderingModule->GetDefaultViewport();
+
 	Panels.Clear();
 	TraversalList.Nodes.Clear();
 
@@ -116,14 +130,15 @@ uint32 FeModuleUi::ReloadScripts()
 	DataFiles.Clear();
 	DataFiles.Reserve(dbFiles.GetSize());
 
-	for (auto& file : dbFiles)
-	{
-		FeDataFile& dataFile = DataFiles.Add();
+	//for (auto& file : dbFiles)
+	//{
+	//	FeDataFile& dataFile = DataFiles.Add();
 
-		auto iRes = FeJsonParser::DeserializeObject(dataFile, file, JSON_HEAP);
-		if (iRes != FeEReturnCode::Success)
-			DataFiles.PopBack();
-	}
+	//	auto iRes = FeJsonParser::DeserializeObject(dataFile, file, JSON_HEAP);
+	//	if (iRes != FeEReturnCode::Success)
+	//		DataFiles.PopBack();
+	//}
+
 	for (auto & dataFile : DataFiles)
 	{
 		for (auto& game : dataFile.GetGames())
@@ -207,13 +222,13 @@ uint32 FeModuleUi::ReloadScripts()
 	ApplyBindingByType(FeETargetPropertyType::Other);
 	ApplyBindingByType(FeETargetPropertyType::Text);
 
-	for (auto pInstance : RenderingInstances)
+	for (auto& node : TraversalList.Nodes)
 	{
-		if (pInstance->FontResource)
+		if (node.FontResource)
 		{
-			if (pInstance->Geometry.Textures[0] == 0 &&
-				pInstance->Geometry.Textures[1] == 0)
-				pInstance->IsCulled = true;
+			if (node.GeometryInstance->Textures[0] == 0 &&
+				node.GeometryInstance->Textures[1] == 0)
+				node.IsCulled = true;
 		}
 	}
 
@@ -221,9 +236,9 @@ uint32 FeModuleUi::ReloadScripts()
 }
 void FeModuleUi::ApplyBindingByType(FeETargetPropertyType::Type type)
 {
-	for (auto& uiNode : TraversalList.Nodes)
+	for (auto& node : TraversalList.Nodes)
 	{
-		for (auto& dataBind : uiNode.Current->GetBindings())
+		for (auto& dataBind : node.Current->GetBindings())
 		{
 			auto eTargetPropertyType = GetTargetPropertyType(dataBind.GetTarget());
 
@@ -233,7 +248,7 @@ void FeModuleUi::ApplyBindingByType(FeETargetPropertyType::Type type)
 
 				if (!sourceData.IsEmpty())
 				{
-					auto iRes = ApplyBindingToTargetProperty(uiNode, sourceData, dataBind.GetTarget(), eTargetPropertyType);
+					auto iRes = ApplyBindingToTargetProperty(node, sourceData, dataBind.GetTarget(), eTargetPropertyType);
 					if (iRes != FeEReturnCode::Success)
 					{
 						FeUiDefferedApplyBinding& deffered = DefferedApplyBindingData.Add();
@@ -241,7 +256,7 @@ void FeModuleUi::ApplyBindingByType(FeETargetPropertyType::Type type)
 						deffered.SourceData = sourceData;
 						deffered.BindingTarget = &dataBind.GetTarget();
 						deffered.TargetPropertyType = type;
-						deffered.TraversalNode = &uiNode;
+						deffered.TraversalNode = &node;
 					}
 				}
 			}
@@ -273,7 +288,7 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	auto pRenderer = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	FeUiElementTraversalNode* pTarget = &node;
+	FeUiElementTraversalNode* pNode = &node;
 	const FeTArray<FeString>& targetPath = targetBinding.GetPath();
 	const FeString& targetProperty = targetBinding.GetProperty();
 
@@ -286,12 +301,12 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 		{
 			bool bFoundElement = false;
 
-			for (auto& child : pTarget->Children)
+			for (auto& child : pNode->Children)
 			{
 				if (child->Current->GetName() == targetPath[iDepth])
 				{
 					iDepth++;
-					pTarget = child;
+					pNode = child;
 					bFoundElement = true;
 					break;
 				}
@@ -305,8 +320,6 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 		}
 	}
 	
-	FeRenderGeometryInstance& geomInstance = pTarget->RenderInstance->Geometry;
-
 	switch (type)
 	{
 		case FeETargetPropertyType::Image:
@@ -322,17 +335,17 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 
 			//geomInstance.Textures.SetAt(targetBinding.GetIndex(), resource.Id);
 
-			geomInstance.Textures[targetBinding.GetIndex()] = resource.Id;
+			pNode->GeometryInstance->Textures[targetBinding.GetIndex()] = resource.Id;
 
 		} break;
 		case FeETargetPropertyType::Font:
 		{
 			auto resourceId = FeStringTools::GenerateUIntIdFromString(sourceData.Cstr());
-			pTarget->RenderInstance->FontResource = resourceId;
+			pNode->FontResource = resourceId;
 		} break;
 		case FeETargetPropertyType::Text:
 		{
-			return GenerateTextRenderingNodes(node, sourceData);
+			return GenerateTextRenderingNodes(*pNode, sourceData);
 		} break;
 		case FeETargetPropertyType::Other:
 		{
@@ -347,9 +360,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	auto pRenderer = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	FeUiElementTraversalNode* pTarget = &node;
-	
-	const FeRenderResource* pResource = pResourcesHandler->GetResource(pTarget->RenderInstance->FontResource);
+	const FeRenderResource* pResource = pResourcesHandler->GetResource(node.FontResource);
 	
 	if (!pResource || pResource->LoadingState != FeEResourceLoadingState::Loaded)
 		return FeEReturnCode::Failed;
@@ -413,15 +424,17 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 			charData.Width*vMapSize[0],
 			charData.Height*vMapSize[1]);
 
-		FeUiRenderingInstance* pRenderingInstance = FE_NEW(FeUiRenderingInstance, UI_HEAP); // create rendering instance
-		RenderingInstances.Add(pRenderingInstance);
+		FeRenderGeometryInstance& geomInstance = RenderBatches[0].GeometryInstances.Add();
+		geomInstance.Reset();
 
-		pRenderingInstance->Owner = pCurrent;
-		pRenderingInstance->Geometry.Effect = pCurrent->GetFontEffect().Id();
-		pRenderingInstance->Geometry.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-		//pRenderingInstance->Geometry.Textures.Add(pTarget->RenderInstance->FontResource);
-		pRenderingInstance->Geometry.Textures[0] = pTarget->RenderInstance->FontResource;
-		pRenderingInstance->Geometry.UserData = vCharData;
+		// todo@mazingr : create text pre rendered batch
+		geomInstance.Owner = &node;
+
+		geomInstance.Effect = pCurrent->GetFontEffect().Id();
+		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+		//geomInstance.Textures.Add(node.RenderInstance->FontResource);
+		geomInstance.Textures[0] = node.FontResource;
+		geomInstance.UserData = vCharData;
 
 		float fCharWidth = charData.Width *vRes[0];
 		float fCharHeight = charData.Height * vRes[1];
@@ -437,7 +450,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 
 		tOffset[0] += fCharWidth + fInterval;
 
-		FeGeometryHelper::ComputeAffineTransform(pRenderingInstance->Geometry.Transform, t, r, s);
+		FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, t, r, s);
 	}
 	return FeEReturnCode::Success;
 }
@@ -485,16 +498,6 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 
 	auto pRenderingModule = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	FeRenderBatch& renderBatch = pRenderingModule->CreateRenderBatch();
-	renderBatch.GeometryInstances.Reserve(RenderingInstances.GetSize());
-
-	for (auto pInstance : RenderingInstances)
-	{
-		if (!pInstance->IsCulled)
-			renderBatch.GeometryInstances.Add(pInstance->Geometry);
-		//FE_ASSERT(instance.Geometry.Textures.GetSize() < 8, "");
-	}
-
 	FeTArray<FeUiDefferedApplyBinding> failedApplies;
 
 	for (auto& apply : DefferedApplyBindingData)
@@ -507,6 +510,12 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 
 	DefferedApplyBindingData.Clear();
 	DefferedApplyBindingData.Add(failedApplies);
+
+	// Register all geometry to renderer
+	for (auto& batch : RenderBatches)
+	{
+		pRenderingModule->RegisterRenderBatch(&batch);
+	}
 
 	return FeEReturnCode::Success;
 }

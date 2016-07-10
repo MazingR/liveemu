@@ -122,6 +122,11 @@ public:
 			EffectiveSize = _iSize;
 		}
 	}
+	void		ReserveZeroMemory(U _iSize)
+	{
+		Reserve(_iSize);
+		memset(BaseAdress, 0, sizeof(T)*_iSize);
+	}
 	void		Resize(U _iSize)
 	{
 		T* pNewBase = NULL;

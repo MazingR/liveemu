@@ -27,11 +27,18 @@ struct FeTransform
 	FeRotation	Rotation;
 	FeVector3	Scale;
 
+	FeTransform()
+	{
+		SetIdentity();
+	}
 	void SetIdentity()
 	{
-		Translation = FeVector3(0.f, 0.f, 0.f);
-		Rotation	= FeRotation::EulerAngle(0.f, 0.f, 0.f);
-		Scale		= FeVector3(1.f, 1.f, 1.f);
+		static float vZero[3] = { 0.f, 0.f, 0.f };
+		static float vOne[3] = { 1.f, 1.f, 1.f };
+
+		Translation.set(vZero);
+		Rotation.set(0.f, 0.f, 0.f);
+		Scale.set(vOne);
 	}
 };
 namespace FeMatrix

@@ -26,7 +26,7 @@ struct FeRenderDebugInfos
 struct FeRenderBatch
 {
 	FeTArray<FeRenderGeometryInstance> GeometryInstances;
-	FeRenderViewport* Viewport;
+	const FeRenderViewport* Viewport;
 
 	FeRenderBatch()
 	{
@@ -59,22 +59,24 @@ public:
 	virtual uint32 Update(const FeDt& fDt) override;
 	
 	void SwitchDebugRenderTextMode();
-	FeRenderBatch& CreateRenderBatch();
+	FeRenderBatch* CreateRenderBatch();
+	void RegisterRenderBatch(FeRenderBatch* batch);
 	void UnloadEffects();
 	uint32 ReloadEffects();
 	uint32 LoadEffects(const FeTArray<FeRenderEffect>& effects);
+	const FeRenderViewport& GetDefaultViewport() const { return DefaultViewport; }
 
 private:
 	void BeginRender();
 	void EndRender();
-	void RenderBatch(FeRenderBatch& batch, const FeDt& fDt);
+	void RenderBatch(const FeRenderBatch* batch, const FeDt& fDt);
 	void RenderDebugText(const FeDt& fDt);
 
 	static FeRenderDevice Device;
 	std::map<FeResourceId, FeRenderEffect> Effects;
 	FeTArray<FeRenderGeometryData> Geometries;
 		
-	FeTArray<FeRenderBatch>			RegisteredRenderBatches;
+	FeTArray<FeRenderBatch*>		RegisteredRenderBatches;
 
 	IFW1Factory*					FW1Factory;
 	IFW1FontWrapper*				FontWrapper;

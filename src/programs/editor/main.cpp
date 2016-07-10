@@ -1,3 +1,8 @@
+#include <QApplication>
+#include <QCommandLineParser>
+#include <QCommandLineOption>
+#include "mainwindow.hpp"
+
 #include <pch.hpp>
 
 #define USE_LIMIT_FPS 1
@@ -25,8 +30,8 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		
 		init.WindowsCmdShow = appInit.WindowsCmdShow;
 		init.WindowsInstance = (HINSTANCE)appInit.WindowsInstance;
-		init.Width = 1920;
-		init.Height = 1080;
+		init.Width = 1280;
+		init.Height = 720;
 
 		SDL_Window* window = SDL_CreateWindow(szWindowName, 100, 100, init.Width, init.Height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); //SDL_WINDOW_FULLSCREEN_DESKTOP
 		if (window == nullptr)
@@ -121,22 +126,44 @@ uint32 FeApplication::Run()
 //int _tmain(int argc, _TCHAR* argv[])
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
-	FeMemoryManager::StaticInstance.CreateHeapMBytes(31, "Render");
-	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Ui");
-	FeFileTools::SetRootDir("../data");
+	Q_INIT_RESOURCE(application);
 
-	FeApplication& app = FeApplication::StaticInstance;
-	FeApplicationInit init;
+	char argv[1][1];
+	int argc = 0;
 
-	init.WindowsCmdLine			= lpCmdLine;
-	init.WindowsCmdShow			= nCmdShow;
-	init.WindowsInstance		= hInstance;
-	init.WindowsPrevInstance	= hPrevInstance;
+	QApplication app(argc, argv);
+	QCoreApplication::setOrganizationName("QtProject");
+	QCoreApplication::setApplicationName("Application Example");
+	QCoreApplication::setApplicationVersion(QT_VERSION_STR);
+	QCommandLineParser parser;
+	parser.setApplicationDescription(QCoreApplication::applicationName());
+	parser.addHelpOption();
+	parser.addVersionOption();
+	parser.addPositionalArgument("file", "The file to open.");
+	parser.process(app);
 
-	FE_FAILEDRETURN(app.Load(init));
-	FE_FAILEDRETURN(app.Run());
-	FE_FAILEDRETURN(app.Unload());
+	MainWindow mainWin;
+	if (!parser.positionalArguments().isEmpty())
+		mainWin.loadFile(parser.positionalArguments().first());
+	mainWin.show();
+	return app.exec();
+
+	//FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
+	//FeMemoryManager::StaticInstance.CreateHeapMBytes(31, "Render");
+	//FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Ui");
+	//FeFileTools::SetRootDir("../data");
+
+	//FeApplication& app = FeApplication::StaticInstance;
+	//FeApplicationInit init;
+
+	//init.WindowsCmdLine			= lpCmdLine;
+	//init.WindowsCmdShow			= nCmdShow;
+	//init.WindowsInstance		= hInstance;
+	//init.WindowsPrevInstance	= hPrevInstance;
+
+	//FE_FAILEDRETURN(app.Load(init));
+	//FE_FAILEDRETURN(app.Run());
+	//FE_FAILEDRETURN(app.Unload());
 
 	return 0;
 }

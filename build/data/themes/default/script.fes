@@ -3,12 +3,12 @@
 	[
 		{
 			"Name" : "Font_Default0",
-			"Size" : 18,
+			"Size" : 22,
 			"Interval" : 1,
 			"LineSpace" : 2,
 			"Space" : 8,
-			"TrueTypeFile" : "themes/common/fonts/CaviarDreams_Bold.TTF"
-		}
+			"TrueTypeFile" : "themes/common/fonts/calibrib.ttf"
+		}	
 	],
 	"Panels" :
 	[
@@ -26,8 +26,8 @@
 			"FontEffect" : "Effect_Default_Font",
 			"Transform" : 
 			{
-				"T" : [0.25,	0.0,	0.0],
-				"S" : [0.5,		1.0,	1.0]
+				"T" : [0.0,	0.0,	0.0],
+				"S" : [1,	1.0,	1.0]
 			},
 			"Bindings" :
 			[
@@ -39,7 +39,7 @@
 					},
 					"Target" : 
 					{
-						"Path" : [],
+						"Path" : ["Text"],
 						"Property" :"Font",
 						"Index" :0
 					}
@@ -48,11 +48,11 @@
 					"Source" : 
 					{
 						"Type" : "Source_Static",
-						"Value" :"Unique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nUnique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nUnique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nUnique fighting system such as Raid (PvE) to fight against AI Bosses in a team of 8 or more players together, and also PvP system to train your battle ability and strategies by challenging other players.\n\nThe Skill System applies to both Hero and Troops, where Troops are able to attack, defend or heal to support Hero. Besides, Heroes have unique skills to make different effects by using skill combos, throwing the enemies to the sky and stomp to the floor for AoE attacks.\n\nRPG Mode gives full control to the Hero on third person view like normal Role Playing Games. RTS Mode is a special bird eye view for gamers to control and command all Troops. Gamers are able to switch between modes and gain access function to the desired mode.\n\nTroops are groups who join battle with Hero and obey the leader's command. They can be categorized to close combat, ranged attack and supportive combat. There are also special troops such as machines, vehicles and flying troops to be owned by gamers. Troops can be leveled up, evolved and combined to become stronger and effective in battle."
+						"Value" :"Le 64DD, c’est ce truc un peu étrange dont on a toujours du mal à comprendre l’intérêt 20 ans après. Cet accessoire imposant qui se branche sous la Nintendo 64 et qui permet de lire des grosses disquettes. Pourquoi diable aurait-on besoin d’un lecteur de jeux supplémentaire pour une même console ? Quels pourraient en être les bénéfices pour le joueur ? Ces questions, Nintendo aura eu beaucoup de mal à y répondre, coincé entre sa volonté de proposer une lecteur de disques pour sa console, et celle, plus compliquée, de justifier le choix du port cartouche pour la Nintendo 64. Retour sur ce qui est sans doute le plus grand fiasco de la Nintendo 64.\nCet article fait partie de notre cahier Gamekult consacré au vingtième anniversaire de la Nintendo 64. Nous racontons l’histoire de la console ici (accès Premium)\n\nPAS DE CD-ROM, MAIS DES “DISQUETTES”\nDans les années 90, la mode était aux... extensions de consoles, surtout du côté de Sega, qui avait sorti un lecteur CD et même son 32X qui offrait à la machine un surplus de puissance nécessaire pour certains jeux. L’occasion pour le constructeur de se permettre des publicités aux allusions salaces (voir image ci-dessous). Nintendo n’était pas étranger au phénomène : certes son lecteur CD pour la Super Nintendo avait été abandonné, mais au Japon, la société avait sorti le Famicom Disk System pour la Famicom, puis le Satellaview pour la Super Famicom, lequel permettait notamment de télécharger des jeux via une chaîne satellite.\n\nPublicité papier pour le 32X de Sega.\nLa Nintendo 64 avait quant à elle, dès le départ, un projet de ce genre dans les cartons. Nintendo l’a annoncé très tôt : dès la première présentation de la console, fin 1995, le constructeur japonais confirme que sa console avec un port cartouche disposerait d’un lecteur disques en supplément. Les détails sont encore rares à l’époque, mais le prochain Zelda est déjà annoncé en exclusivité pour ce support, et une date de sortie à fin 1996 est avancée. En réalité, la fin 96, c’est quand l’accessoire est présenté pour la première fois, au salon Shoshinkai, et obtient son nom définitif : le 64DD, pour « Disk Drive » (« lecteur de disques »), tout simplement.\n\nIl y a toutefois une première nuance dans ce projet. En fait de CD-ROM, les disques s’apparentent en réalité à des disquettes façon ZIP (https://fr.wikipedia.org/wiki/Disque_ZIP). Ce format permet à Nintendo une meilleure vitesse de transfert que le CD-ROM, ce qui est important dans la mesure où la communication de Nintendo pour justifier son choix du support cartouche repose sur ce problème, qui provoque des temps de chargement dérangeants pour le joueur. On évalue à l’époque un taux de transfert d’environ 300 ko par seconde pour les CD-ROM double vitesse de la Saturn et de la PlayStation, quand Nintendo annonce un taux de 790 ko par seconde pour le 64DD… ce qui reste tout de même très inférieur à la vitesse des cartouches, qui se compte en mégaoctets.\n\nLe 64DD au Shoshinkai, photo par EDGE.\nDans ce cas, quel est le véritable intérêt du format « DD » ? Il apporte une originalité non négligeable : la possibilité d’écrire des données dessus, en quantité importante. Sur les 64 Mo disponibles, les développeurs auront la possibilité d’allouer la moitié à des données réinscriptibles. Et ceci notamment dans la perspective d’inclure des mises à jour de jeux, lesquelles pourraient être téléchargées par un réseau satellite, par exemple, comme sur Super Nintendo.\n\nLe principe de mises à jour a d’ailleurs son importance dans la communication.\nLe 64DD, c’est ce truc un peu étrange dont on a toujours du mal à comprendre l’intérêt 20 ans après. Cet accessoire imposant qui se branche sous la Nintendo 64 et qui permet de lire des grosses disquettes. Pourquoi diable aurait-on besoin d’un lecteur de jeux supplémentaire pour une même console ? Quels pourraient en être les bénéfices pour le joueur ?\nLe 64DD, c’est ce truc un peu étrange dont on a toujours du mal à comprendre l’intérêt 20 ans après. Cet accessoire imposant qui se branche sous la Nintendo 64 et qui permet de lire des grosses disquettes. Pourquoi diable aurait-on besoin d’un lecteur de jeux supplémentaire pour une même console ? Quels pourraient en être les bénéfices pour le joueur ?\n\nLe 64DD, c’est ce truc un peu étrange dont on a toujours du mal à comprendre l’intérêt 20 ans après. Cet accessoire imposant qui se branche sous la Nintendo 64 et qui permet de lire des grosses disquettes. Pourquoi diable aurait-on besoin d’un lecteur de jeux supplémentaire pour une même console ? Quels pourraient en être les bénéfices pour le joueur ?\n"
 					},
 					"Target" : 
 					{
-						"Path" : ["Header"],
+						"Path" : ["Text"],
 						"Property" :"Text",
 						"Index" :0
 					}
@@ -65,7 +65,20 @@
 					},
 					"Target" : 
 					{
-						"Path" : ["Header"],
+						"Path" : ["Image"],
+						"Property" :"Image",
+						"Index" :0
+					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Source_Static",
+						"Value" : "test/textures/boxfronts/game_-1019023171.dds"
+					},
+					"Target" : 
+					{
+						"Path" : ["Image2"],
 						"Property" :"Image",
 						"Index" :0
 					}
@@ -74,13 +87,33 @@
 			"Children" : 
 			[
 				{
-					"Name" : "Header",
+					"Name" : "Image",
 					"_serialize_type_" : "FeUiPanel",
 					"Effect" : "Effect_Default",
 					"Transform" : 
 					{
-						"T" : [0.2,		0.2,	0.01],
+						"T" : [0.2,		0.2,	-0.01],
 						"S" : [0.3,		0.8,	1.0]
+					}
+				},
+				{
+					"Name" : "Image2",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default",
+					"Transform" : 
+					{
+						"T" : [0.6,		0.2,	-0.01],
+						"S" : [0.3,		0.8,	1.0]
+					}
+				},
+				{
+					"Name" : "Text",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default",
+					"Transform" : 
+					{
+						"T" : [0.1,		0.0,	-0.02],
+						"S" : [0.8,		0.8,	1.0]
 					}
 				}
 			]
@@ -91,7 +124,7 @@
 			"Transform" : 
 			{
 				"T" : [0.0,		0.0,	0.0],
-				"S" : [0.2,		0.2,	1.0]
+				"S" : [0.3,		0.2,	1.0]
 			},
 			"Bindings" :
 			[
@@ -103,7 +136,7 @@
 					},
 					"Target" : 
 					{
-						"Path" : [],
+						"Path" : ["Text"],
 						"Property" :"Font",
 						"Index" :0
 					}
@@ -112,11 +145,11 @@
 					"Source" :
 					{
 						"Type" : "Source_Static",
-						"Value" :"Here is \nanother line."
+						"Value" :"Here is another line."
 					},
 					"Target" : 
 					{
-						"Path" : [],
+						"Path" : ["Text"], 
 						"Property" :"Text",
 						"Index" :0
 					}
@@ -124,6 +157,11 @@
 			],
 			"Children" : 
 			[
+				{
+					"Name" : "Text",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default"
+				}
 			]
 		}
 	],

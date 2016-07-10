@@ -23,7 +23,7 @@ void FeSetLastError(const char* fmt, ...)
 {
 	va_list argptr;
 	va_start(argptr, fmt);
-	vsprintf(LastError, fmt, argptr);
+	vsprintf_s(LastError, fmt, argptr);
 	va_end(argptr);
 }
 const char* FeGetLastError()

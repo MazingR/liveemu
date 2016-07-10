@@ -44,12 +44,14 @@ public:
 	uint32 ProcessThreadedResourcesLoading(bool& bThreadSopped);
 	void UnloadResources();
 private:
+	uint32 LoadRenderTargetTexture(FeRenderLoadingResource& resource, FeRenderTargetTexture* pTextureData);
 	uint32 LoadTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData);
 	uint32 LoadFont(FeRenderLoadingResource& resource, FeRenderFont* pTextureData);
 	uint32 PostLoadFont(FeRenderLoadingResource& resource, FeRenderFont* pTextureData);
 	uint32 SaveTexture(FeRenderLoadingResource& resource, FeRenderTexture* pTextureData);
 
 	std::map<FeEResourceLoadingState::Type, LockedLoadingResourcesMap> LoadingResources;
+
 	SDL_Thread*			LoadingThread;
 	SDL_mutex*			LoadingThreadMutex;
 	ResourcesMap		Resources;

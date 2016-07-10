@@ -82,6 +82,7 @@ namespace FeEResourceType
 	enum Type
 	{
 		Texture,
+		RenderTargetTexture,
 		Font,
 		Geometry,
 		Sound,
@@ -121,6 +122,22 @@ struct FeRenderTexture : public FeRenderResource
 	ID3D11ShaderResourceView* GetD3DSRV(uint32 iIdx) const;
 };
 
+class FeRenderTargetTexture : public FeRenderResource
+{
+public:
+	FeRenderTexture		Texture;
+	uint32				Width;
+	uint32				Height;
+	uint32				Channels;
+
+	FeRenderTargetTexture()
+	{}
+
+	void Release();
+	ID3D11Resource* GetD3DResource(uint32 iIdx) const;
+	ID3D11ShaderResourceView* GetD3DSRV(uint32 iIdx) const;
+};
+
 struct FeRenderFontChar
 {
 	uint32 Top;
@@ -130,6 +147,7 @@ struct FeRenderFontChar
 	uint32 Width;
 	uint32 Height;
 };
+
 class FeRenderFont : public FeRenderResource
 {
 public:
@@ -189,8 +207,11 @@ public:
 
 		switch (Type)
 		{
-		case FeEResourceType::Font:		Resource = AllocateResource<FeRenderFont>();	break;
-		case FeEResourceType::Texture:	Resource = AllocateResource<FeRenderTexture>();	break;
+		case FeEResourceType::Font:					Resource = AllocateResource<FeRenderFont>();	break;
+		case FeEResourceType::Texture:				Resource = AllocateResource<FeRenderTexture>();	break;
+		case FeEResourceType::RenderTargetTexture:	Resource = AllocateResource<FeRenderTargetTexture>();	break;
+		default:
+			FE_ASSERT(false, "Uknown resource type!");
 		}
 	}
 };
@@ -231,17 +252,19 @@ struct FeRenderGeometryInstance
 	FeResourceId					Effect;
 	FeGeometryTransform				Transform;
 	FeVector4						UserData;
+	FeResourceId					Textures[2];
+	void*							Owner;
 
-	FeResourceId			Textures[2];
-	//FeTArray<FeResourceId>			Textures;
-
-	FeRenderGeometryInstance()
+	void Reset()
 	{
-		memset(Textures, 0, sizeof(Textures));
-
-		//Textures.SetHeapId(RENDERER_HEAP);
-		//Textures.Reserve(1);
-		//Textures.Clear();
+		Geometry	= 0;
+		Effect		= 0;
+		Owner		= 0;
+		
+		Textures[0] = 0;
+		Textures[1] = 0;
+		
+		Transform.Matrix = FeGeometryTransform::IdentityMatrix();
 	}
 };
 namespace FeEGemetryDataType

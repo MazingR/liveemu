@@ -38,7 +38,7 @@ public:
 	FeString& operator=(const FeString& other);
 	FeString(FePooledString& pooledStr);
 	FeString(const FeString& copy);
-	bool IsEmpty()
+	bool IsEmpty() const
 	{
 		return !Pooled;
 	}
