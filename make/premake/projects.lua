@@ -86,6 +86,19 @@ groups =
 			dependencyLibDir = { c_externals_root.."libraries/windows/directx/lib/x86" },
 			targetname = "directx",
 		},
+		qt = 
+		{
+			kind = c_projectKindExternal,
+			dependencyInclude = 
+			{
+				c_externals_root.."libraries/common/qt/msvc2013_64/include",
+				c_externals_root.."libraries/common/qt/msvc2013_64/include/QtGui",
+				c_externals_root.."libraries/common/qt/msvc2013_64/include/QtWidgets",
+				c_externals_root.."libraries/common/qt/msvc2013_64/include/QtCore",
+			},
+			dependencyLibDir = { c_externals_root.."libraries/common/qt/msvc2013_64/lib" },
+			targetname = "Qt5Core",
+		},
 		pthreads = 
 		{
 			kind = c_projectKindExternal,
@@ -250,6 +263,29 @@ groups =
 			flags { "WinMain" },
 			dependencies = 
 			{
+				{"modules", "renderer"},
+				{"modules", "ui"},
+				{"modules", "common"},
+			},
+		},
+		editor = 
+		{
+			name = "editor",
+			kind = c_projectKindWindowedApp,
+			links = { "Qt5Gui.lib", "Qt5Widgets.lib" },
+			srcPath = 
+			{
+				c_src_root.."programs/editor/**.hpp",
+				c_src_root.."programs/editor/**.cpp",
+			},
+			includedirs = { c_src_root.."programs/editor" },
+			targetname_Debug = "editor",
+			targetname_Release = "editor",
+			flags { "WinMain" },
+			dependencies = 
+			{
+				{"externals", "qt"},
+				
 				{"modules", "renderer"},
 				{"modules", "ui"},
 				{"modules", "common"},
