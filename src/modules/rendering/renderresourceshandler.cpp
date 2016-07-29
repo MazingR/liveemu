@@ -408,13 +408,17 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 			memcpy_s(&pOutput[outputBufferIdx], slot->bitmap.width, &slot->bitmap.buffer[inputBufferIdx], slot->bitmap.width);
 		}
 		FeRenderFontChar charData;
+		memset(&charData, 0, sizeof(FeRenderFontChar));
 
 		charData.Left = iXOffset;
 		charData.Top = iYOffset;
-		charData.OffsetLeft = slot->bitmap_left;
-		charData.OffsetTop = slot->bitmap_top;
-		charData.Width = slot->bitmap.width;
-		charData.Height = slot->bitmap.rows;
+
+#define SetIfValid(a, b) if (b!=(uint32)-1)  { a=b; }
+		
+		SetIfValid (charData.OffsetLeft, slot->bitmap_left);
+		SetIfValid (charData.OffsetTop, slot->bitmap_top);
+		SetIfValid (charData.Width, slot->bitmap.width);
+		SetIfValid (charData.Height, slot->bitmap.rows);
 
 		pFont->Chars[szFontContent[iChar]] = charData;
 		for (auto& replaceGroup : replaceGroups)
