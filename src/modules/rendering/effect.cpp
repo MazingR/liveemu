@@ -27,8 +27,8 @@ uint32 FeRenderEffect::CompileShaderFromFile(const char* szFileName, const char*
 #endif
 
 	ID3DBlob* pErrorBlob;
-	auto hr = D3DX11CompileFromFile(szFileName, NULL, NULL, szEntryPoint, szShaderModel,
-		dwShaderFlags, 0, NULL, (ID3DBlob**)ppBlobOut, &pErrorBlob, NULL);
+	auto hr = D3DX11CompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
+		dwShaderFlags, 0, nullptr, (ID3DBlob**)ppBlobOut, &pErrorBlob, nullptr);
 
 	if (FAILED(hr))
 	{
@@ -86,7 +86,7 @@ void FeRenderEffect::BeginFrame(const FeRenderCamera& camera, const FeRenderView
 	FeMatrix4 matViewPorj;
 	mult(matViewPorj, camera.MatrixProjection, camera.MatrixView);
 		
-	pContext->UpdateSubresource(CBPerFrame.Buffer, 0, NULL, &cbPerFrame, 0, 0);
+	pContext->UpdateSubresource(CBPerFrame.Buffer, 0, nullptr, &cbPerFrame, 0, 0);
 }
 void FeRenderEffect::EndFrame()
 {
@@ -104,7 +104,7 @@ void FeRenderEffect::BindGeometryInstance(const FeRenderGeometryInstance geometr
 		const float* pUserData = geometryInstance.UserData.getData();
 		data.UserData = XMVectorSet(pUserData[0], pUserData[1], pUserData[2], pUserData[3]);
 	}
-	pContext->UpdateSubresource(CBPerObject.Buffer, 0, NULL, &data, 0, 0);
+	pContext->UpdateSubresource(CBPerObject.Buffer, 0, nullptr, &data, 0, 0);
 	
 	// todo: bind other constants
 }
@@ -113,8 +113,8 @@ void FeRenderEffect::Bind()
 	ID3D11DeviceContext* pContext = FeModuleRendering::GetDevice().GetImmediateContext();
 
 	pContext->IASetInputLayout((ID3D11InputLayout*)VertexLayout);
-	pContext->VSSetShader(VertexShader, NULL, 0);
-	pContext->PSSetShader(PixelShader, NULL, 0);
+	pContext->VSSetShader(VertexShader, nullptr, 0);
+	pContext->PSSetShader(PixelShader, nullptr, 0);
 
 	pContext->VSSetConstantBuffers(0, 1, &CBPerFrame.Buffer);
 	pContext->VSSetConstantBuffers(1, 1, &CBPerObject.Buffer);
@@ -127,13 +127,13 @@ void FeRenderEffect::Bind()
 	if (UseAlphaBlending)
 		pContext->OMSetBlendState(BlendState, 0, 0xffffffff);
 	else
-		pContext->OMSetBlendState(NULL, 0, 0xffffffff);
+		pContext->OMSetBlendState(nullptr, 0, 0xffffffff);
 }
 uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 {
 	// Compile the vertex shader
 	HRESULT hr = S_OK;
-	ID3DBlob* pVSBlob = NULL;
+	ID3DBlob* pVSBlob = nullptr;
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
 
 	char szFullPath[1024];
@@ -141,7 +141,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	FE_FAILEDRETURN( CompileShaderFromFile(szFullPath, "VS", "vs_5_0", (void**)&pVSBlob) );
 
 	// Create the vertex shader
-	hr = pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, (ID3D11VertexShader**)&VertexShader);
+	hr = pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, (ID3D11VertexShader**)&VertexShader);
 		
 	if (FAILED(hr))
 	{
@@ -163,17 +163,17 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	if (FAILED(hr)) return FeEReturnCode::Rendering_CreateShaderFailed;
 
 	// Compile the pixel shader
-	ID3DBlob* pPSBlob = NULL;
+	ID3DBlob* pPSBlob = nullptr;
 	hr = CompileShaderFromFile(szFullPath, "PS", "ps_5_0", (void**)&pPSBlob);
 
 	if (FAILED(hr) || !pPSBlob)
 	{
-		MessageBox(NULL, "The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", "Error", MB_OK);
+		MessageBox(nullptr, "The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", "Error", MB_OK);
 		return hr;
 	}
 
 	// Create the pixel shader
-	hr = pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, (ID3D11PixelShader**)&PixelShader);
+	hr = pD3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, (ID3D11PixelShader**)&PixelShader);
 	pPSBlob->Release();
 	if (FAILED(hr)) return FeEReturnCode::Rendering_CreateShaderFailed;
 
@@ -186,12 +186,12 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 		desc.ByteWidth = sizeof(FeCBPerFrame);
 		desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		desc.CPUAccessFlags = 0;
-		hr = pD3DDevice->CreateBuffer(&desc, NULL, &CBPerFrame.Buffer);
+		hr = pD3DDevice->CreateBuffer(&desc, nullptr, &CBPerFrame.Buffer);
 		if (FAILED(hr))
 			return FeEReturnCode::Failed;
 
 		desc.ByteWidth = sizeof(FeCBPerObject);
-		hr = pD3DDevice->CreateBuffer(&desc, NULL, &CBPerObject.Buffer);
+		hr = pD3DDevice->CreateBuffer(&desc, nullptr, &CBPerObject.Buffer);
 
 		if (FAILED(hr))
 			return FeEReturnCode::Failed;

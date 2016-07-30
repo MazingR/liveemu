@@ -3,7 +3,7 @@
 uint32 file_read(const char* filename, void** outputBuff) {
 	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
 	
-	if (rw == NULL) 
+	if (rw == nullptr) 
 		return FeEReturnCode::File_OpenFailed;
 
 	size_t res_size = (size_t)SDL_RWsize(rw);
@@ -52,7 +52,7 @@ struct TestValue
 
 void test1()
 {
-	srand(time(NULL));
+	srand(time(nullptr));
 	std::clock_t time;
 	
 	uint32 iValuesCount = 2 << 22;

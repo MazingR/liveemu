@@ -168,19 +168,19 @@ void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, 
 void* FeMemoryManager::Free(void* _ptr, int iHeapId)
 {
 	if (!_ptr)
-		return NULL;
+		return nullptr;
 
 	if (iHeapId == DEFAULT_HEAP)
 	{
 		HeapFree(GetDefaultHeapHandle(), 0, _ptr);
-		return NULL;
+		return nullptr;
 	}
 
 	MemHeap& heap = GetHeap(iHeapId);
 	HeapFree(heap.HeapHandle, 0, _ptr);
 	OnFree(heap, _ptr);
 
-	return NULL;
+	return nullptr;
 }
 MemHeap& FeMemoryManager::GetHeap(uint32 iHeapId)
 {

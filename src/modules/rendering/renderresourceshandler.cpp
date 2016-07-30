@@ -64,7 +64,7 @@ uint32 FeModuleRenderResourcesHandler::ProcessThreadedResourcesLoading(bool& bTh
 	{
 		SCOPELOCK(LoadingThreadMutex); // <------ Lock Mutex
 
-		ResourcesLoadingMap* pResourcesToLoad = NULL;
+		ResourcesLoadingMap* pResourcesToLoad = nullptr;
 		{
 			SCOPELOCK(LoadingResources[FeEResourceLoadingState::Loading].Mutex); // <------ Lock Mutex
 			pResourcesToLoad = new ResourcesLoadingMap(LoadingResources[FeEResourceLoadingState::Loading].Resources);
@@ -231,7 +231,7 @@ uint32 FeModuleRenderResourcesHandler::Update(const FeDt& fDt)
 const FeRenderResource* FeModuleRenderResourcesHandler::GetResource(const FeResourceId& resourceId) const
 {
 	ResourcesMap::const_iterator it = Resources.find(resourceId);
-	return (it != Resources.end()) ? it->second : NULL;
+	return (it != Resources.end()) ? it->second : nullptr;
 }
 uint32 FeModuleRenderResourcesHandler::UnloadResource(const FeResourceId&)
 {
@@ -245,7 +245,7 @@ uint32 FeModuleRenderResourcesHandler::LoadResource(FeRenderLoadingResource& res
 
 	if (!GetResource(resource.Id))
 	{
-		if (NULL == resource.Resource)
+		if (nullptr == resource.Resource)
 			resource.CreateResource(); // allocate resource
 
 		FE_ASSERT(resource.Resource, "couldn't created render resource !");
@@ -263,7 +263,7 @@ uint32 FeModuleRenderResourcesHandler::LoadResource(FeRenderLoadingResource& res
 uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resource, FeRenderFont* pFont)
 {
 	bool bLoadingFailed = false;
-	pFont->MapTmpData = NULL;
+	pFont->MapTmpData = nullptr;
 	pFont->MapDepthPitch = 0;
 
 	char szFullPath[COMMON_PATH_SIZE];
@@ -301,12 +301,12 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 	};
 	FeTArray<ReplaceGroup> replaceGroups;
 
-	//replaceGroups.Add(ReplaceGroup('e', 'é', 'ê', 'è'));
-	//replaceGroups.Add(ReplaceGroup('a', 'à', 'â'));
-	//replaceGroups.Add(ReplaceGroup('u', 'ù', 'û', 'ü'));
-	//replaceGroups.Add(ReplaceGroup('c', 'ç'));
-	//replaceGroups.Add(ReplaceGroup('o', 'ô', 'ö'));
-	//replaceGroups.Add(ReplaceGroup('i', 'î', 'ï'));
+	replaceGroups.Add(ReplaceGroup('e', 'é', 'ê', 'è'));
+	replaceGroups.Add(ReplaceGroup('a', 'à', 'â'));
+	replaceGroups.Add(ReplaceGroup('u', 'ù', 'û', 'ü'));
+	replaceGroups.Add(ReplaceGroup('c', 'ç'));
+	replaceGroups.Add(ReplaceGroup('o', 'ô', 'ö'));
+	replaceGroups.Add(ReplaceGroup('i', 'î', 'ï'));
 
 	const char szTemplateFontContent[] = 
 	{	"abcdefghijklmnopqrstuvwxyz\
@@ -462,9 +462,9 @@ uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& res
 	desc.CPUAccessFlags		= D3D11_CPU_ACCESS_WRITE;
 
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
-	ID3D11Texture2D *pTexture = NULL;
+	ID3D11Texture2D *pTexture = nullptr;
 
-	auto hr = pD3DDevice->CreateTexture2D(&desc, NULL, &pTexture);
+	auto hr = pD3DDevice->CreateTexture2D(&desc, nullptr, &pTexture);
 
 	if (FAILED(hr))
 		return FeEReturnCode::Failed;
@@ -490,7 +490,7 @@ uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& res
 
 	pD3DContext->Unmap(pTexture, 0);
 
-	hr = pD3DDevice->CreateShaderResourceView(pTexture, NULL, &pFont->Texture.D3DSRV);
+	hr = pD3DDevice->CreateShaderResourceView(pTexture, nullptr, &pFont->Texture.D3DSRV);
 	if (FAILED(hr))
 		return FeEReturnCode::Failed;
 
@@ -513,19 +513,19 @@ uint32 FeModuleRenderResourcesHandler::LoadRenderTargetTexture(FeRenderLoadingRe
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
-	ID3D11Texture2D *pTexture = NULL;
+	ID3D11Texture2D *pTexture = nullptr;
 
 	pTextureData->SizeInMemory = ComputeResourceSizeInMemoryFromFormat(desc.Width, desc.Height, desc.Format, true);
 
 	if (pTextureData->SizeInMemory + ResourcePoolAllocated <= ResourcePoolLimit)
 	{
-		auto hr = pD3DDevice->CreateTexture2D(&desc, NULL, &pTexture);
+		auto hr = pD3DDevice->CreateTexture2D(&desc, nullptr, &pTexture);
 		pTextureData->Texture.D3DResource = reinterpret_cast<ID3D11Resource*>(pTexture);
 		pTextureData->Texture.RuntimeCreated = true;
 
 		if (SUCCEEDED(hr))
 		{
-			hr = pD3DDevice->CreateShaderResourceView(pTextureData->Texture.D3DResource, NULL, &pTextureData->Texture.D3DSRV);
+			hr = pD3DDevice->CreateShaderResourceView(pTextureData->Texture.D3DResource, nullptr, &pTextureData->Texture.D3DSRV);
 		}
 
 		return SUCCEEDED(hr) ? FeEReturnCode::Success : FeEReturnCode::Failed;
@@ -556,7 +556,7 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& reso
 	if (FeFileTools::FileExists(ddsPath))
 		fullPath = ddsPath;
 #endif
-	D3DX11GetImageInfoFromFile(fullPath.Value, NULL, &imgInfos, &hr);
+	D3DX11GetImageInfoFromFile(fullPath.Value, nullptr, &imgInfos, &hr);
 
 	if (FAILED(hr))
 		return FeEReturnCode::Failed;
@@ -585,11 +585,11 @@ uint32 FeModuleRenderResourcesHandler::LoadTexture(FeRenderLoadingResource& reso
 	{
 		pTextureData->RuntimeCreated = loadinfos.Format != imgInfos.Format;
 
-		D3DX11CreateTextureFromFile(pD3DDevice, fullPath.Value, &loadinfos, NULL, &pTextureData->D3DResource, &hr);
+		D3DX11CreateTextureFromFile(pD3DDevice, fullPath.Value, &loadinfos, nullptr, &pTextureData->D3DResource, &hr);
 
 		if (SUCCEEDED(hr))
 		{
-			hr = pD3DDevice->CreateShaderResourceView(pTextureData->D3DResource, NULL, &pTextureData->D3DSRV);
+			hr = pD3DDevice->CreateShaderResourceView(pTextureData->D3DResource, nullptr, &pTextureData->D3DSRV);
 		}
 
 		return SUCCEEDED(hr) ? FeEReturnCode::Success : FeEReturnCode::Failed;

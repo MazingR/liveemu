@@ -6,7 +6,7 @@ FeCObjectsFactory FeObjectsFactory;
 
 FeSerializable* FeCObjectsFactory::CreateObjectFromFactory(const char* sTypeName, uint32 iHeapId)
 {
-	FeSerializable* pResult = NULL;
+	FeSerializable* pResult = nullptr;
 	uint32 iTypeHash = FeStringTools::GenerateUIntIdFromString(sTypeName);
 	FactoriesMapIt it = Factories.find(iTypeHash);
 	
@@ -14,7 +14,7 @@ FeSerializable* FeCObjectsFactory::CreateObjectFromFactory(const char* sTypeName
 	{
 		return it->second.CreateFunc(iHeapId);
 	}
-	return NULL;
+	return nullptr;
 }
 
 FeCObjectsFactory& GetObjectsFactory()

@@ -50,10 +50,6 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		FeModuleUiInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleUi>(init));
 	}
-	//{
-	//	FeModuleInit init;
-	//	FE_FAILEDRETURN(CreateAndLoadModule<FeModuleFontsHandler>(init));
-	//}
 
 	return FeEReturnCode::Success;
 }

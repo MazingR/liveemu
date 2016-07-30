@@ -32,10 +32,10 @@
 	uint32 FeRenderViewport::CreateFromBackBuffer()
 	{
 		// Create a render target view
-		ID3D11Texture2D* pBackBuffer = NULL;
+		ID3D11Texture2D* pBackBuffer = nullptr;
 
 		D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetSwapChain()->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer));
-		D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateRenderTargetView(pBackBuffer, NULL, &RenderTargetView));
+		D3DFAILEDRETURN(FeModuleRendering::GetDevice().GetD3DDevice()->CreateRenderTargetView(pBackBuffer, nullptr, &RenderTargetView));
 		
 		SafeRelease(pBackBuffer);
 
@@ -55,7 +55,7 @@
 		descDepth.CPUAccessFlags		= 0;
 		descDepth.MiscFlags				= 0;
 
-		HRESULT hr = FeModuleRendering::GetDevice().GetD3DDevice()->CreateTexture2D(&descDepth, NULL, &DepthStencil);
+		HRESULT hr = FeModuleRendering::GetDevice().GetD3DDevice()->CreateTexture2D(&descDepth, nullptr, &DepthStencil);
 		if (FAILED(hr))
 			return FeEReturnCode::Failed;
 

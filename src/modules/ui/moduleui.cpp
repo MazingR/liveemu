@@ -24,7 +24,7 @@ void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList
 	{
 		FeUiElementTraversalNode& node = traversal.Nodes.Add();
 		node.Current = &panel;
-		node.Parent = NULL;
+		node.Parent = nullptr;
 
 		uiElements.push(&node);
 	}
@@ -121,43 +121,6 @@ uint32 FeModuleUi::ReloadScripts()
 	TraversalList.Nodes.Clear();
 
 	pResourcesHandler->UnloadResources();
-
-	FeTArray<FePath> dbFiles;
-	dbFiles.SetHeapId(UI_HEAP);
-	FeFileTools::ListFilesRecursive(dbFiles, "test/data", ".*\\.json");
-
-	DataFiles.SetHeapId(JSON_HEAP);
-	DataFiles.Clear();
-	DataFiles.Reserve(dbFiles.GetSize());
-
-	//for (auto& file : dbFiles)
-	//{
-	//	FeDataFile& dataFile = DataFiles.Add();
-
-	//	auto iRes = FeJsonParser::DeserializeObject(dataFile, file, JSON_HEAP);
-	//	if (iRes != FeEReturnCode::Success)
-	//		DataFiles.PopBack();
-	//}
-
-	for (auto & dataFile : DataFiles)
-	{
-		for (auto& game : dataFile.GetGames())
-		{
-			FE_LOG("Game\t%s",game.GetTitle().Cstr());
-
-			//FE_LOG("\nGame :\
-			//	   \n%s\t%s\
-			//	   \n%s\t%s\
-			//	   \n%s\t%s\
-			//	   \n%s\t%s\
-			//	   ",
-			//	   "Title", game.GetTitle().Cstr(),
-			//	   "Developer", game.GetDeveloper().Cstr(),
-			//	   "Platform", game.GetPlatform().Cstr(),
-			//	   "Overview", game.GetOverview().Cstr()
-			//	   );
-		}
-	}
 
 	// Load scripts from files
 	FeTArray<FePath> files;

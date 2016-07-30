@@ -103,7 +103,7 @@ uint32 FeModuleRendering::Update(const FeDt& fDt)
 	// Process iMaxProcessedMsg at maximum
 	//while (WM_QUIT != msg.message && iProcessedMsg++<iMaxProcessedMsg)
 	//{
-	//	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	//	if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 	//	{
 	//		TranslateMessage(&msg);
 	//		DispatchMessage(&msg);
@@ -158,8 +158,8 @@ void FeModuleRendering::RenderBatch(const FeRenderBatch* batch, const FeDt& fDt)
 	FeResourceId iLastEffectId = 0;
 	FeResourceId iLastGeometryId = 0;
 		
-	FeRenderGeometryData* pGeometryData = NULL;
-	FeRenderEffect* pEffect = NULL;
+	FeRenderGeometryData* pGeometryData = nullptr;
+	FeRenderEffect* pEffect = nullptr;
 	FeRenderCamera camera;
 
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();

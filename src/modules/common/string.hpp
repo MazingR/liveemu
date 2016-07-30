@@ -6,7 +6,7 @@
 
 namespace FeStringTools
 {
-	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2=NULL, unsigned int  _crc=0);
+	uint32 GenerateUIntIdFromString(const char* cptr, const char* cptr2=nullptr, unsigned int  _crc=0);
 	void ToLower(char* szStr);
 	void ToUpper(char* szStr);
 	
@@ -29,10 +29,10 @@ struct FeString
 	friend class FeStringPool;
 
 public:
-	inline const char* Cstr() const { return Pooled ? Pooled->Cstr : NULL; }
+	inline const char* Cstr() const { return Pooled ? Pooled->Cstr : nullptr; }
 	inline const uint32 Id() const { return Pooled ? Pooled->Id : 0; }
 	
-	FeString() : Pooled(NULL) {}
+	FeString() : Pooled(nullptr) {}
 	~FeString();
 
 	FeString& operator=(const FeString& other);

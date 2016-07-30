@@ -113,8 +113,8 @@ struct FeRenderTexture : public FeRenderResource
 	ID3D11ShaderResourceView*		D3DSRV;
 
 	FeRenderTexture() :
-		D3DResource(NULL),
-		D3DSRV(NULL)
+		D3DResource(nullptr),
+		D3DSRV(nullptr)
 	{}
 
 	void Release();
@@ -165,8 +165,8 @@ public:
 	std::map<uint8, FeRenderFontChar> Chars;
 
 	FeRenderFont() :
-		FtFontFace(NULL),
-		MapTmpData(NULL)
+		FtFontFace(nullptr),
+		MapTmpData(nullptr)
 	{}
 
 	void Release();
@@ -198,12 +198,12 @@ public:
 
 	FeRenderLoadingResource() : 
 		Id(0),
-		Resource(NULL)
+		Resource(nullptr)
 	{}
 
 	void CreateResource()
 	{
-		FE_ASSERT(Resource == NULL, "resource already created !");
+		FE_ASSERT(Resource == nullptr, "resource already created !");
 
 		switch (Type)
 		{

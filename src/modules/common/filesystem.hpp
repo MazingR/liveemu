@@ -52,8 +52,8 @@ namespace FeFileTools
 	void SetRootDir(const char* szPath);
 	const FePath& GetRootDir();
 
-	uint32 ListFiles(FeTArray<FePath>& files, const char* szPath, const char* szFilter = NULL);
-	uint32 ListFilesRecursive(FeTArray<FePath>& files, const char* szPath, const char* szFilter=NULL);
+	uint32 ListFiles(FeTArray<FePath>& files, const char* szPath, const char* szFilter = nullptr);
+	uint32 ListFilesRecursive(FeTArray<FePath>& files, const char* szPath, const char* szFilter=nullptr);
 
 	uint32 GetFileSize(const char* szPath, size_t* iSize);
 	

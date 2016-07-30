@@ -50,6 +50,7 @@
 #endif
 
 typedef rapidjson::Value FeSerializerValue;
+
 class FeSerializable;
 
 typedef FeSerializable*(*FeCreateObjectFunc) (uint32 iHeapId);

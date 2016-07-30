@@ -169,7 +169,9 @@ struct FePath
 		sprintf_s(Value, other.Value);
 		return *this;
 	}
-	inline void Set(const char* str);
+	
+	void Set(const char* str);
+	void SetR(const char* str);
 };
 
 #define SafeDelete(ptr) {if (ptr) delete ptr; }

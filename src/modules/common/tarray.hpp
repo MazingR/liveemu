@@ -23,7 +23,7 @@ public:
 	U			GetSize()	const		{ return Size; }
 
 	FeTArray(U _iSize = 0, THeapId iHeapId = DEFAULT_HEAP)
-		: BaseAdress(NULL)
+		: BaseAdress(nullptr)
 		, Size(0)
 		, EffectiveSize(0)
 		, HeapId(iHeapId)
@@ -33,7 +33,7 @@ public:
 			Reserve(_iSize);
 	}
 	FeTArray(const FeTArray& _copy, THeapId iHeapId = DEFAULT_HEAP)
-		: BaseAdress(NULL)
+		: BaseAdress(nullptr)
 		, HeapId(iHeapId)
 	{
 		CanExpand = true;
@@ -78,7 +78,7 @@ public:
 		Size = _copy.Size;
 		if (Size>EffectiveSize)
 		{
-			if (BaseAdress != NULL)
+			if (BaseAdress != nullptr)
 			{
 				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 			}
@@ -114,7 +114,7 @@ public:
 					pNewBase[i] = BaseAdress[i];
 				}
 			}
-			if (BaseAdress != NULL)
+			if (BaseAdress != nullptr)
 			{
 				FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 			}
@@ -129,7 +129,7 @@ public:
 	}
 	void		Resize(U _iSize)
 	{
-		T* pNewBase = NULL;
+		T* pNewBase = nullptr;
 			
 		if (_iSize>0)
 			pNewBase = FE_NEW_ARRAY(T, _iSize, HeapId);
@@ -141,7 +141,7 @@ public:
 				pNewBase[i] = BaseAdress[i];
 			}
 		}
-		if (BaseAdress != NULL)
+		if (BaseAdress != nullptr)
 		{
 			FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 		}
@@ -151,7 +151,7 @@ public:
 	}
 	void		Resize(U _iSize, const T& _kDefaultValue)
 	{
-		T* pNewBase = NULL;
+		T* pNewBase = nullptr;
 		if (_iSize>0)
 			pNewBase = FE_NEW_ARRAY(T, _iSize, HeapId);
 		if (_iSize>0 && Size>0)
@@ -165,7 +165,7 @@ public:
 		{
 			pNewBase[i] = _kDefaultValue;
 		}
-		if (BaseAdress != NULL)
+		if (BaseAdress != nullptr)
 		{
 			FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
 		}
@@ -214,7 +214,7 @@ public:
 				pNewBase[i] = BaseAdress[i];
 			}
 
-			if (BaseAdress != NULL)
+			if (BaseAdress != nullptr)
 			{
 				FE_DELETE_ARRAY(T, BaseAdress, iPreviousSize, HeapId);
 			}
@@ -345,10 +345,10 @@ public:
 	}
 	void		Free()
 	{
-		if (BaseAdress != NULL)
+		if (BaseAdress != nullptr)
 		{
 			FE_DELETE_ARRAY(T, BaseAdress, EffectiveSize, HeapId);
-			BaseAdress = NULL;
+			BaseAdress = nullptr;
 		}
 		Size = 0;
 		EffectiveSize = 0;

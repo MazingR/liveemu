@@ -46,29 +46,3 @@ public:
 	FE_DECLARE_CLASS_BODY(FeScriptFile_Properties, FeScriptFile, FeSerializable)
 };
 FE_DECLARE_CLASS_BOTTOM(FeScriptFile)
-
-class FeDataGame : public FeSerializable
-{
-public:
-#define FeDataGame_Properties(_d)				\
-	_d(FeString,				Title)			\
-	_d(FeString,				Platform)		\
-	_d(uint32,					Players)		\
-	_d(FeString,				Publisher)		\
-	_d(FeString,				Developer)		\
-	_d(FeNTArray<FeString>,		GenresList)		\
-	_d(FeString,				Overview)		\
-
-	FE_DECLARE_CLASS_BODY(FeDataGame_Properties, FeDataGame, FeSerializable)
-};
-FE_DECLARE_CLASS_BOTTOM(FeDataGame)
-
-class FeDataFile : public FeSerializable
-{
-public:
-#define FeDataFile_Properties(_d)				\
-	_d(FeNTArray<FeDataGame>,		Games)		\
-
-	FE_DECLARE_CLASS_BODY(FeDataFile_Properties, FeDataFile, FeSerializable)
-};
-FE_DECLARE_CLASS_BOTTOM(FeDataFile)

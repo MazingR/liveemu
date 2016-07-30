@@ -76,7 +76,7 @@ extern void   cJSON_Delete(cJSON *c);
 
 /* Returns the number of items in an array (or object). */
 extern int	  cJSON_GetArraySize(cJSON *array);
-/* Retrieve item number "item" from array "array". Returns NULL if unsuccessful. */
+/* Retrieve item number "item" from array "array". Returns nullptr if unsuccessful. */
 extern cJSON *cJSON_GetArrayItem(cJSON *array,int item);
 /* Get item "string" from object. Case insensitive. */
 extern cJSON *cJSON_GetObjectItem(cJSON *object,const char *string);

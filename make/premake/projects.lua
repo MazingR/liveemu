@@ -244,6 +244,24 @@ groups =
 			{
 				{"modules", "renderer"},
 			},
+		},
+		scraping = 
+		{
+			name = "module_scraping",
+			kind = c_projectKindStaticLib,
+			dependencyInclude = { c_src_root.."modules" },
+			srcPath = 
+			{
+				c_src_root.."modules/scraping/**.hpp",
+				c_src_root.."modules/scraping/**.cpp",
+			},
+			includedirs = { c_src_root.."modules/scraping" },
+			defines = nil,
+			targetname = "scraping",
+			dependencies = 
+			{
+				{"modules", "common"},
+			},
 		}
 	},
 	runtime = 
@@ -275,8 +293,8 @@ groups =
 			links = { "Qt5Gui.lib", "Qt5Widgets.lib" },
 			srcPath = 
 			{
-				c_src_root.."programs/editor/**.hpp",
-				c_src_root.."programs/editor/**.cpp",
+				-- c_src_root.."programs/editor/**.hpp",
+				-- c_src_root.."programs/editor/**.cpp",
 			},
 			includedirs = { c_src_root.."programs/editor" },
 			targetname_Debug = "editor",

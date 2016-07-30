@@ -136,3 +136,104 @@ uint32 FeDeserialize(FeSerializerValue& value, FeString* pOutput, const char* _s
 
 	return FeEReturnCode::Success;
 }
+
+// -------------------------------------------------------------------------------------------------------------------------
+
+uint32 FeDeserializeDb(FeSerializerValue& value, bool* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, int* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, uint32* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, float* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, FeVector3* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, FeColor* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, FePath* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, FeTransform* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeDeserializeDb(FeSerializerValue& value, FeString* pOutput, const char* _sPropertyName, uint32 iHeapId)
+{
+	FE_ASSERT(false, "Not implemented");
+	return FeEReturnCode::Success;
+}
+
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const bool&			input)
+{
+	return sprintf_s(output, outputLen, input ? "1" : "0");
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const int&			input)
+{
+	return sprintf_s(output, outputLen, "%d", input);
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const float&			input)
+{
+	return sprintf_s(output, outputLen, "%4.2f", input); 
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const uint32&		input)
+{
+	return sprintf_s(output, outputLen, "%u", input);
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const FePath&		input)
+{
+	return sprintf_s(output, outputLen, input.Value);
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const FeVector3&		input)
+{
+	//  todo
+	return 0;
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const FeColor&		input)
+{
+	// todo
+	return 0;
+}
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const FeTransform&	input)
+{
+	// todo
+	return 0;
+}
+
+uint32 FeSeserializeDb(char* output, uint32 outputLen, const FeString& intput)
+{
+	uint32 iRes = intput.IsEmpty() ? 0 : sprintf_s(output, outputLen, intput.Cstr());
+	if (iRes)
+		FeStringTools::Replace(output, '\'', ' ');
+
+	return iRes;
+}

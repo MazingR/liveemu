@@ -70,7 +70,7 @@ uint32 FeRenderDevice::Initialize(void* hwnd)
 	{
 		DriverType = driverTypes[driverTypeIndex];
 		
-		hr = D3D11CreateDeviceAndSwapChain(NULL, DriverType, NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+		hr = D3D11CreateDeviceAndSwapChain(nullptr, DriverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
 			D3D11_SDK_VERSION, &sd, &SwapChain, &D3dDevice, &FeatureLevel, &ImmediateContext);
 		
 		if (SUCCEEDED(hr))

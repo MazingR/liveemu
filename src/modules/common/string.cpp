@@ -4,7 +4,7 @@
 #include "serializable.hpp"
 #include <string>
 
-static FeStringPool* StaticInstance = NULL;
+static FeStringPool* StaticInstance = nullptr;
 
 FeString::FeString(const FeString& other) : FeString()
 {
@@ -39,7 +39,7 @@ void FeStringPool::DeleteString(FeString* pStr)
 	if (pStr->Pooled)
 	{
 		FePooledString& pooledStr = *pStr->Pooled;
-		pStr->Pooled = NULL;
+		pStr->Pooled = nullptr;
 
 		FE_ASSERT(pooledStr.RefCount > 0, "Invalid pooled string ref count !");
 		if (pooledStr.RefCount == 0)

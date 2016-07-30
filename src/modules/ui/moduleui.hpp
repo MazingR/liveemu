@@ -22,7 +22,7 @@ struct FeUiElementTraversalNode
 
 	FeRenderGeometryInstance*			GeometryInstance;
 
-	FeUiElementTraversalNode() : Parent(NULL), Current(NULL), GeometryInstance(NULL) {}
+	FeUiElementTraversalNode() : Parent(nullptr), Current(nullptr), GeometryInstance(nullptr) {}
 };
 struct FeUiDefferedApplyBinding
 {
@@ -71,30 +71,4 @@ private:
 	FeUiElementTraversalList		TraversalList;
 
 	FeTArray<FeUiDefferedApplyBinding> DefferedApplyBindingData;
-
-	FeTArray<FeDataFile>			DataFiles;
 };
-
-//
-//class FeModuleFontsHandler : public FeModule
-//{
-//public:
-//	virtual uint32 Load(const FeModuleInit*) override;
-//	virtual uint32 Unload() override;
-//	virtual uint32 Update(const FeDt& fDt) override;
-//
-//	uint32 LoadFontFromFile(const FePath& path);
-//
-//private:
-//
-//	static void FontLoadingCallback(FeRenderTexture* pTexture, void* pUserData);
-//
-//	FT_LibraryRec_*	FtLibrary;
-//	FeTArray<FeFontData> Fonts;
-//};
-//
-//struct FeFontLoadingData
-//{
-//	FePath					FontPath;
-//	FeModuleFontsHandler*	This;
-//};

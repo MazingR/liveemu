@@ -24,6 +24,11 @@ void FePath::Set(const char* str)
 	sprintf_s(Value, str);
 	FeFileTools::FormatPath(*this);
 }
+void FePath::SetR(const char* str)
+{
+	sprintf_s(Value, "%s/%s", FeFileTools::GetRootDir().Value, str);
+	FeFileTools::FormatPath(*this);
+}
 
 uint32 FeModuleFilesManager::Load(const FeModuleInit*)
 {
@@ -54,8 +59,8 @@ uint32 FeModuleFilesManager::Update(const FeDt& fDt)
 				true,
 				FILE_CHANGE_FLAGS,
 				&bytesRet,
-				NULL,
-				NULL))
+				nullptr,
+				nullptr))
 			{
 				size_t iFileChangedCount = bytesRet / sizeof(FILE_NOTIFY_INFORMATION);
 				
@@ -92,10 +97,10 @@ void FeModuleFilesManager::WatchDirectory(const char* szPath, FeFileChangeEvent 
 		szPath, // pointer to the directory containing the tex files
 		FILE_LIST_DIRECTORY | GENERIC_READ,                // access (read-write) mode
 		FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,  // share mode
-		NULL, // security descriptor
+		nullptr, // security descriptor
 		OPEN_EXISTING, // how to create
 		FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, // file attributes
-		NULL); // file with attributes to copy
+		nullptr); // file with attributes to copy
 
 	FePath watchPath;
 	watchPath.Set(szPath);
@@ -120,10 +125,10 @@ uint32 sdl_file_write(const char* filename, const char* szContent)
 {
 	SDL_RWops *rw = SDL_RWFromFile(filename, "w");
 
-	if (rw == NULL)
+	if (rw == nullptr)
 		return FeEReturnCode::File_OpenFailed;
 
-	if (rw != NULL) {
+	if (rw != nullptr) {
 		const char *str = "Hello World";
 		size_t len = SDL_strlen(szContent);
 		size_t iWritten = SDL_RWwrite(rw, str, 1, len);
@@ -138,7 +143,7 @@ uint32 sdl_file_write(const char* filename, const char* szContent)
 uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize) {
 	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
 
-	if (rw == NULL)
+	if (rw == nullptr)
 		return FeEReturnCode::File_OpenFailed;
 
 	size_t res_size = (size_t)SDL_RWsize(rw);
@@ -192,7 +197,7 @@ namespace FeFileTools
 			dirs.PopBack();
 
 			sprintf_s(szTmpPath, "%s%s/%s", GetRootDir().Value, dir.Path, "*");
-			hFind = FindFirstFileEx(szTmpPath, FindExInfoStandard, &findData, FindExSearchNameMatch, NULL, 0);
+			hFind = FindFirstFileEx(szTmpPath, FindExInfoStandard, &findData, FindExSearchNameMatch, nullptr, 0);
 
 			dir.Handle = hFind;
 
@@ -338,14 +343,14 @@ namespace FeFileTools
 	bool FileExists(const FePath& file)
 	{
 		WIN32_FIND_DATA findData;
-		HANDLE hFind = FindFirstFileEx(file.Value, FindExInfoStandard, &findData, FindExSearchNameMatch, NULL, 0);
+		HANDLE hFind = FindFirstFileEx(file.Value, FindExInfoStandard, &findData, FindExSearchNameMatch, nullptr, 0);
 		return hFind != ((HANDLE)-1);
 	}
 	uint32 GetFileSize(const char* szPath, size_t* iSize)
 	{
 		SDL_RWops *rw = SDL_RWFromFile(szPath, "r");
 
-		if (rw == NULL)
+		if (rw == nullptr)
 			return FeEReturnCode::File_OpenFailed;
 
 		*iSize = (size_t)SDL_RWsize(rw);
