@@ -6,7 +6,6 @@ template<typename T>
 struct FeTPtr
 {
 public:
-	T* Ptr;
 	bool Owner : 1;
 
 	FeTPtr() : Ptr(nullptr) {}
@@ -33,6 +32,12 @@ public:
 	{
 		return Ptr != nullptrptr;
 	}
+	void Assign(T* ptr)
+	{
+		Delete();
+		Ptr = ptr;
+		Owner = false;
+	}
 	void Delete()
 	{
 		if (Ptr && Owner)
@@ -40,5 +45,9 @@ public:
 			FE_DELETE(T, Ptr, 1);
 		}
 	}
+	T* Get() { return Ptr; }
+
+private:
+	T* Ptr;
 };
 

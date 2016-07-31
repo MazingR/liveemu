@@ -128,6 +128,23 @@ void ComputeSqlPropertyValue(const FeTPtr<FeSerializable>* pValue, const char* s
 		ComputeSqlInsertOrUpdate(output, iOutputLen, iOutputedLen, true);														\
 	}
 
+/// <summary>
+/// Step 5 : Declare the properties reflection acces function
+/// </summary>
+/// 
+#define DECLARE_REFLECTION_PROPERTY(t, n) if (strcmp(szName, #n) == 0) return &n;
+
+#define DECLARE_REFLECTION(properties, thisClass, baseClass)																\
+	virtual void* GetPropertyValueByName(const char* szName) override														\
+	{																														\
+		void* Value = baseClass::GetPropertyValueByName(szName);															\
+		if (!Value)																											\
+		{																													\
+			properties(DECLARE_REFLECTION_PROPERTY)																			\
+		}																													\
+		return Value;																										\
+	}																														\
+
 // ------------------------------------------------------------------------------------------------
 
 #define DECLARE_PROPERTY_ACCESSOR(t, n)				\
@@ -156,6 +173,7 @@ void ComputeSqlPropertyValue(const FeTPtr<FeSerializable>* pValue, const char* s
 	DECLARE_DESERIALIZER(properties, baseClass)					\
 	DECLARE_SQL_SERIALIZER(properties, thisClass, baseClass)	\
 	DECLARE_ACCESSORS(properties, baseClass)					\
+	DECLARE_REFLECTION(properties, thisClass, baseClass)		\
 
 #define FE_DECLARE_CLASS_BOTTOM(thisClass)																					\
 	static FeTFactory<thisClass> Factory_##thisClass;																		\

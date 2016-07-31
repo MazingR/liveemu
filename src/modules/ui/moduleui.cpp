@@ -40,7 +40,7 @@ void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList
 		{
 			FeUiElementTraversalNode& childNode = traversal.Nodes.Add();
 
-			childNode.Current = child.Ptr;
+			childNode.Current = child.Get();
 			childNode.Parent = pElement;
 
 			if (childNode.Current->GetFontEffect().IsEmpty())

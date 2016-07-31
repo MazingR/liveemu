@@ -4,6 +4,17 @@
 #include <common/maths.hpp>
 #include <queue>
 
+static int DbCallback(void *NotUsed, int argc, char **argv, char **azColName)
+{
+	//int i;
+	//for (i = 0; i<argc; i++)
+	//{
+	//	printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "nullptr");
+	//}
+	//printf("\n");
+	return 0;
+}
+
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------
 class FeGameScrapperArcadeHistoryImpl
 {
@@ -51,7 +62,12 @@ public:
 			char szParsedRomName[32];
 			
 			GamesList.SetHeapId(FE_HEAPID_FILESYSTEM);
+			GamesDataList.SetHeapId(FE_HEAPID_FILESYSTEM);
+			GamesDumpList.SetHeapId(FE_HEAPID_FILESYSTEM);
+
 			GamesList.Reserve(20000);
+			GamesDataList.Reserve(20000);
+			GamesDumpList.Reserve(8*20000);
 
 			while (iReadChars < iFileSize)
 			{
@@ -78,8 +94,10 @@ public:
 					if (strlen(szParsedName) && strlen(szParsedRomNames))
 					{
 						FeDataGame& Game = GamesList.Add();
+						FeStringTools::Replace(szParsedName, '\'', ' ');
+
 						Game.SetName(szParsedName);
-						Game.GetData().New();
+						Game.GetData().Assign(&GamesDataList.Add());
 
 						uint32 iRomNamesOffset = 0;
 						uint32 iRomNamesLen = strlen(szParsedRomNames);
@@ -92,11 +110,13 @@ public:
 							memcpy_s(szParsedRomName, 32, szParsedRomNames+iRomNamesOffset, nameLen);
 							iRomNamesOffset += nameLen+1;
 
-							FeDataGameDump* pDump = Game.GetData().Ptr->NewDumpPtr(iRomIdx);
-							pDump->SetName(szParsedRomName);
+							FeTPtr<FeDataGameDump>& Dump = Game.GetData().Get()->GetDump(iRomIdx);
+							Dump.Assign(&GamesDumpList.Add());
+							Dump.Get()->SetName(szParsedRomName);
+
 							iRomIdx++;
 
-							if (iRomIdx > 4)
+							if (iRomIdx >= FeDataGameData::MaxDumpsCount)
 								break;
 						}
 					}
@@ -114,21 +134,31 @@ public:
 	{
 
 	}
-	void InjectInfosInDatabase()
+	void InjectInfosInDatabase(FeModuleScraping* module)
 	{
+		FeDataPlatform arcade;
+		arcade.SetName("Arcade");
 
+		module->InsertOrUpdateEntry(&arcade);
+
+		for (auto& game : GamesList)
+		{
+			module->InsertOrUpdateEntry(&game);
+		}
 	}
 	
 private:
 	FeNTArray<FeDataGame> GamesList;
+	FeNTArray<FeDataGameData> GamesDataList;
+	FeNTArray<FeDataGameDump> GamesDumpList;
 };
-uint32 FeGameScrapperArcadeHistory::Load()
+uint32 FeGameScrapperArcadeHistory::Load(FeModuleScraping* module)
 {
 	Impl = FE_NEW(FeGameScrapperArcadeHistoryImpl, 0);
 	
 	Impl->LoadDatFileInfos();
 	Impl->FetchRomFilesChecksum();
-	Impl->InjectInfosInDatabase();
+	Impl->InjectInfosInDatabase(module);
 
 	return FeEReturnCode::Success;
 }
@@ -146,7 +176,7 @@ class FeGameScrapperGiantBombImpl
 {
 
 };
-uint32 FeGameScrapperGiantBomb::Load()
+uint32 FeGameScrapperGiantBomb::Load(FeModuleScraping* module)
 {
 	Impl = FE_NEW(FeGameScrapperGiantBombImpl, 0);
 	return FeEReturnCode::Success;
@@ -161,76 +191,7 @@ uint32 FeGameScrapperGiantBomb::Scrap(FeDataGame& Game)
 	return FeEReturnCode::Success;
 }
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------
-static int DbCallback(void *NotUsed, int argc, char **argv, char **azColName)
-{
-	//int i;
-	//for (i = 0; i<argc; i++)
-	//{
-	//	printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "nullptr");
-	//}
-	//printf("\n");
-	return 0;
-}
 
-class FeModuleScrapingImpl
-{
-public:
-	FeModuleScrapingImpl()
-	{
-		SqlScript = FE_NEW_ARRAY(char, SqlScriptLen, 0);
-	}
-	~FeModuleScrapingImpl()
-	{
-		FE_DELETE_ARRAY(char, SqlScript, SqlScriptLen, 0);
-	}
-	template<typename FeDbSerializable>
-	uint32 InsertOrUpdateEntry(FeDbSerializable* pEntry)
-	{
-		uint32 iOutputed = 0;
-		uint32 RowID;
-		memset(SqlScript, 0, SqlScriptLen);
-
-		/*int(*callback)(void*, int, char**, char**) = [](void *NotUsed, int argc, char **argv, char **azColName) -> int
-		{
-			return 0;
-		};*/
-		
-		// not from db, try to recover row ID from Db
-		if (pEntry->GetID() == FE_INVALID_ID)
-		{
-			if (pEntry->HasSecondaryKey())
-			{
-				RowID = FeDatabase::StaticInstance.GetRowID(pEntry->ClassName, pEntry->GetSecondaryKey(), pEntry->GetName().Cstr());
-				pEntry->SetID(RowID);
-			}
-			else
-			{
-				FE_ASSERT(false, "trying to insert invalid row id to db");
-				return FeEReturnCode::Failed;
-			}
-		}
-
-		// New entry
-		if (pEntry->GetID() == FE_INVALID_ID)
-		{
-			pEntry->ComputeSqlInsert(SqlScript, SqlScriptLen, iOutputed);
-			if (FE_SUCCEEDED(FeDatabase::StaticInstance.ExecuteInsert(SqlScript, RowID, DbCallback)))
-				pEntry->SetID(RowID);
-			else
-				return FeEReturnCode::Failed;
-		}
-		else
-		{
-			pEntry->ComputeSqlUpdate(SqlScript, SqlScriptLen, iOutputed);
-			return FeDatabase::StaticInstance.Execute(SqlScript, DbCallback);
-		}
-		return FeEReturnCode::Success;
-	}
-private:
-
-	const uint32 SqlScriptLen = 2048;
-	char* SqlScript;
-};
 void FeModuleScraping::Test()
 {
 
@@ -252,11 +213,6 @@ void FeModuleScraping::Test()
 	//	if (iRes != FeEReturnCode::Success)
 	//		DataFiles.PopBack();
 	//}
-
-	FePath dbPath;
-	FeFileTools::ComputeFullPath(dbPath, "db/main.db");
-
-	FeDatabase::StaticInstance.Load(dbPath);
 
 	//const uint32 iSqlLen = 2048;
 
@@ -319,11 +275,11 @@ void FeModuleScraping::Test()
 	}
 
 	for (auto& platform : Platforms)
-		Impl->InsertOrUpdateEntry(&platform);
+		InsertOrUpdateEntry(&platform);
 	for (auto& genre : GameGenres)
-		Impl->InsertOrUpdateEntry(&genre);
+		InsertOrUpdateEntry(&genre);
 	for (auto& game : Games)
-		Impl->InsertOrUpdateEntry(&game);
+		InsertOrUpdateEntry(&game);
 
 
 	//uint32 iOutputed = 0;
@@ -357,7 +313,7 @@ void FeModuleScraping::Test()
 
 	//	for (auto& game : dataFile.GetGames())
 	//	{
-	//		FE_LOG("Game\t%s", game.GetTitle().Cstr());
+	//		FE_LOG("Game\t% ", game.GetTitle().Cstr());
 
 	//		uint32 iOutputed = 0;
 	//		game.ComputeSqlInsert(szSql, iSqlLen, iOutputed);
@@ -374,23 +330,34 @@ void FeModuleScraping::Test()
 uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 {
 	auto init = (FeModuleScrapingInit*)initBase;
-	Impl = FE_NEW(FeModuleScrapingImpl, 0);
+	
+	// Load database
+	FePath dbPath;
+	FeFileTools::ComputeFullPath(dbPath, "db/main.db");
+	FeDatabase::StaticInstance.Load(dbPath);
+
+	SqlScript = FE_NEW_ARRAY(char, SqlScriptLen, 0);
 
 	CreateScrapper<FeGameScrapperArcadeHistory>();
 	CreateScrapper<FeGameScrapperGiantBomb>();
 
-	GetScrapper<FeGameScrapperArcadeHistory>()->Load();
-	GetScrapper<FeGameScrapperGiantBomb>()->Load();
+	GetScrapper<FeGameScrapperArcadeHistory>()->Load(this);
+	GetScrapper<FeGameScrapperGiantBomb>()->Load(this);
 	
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleScraping::Unload()
 {
-	FE_DELETE(FeModuleScrapingImpl, Impl, 0);
+	FE_DELETE_ARRAY(char, SqlScript, SqlScriptLen, 0);
 
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleScraping::Update(const FeDt& fDt)
 {
 	return FeEReturnCode::Success;
+}
+
+FeString* ComputeEntrySecondaryKeyValue(FeDbSerializableNamed* pEntry)
+{
+	return &pEntry->GetName();
 }

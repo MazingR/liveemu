@@ -246,9 +246,15 @@ uint32 FeSeserializeDb(char* output, uint32 outputLen, const FeTransform&	input)
 
 uint32 FeSeserializeDb(char* output, uint32 outputLen, const FeString& intput)
 {
-	uint32 iRes = intput.IsEmpty() ? 0 : sprintf_s(output, outputLen, intput.Cstr());
-	if (iRes)
+	if (intput.IsEmpty())
+		return 0;
+
+	uint32 strLen = strlen(intput.Cstr());
+	memcpy_s(output, outputLen, intput.Cstr(), strLen);
+	output[strLen] = '\0';
+	
+	if (strLen)
 		FeStringTools::Replace(output, '\'', ' ');
 
-	return iRes;
+	return strLen;
 }

@@ -20,6 +20,10 @@ namespace FeESerializeFormat
 class FeSerializable
 {
 public:
+	virtual void* GetPropertyValueByName(const char* szName)
+	{
+		return nullptr;
+	}
 	virtual void ComputeSqlPropertiesName(char* output, uint32 iOutputLen, uint32& iOutputedLen, bool bInsert)
 	{
 	}
@@ -78,10 +82,10 @@ uint32 FeDeserialize(FeSerializerValue& value, FeTPtr<T>* pOutput, const char* _
 
 	if (jsonProperty.HasMember("_serialize_type_"))
 	{
-		pOutput->Ptr = (T*)GetObjectsFactory().CreateObjectFromFactory(jsonProperty["_serialize_type_"].GetString(), iHeapId);
+		pOutput->Assign((T*)GetObjectsFactory().CreateObjectFromFactory(jsonProperty["_serialize_type_"].GetString(), iHeapId));
 	}
 
-	return FeJsonParser::DeserializeObject(*pOutput->Ptr, jsonProperty, iHeapId);
+	return FeJsonParser::DeserializeObject(*pOutput->Get(), jsonProperty, iHeapId);
 }
 uint32 FeDeserialize(FeSerializerValue& value, bool*		pOutput, const char* _sPropertyName, uint32 iHeapId);
 uint32 FeDeserialize(FeSerializerValue& value, int*			pOutput, const char* _sPropertyName, uint32 iHeapId);

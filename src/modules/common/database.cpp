@@ -129,5 +129,5 @@ uint32 FeDatabase::ExecuteInsert(const char* szExec, uint32& ID, int(*callback)(
 }
 uint32 FeDatabase::GetRowID(const char* sTable, const char* sSecondaryKey, const char* sValue)
 {
-	return Impl ? Impl->GetRowID(sTable, sSecondaryKey, sValue) : FeEReturnCode::Failed;
+	return Impl ? Impl->GetRowID(sTable, sSecondaryKey, sValue) : FE_INVALID_ID;
 }

@@ -61,40 +61,45 @@ FE_DECLARE_CLASS_BOTTOM(FeDataGameDump)
 class FeDataGameData : public FeDbSerializable
 {
 public:
+	static const uint32 MaxDumpsCount = 10;
+
 	#define props(_d)							\
 	_d(FeTPtr<FeDataGameDump>,	Dump0)			\
 	_d(FeTPtr<FeDataGameDump>,	Dump1)			\
 	_d(FeTPtr<FeDataGameDump>,	Dump2)			\
 	_d(FeTPtr<FeDataGameDump>,	Dump3)			\
 	_d(FeTPtr<FeDataGameDump>,	Dump4)			\
+	_d(FeTPtr<FeDataGameDump>,	Dump5)			\
+	_d(FeTPtr<FeDataGameDump>,	Dump6)			\
+	_d(FeTPtr<FeDataGameDump>,	Dump7)			\
+	_d(FeTPtr<FeDataGameDump>,	Dump8)			\
+	_d(FeTPtr<FeDataGameDump>,	Dump9)			\
 
 	FeDataGameData() : FeDbSerializable()
 	{}
 
-	FeDataGameDump* NewDumpPtr(uint32 iDumpIdx)
+	FeTPtr<FeDataGameDump>& GetDump(uint32 iDumpIdx)
 	{
 		switch (iDumpIdx)
 		{
-		case 0:		return GetDump0().New();
-		case 1:		return GetDump1().New();
-		case 2:		return GetDump2().New();
-		case 3:		return GetDump3().New();
-		case 4:		return GetDump4().New();
-		default:	return nullptr;
+			case 0:		return GetDump0();
+			case 1:		return GetDump1();
+			case 2:		return GetDump2();
+			case 3:		return GetDump3();
+			case 4:		return GetDump4();
+			case 5:		return GetDump5();
+			case 6:		return GetDump6();
+			case 7:		return GetDump7();
+			case 8:		return GetDump8();
+			case 9:		return GetDump9();
+			default:
+			{
+				FE_ASSERT(false, "invalid game dump index !");
+				return GetDump0();
+			}
 		}
 	}
-	FeDataGameDump* GetDumpPtr(uint32 iDumpIdx)
-	{
-		switch (iDumpIdx)
-		{
-		case 0:		return GetDump0().Ptr;
-		case 1:		return GetDump1().Ptr;
-		case 2:		return GetDump2().Ptr;
-		case 3:		return GetDump3().Ptr;
-		case 4:		return GetDump4().Ptr;
-		default:	return nullptr;
-		}
-	}
+
 	FE_DECLARE_CLASS_BODY(props, FeDataGameData, FeDbSerializable)
 	#undef props
 };
@@ -116,7 +121,8 @@ FE_DECLARE_CLASS_BOTTOM(FeDataPlatformArts)
 class FeDataGameGenre : public FeDbSerializableNamed
 {
 public:
-	#define props(_d)
+	#define props(_d)		\
+	_d(FeString, Overview)	\
 
 	FeDataGameGenre() : FeDbSerializableNamed()
 	{}
