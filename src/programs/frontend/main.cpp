@@ -2,7 +2,7 @@
 
 #define USE_LIMIT_FPS 1
 #define FPS_LIMIT 60
-#define HEAP_APPLICATION 0
+#define FE_HEAPID_APPLICATION 1
 
 uint32 FeApplication::Load(const FeApplicationInit& appInit)
 {
@@ -122,8 +122,12 @@ uint32 FeApplication::Run()
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
 	FeMemoryManager::StaticInstance.CreateHeapMBytes(16, "SDL2");
-	FeMemoryManager::StaticInstance.CreateHeapMBytes(31, "Render");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "FileSystem");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "JsonParser");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Renderer");
 	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "Ui");
+	FeMemoryManager::StaticInstance.CreateHeapMBytes(32, "StringPool");
+
 	FeFileTools::SetRootDir("../data");
 
 	FeApplication& app = FeApplication::StaticInstance;

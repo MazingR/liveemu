@@ -6,8 +6,15 @@
 #define FE_LOCALLOG(fmt, ...) FE_LOG("[MemoryManager] "fmt, __VA_ARGS__) 
 
 #define MEMALIGNEMENT 16
-#define DEFAULT_HEAP_SIZE 16
 #define MEM_PAGE_SIZE_KB 512
+
+#ifdef DEBUG
+	#define DEFAULT_HEAP_SIZE 32
+	#define PROFILE_ALLOCATIONS 1
+#else
+	#define DEFAULT_HEAP_SIZE 32
+	#define PROFILE_ALLOCATIONS 1
+#endif
 
 bool g_IsMemoryManagerInit = false;
 
@@ -160,7 +167,10 @@ void* FeMemoryManager::Allocate(const size_t& _size, const size_t& _alignmemnt, 
 
 	void* ptr = HeapAlloc(heap.HeapHandle, 0, _size);
 	FE_LOCALASSERT(ptr, "Not enought memory !");
+
+#if PROFILE_ALLOCATIONS
 	OnAllocate(heap, ptr, _size);
+#endif
 
 	return ptr;
 }
@@ -178,7 +188,10 @@ void* FeMemoryManager::Free(void* _ptr, int iHeapId)
 
 	MemHeap& heap = GetHeap(iHeapId);
 	HeapFree(heap.HeapHandle, 0, _ptr);
+
+#if PROFILE_ALLOCATIONS
 	OnFree(heap, _ptr);
+#endif
 
 	return nullptr;
 }
@@ -231,16 +244,37 @@ void FeMemoryManager::OnAllocate(MemHeap& heap, void* _ptr, const size_t& _size)
 	heap.DebugInfos.Allocated += _size;
 	if (heap.DebugInfos.Allocated > heap.DebugInfos.AllocatedPeak)
 		heap.DebugInfos.AllocatedPeak = heap.DebugInfos.Allocated;
-
+	
 	std::pair<MapAllocationsIt, bool> bInsertResult;
-	bInsertResult = heap.Allocations.insert(std::pair<size_t, size_t>((size_t)_ptr, _size));
-	FE_LOCALASSERT(bInsertResult.second == true, "Insert allocation failed !");
+	bool bInserted = false;
 
+	for (uint32 i = 0; i < ALLOC_MAP_COUNT; ++i)
+	{
+		if (heap.Allocations[i].size() < MAX_ALOCC_MAP_SIZE)
+		{
+			bInsertResult = heap.Allocations[i].insert(std::pair<size_t, size_t>((size_t)_ptr, _size));
+			FE_LOCALASSERT(bInsertResult.second == true, "Insert allocation failed !");
+
+			bInserted = true;
+			break;
+		}
+	}
+	FE_LOCALASSERT(bInserted, "Too many allocations on heap!");
 }
 void FeMemoryManager::OnFree(MemHeap& heap, void* _ptr)
 {
-	MapAllocationsIt it = heap.Allocations.find((size_t)_ptr);
-	FE_LOCALASSERT(it != heap.Allocations.end(), "Allocation not found !?");
- 	heap.DebugInfos.Allocated -= it->second;
-	heap.Allocations.erase(it);
+	bool bFoundAlloc = false;
+
+	for (uint32 i = 0; i < ALLOC_MAP_COUNT; ++i)
+	{
+		MapAllocationsIt it = heap.Allocations[i].find((size_t)_ptr);
+		if (it != heap.Allocations[i].end())
+		{
+			heap.DebugInfos.Allocated -= it->second;
+			heap.Allocations[i].erase(it);
+
+			bFoundAlloc = true;
+		}
+	}
+	FE_LOCALASSERT(bFoundAlloc, "Allocation not found !?");
 }

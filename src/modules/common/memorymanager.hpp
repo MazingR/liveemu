@@ -1,6 +1,8 @@
 #pragma once
 
 #define MAX_HEAP_COUNT 64
+#define MAX_ALOCC_MAP_SIZE 24000
+#define ALLOC_MAP_COUNT 32
 
 #include <common.hpp>
 #include <tarray.hpp>
@@ -22,7 +24,7 @@ struct MemHeap
 {
 	void*				HeapHandle;
 	size_t				Size;
-	MapAllocations		Allocations;
+	MapAllocations		Allocations[ALLOC_MAP_COUNT];
 	MemHeapDebugInfos	DebugInfos;
 };
 

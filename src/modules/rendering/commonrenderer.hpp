@@ -6,7 +6,7 @@
 #include <map>
 
 #define DEBUG_STRING_SIZE 2048
-#define RENDERER_HEAP 1
+#define FE_HEAPID_RENDERER 3
 #define RENDERER_DEFAULT_EFFECT_ID 1
 
 // forward declares of DXSDK
@@ -187,7 +187,7 @@ private:
 	template<typename T>
 	FeRenderResource* AllocateResource()
 	{
-		return FE_NEW(T, RENDERER_HEAP);
+		return FE_NEW(T, FE_HEAPID_RENDERER);
 	}
 public:
 	FePath						Path;

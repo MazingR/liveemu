@@ -10,11 +10,16 @@ namespace FeStringTools
 	void ToLower(char* szStr);
 	void ToUpper(char* szStr);
 	
-	size_t IndexOf(const char* szString, char szChar, size_t iStart=0, size_t iEnd=(size_t)-1);
-	size_t LastIndexOf(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = (size_t)-1);
-	size_t Count(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = (size_t)-1);
+	size_t IndexOf(const char* szString, char szChar, size_t iStart=0, size_t iEnd=0);
+	size_t LastIndexOf(const char* szString, char szChar, size_t iStart = 0, size_t iEnd = 0);
+
+	size_t IndexOf(const char* szString, const char* szFind, size_t iStart = 0, size_t iEnd =0);
+
+	size_t Count(const char* szString, char szChar, size_t iStart = 0, size_t iEnd =0);
 	size_t Replace(char* szString, char szFind, char szReplace);
 	size_t TrimEnd(char* szString, char szChar);
+
+	bool TrimLeft(char** szString, char* szTrimed, uint32 strLimit=0);
 }
 
 struct FePooledString

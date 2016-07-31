@@ -1,0 +1,6 @@
+{
+	"Name" : "NPlayers",
+	"IsOnline" : false,
+	"IsPlatformSpecific" : false,
+	"Type" : "GameScrapperNPlayers"
+}

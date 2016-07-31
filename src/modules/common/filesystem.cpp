@@ -19,17 +19,19 @@
 	FILE_NOTIFY_CHANGE_CREATION |		\
 	FILE_NOTIFY_CHANGE_SECURITY
 
-void FePath::Set(const char* str)
+void FePath::Set(const char* str, bool bRelative/*=false*/)
 {
-	sprintf_s(Value, str);
-	FeFileTools::FormatPath(*this);
+	if (bRelative)
+	{
+		sprintf_s(Value, "%s/%s", FeFileTools::GetRootDir().Value, str);
+		FeFileTools::FormatPath(*this);
+	}
+	else
+	{
+		sprintf_s(Value, str);
+		FeFileTools::FormatPath(*this);
+	}
 }
-void FePath::SetR(const char* str)
-{
-	sprintf_s(Value, "%s/%s", FeFileTools::GetRootDir().Value, str);
-	FeFileTools::FormatPath(*this);
-}
-
 uint32 FeModuleFilesManager::Load(const FeModuleInit*)
 {
 	return FeEReturnCode::Success;
@@ -148,7 +150,7 @@ uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize)
 		return FeEReturnCode::File_OpenFailed;
 
 	size_t res_size = (size_t)SDL_RWsize(rw);
-	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, 1);
+	*outputBuff = (char*)FE_ALLOCATE(res_size + 1, FE_HEAPID_FILESYSTEM);
 
 	size_t nb_read_total = 0, nb_read = 1;
 	char* buf = (char*)*outputBuff;
@@ -162,7 +164,7 @@ uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize)
 	*pFileSize = nb_read_total;
 
 	if (nb_read_total != res_size) {
-		free(*outputBuff);
+		FE_FREE(*outputBuff, FE_HEAPID_FILESYSTEM);
 		return FeEReturnCode::File_ReadFailed;
 	}
 
@@ -394,5 +396,15 @@ namespace FeFileTools
 		// if the file size is divisible by 4
 
 		return sum;
+	}
+	void ComputeFullPath(FePath& output, const char* relative)
+	{
+		output.Set(relative, true);
+	}
+	FePath ComputeFullPath(const char* relative)
+	{
+		FePath path;
+		path.Set(relative, true);
+		return path;
 	}
 };

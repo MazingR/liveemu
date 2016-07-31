@@ -26,6 +26,8 @@ public:
 		Delete();
 		Ptr = FE_NEW(T, 1);
 		Owner = true;
+
+		return Ptr;
 	}
 	bool IsValid()
 	{

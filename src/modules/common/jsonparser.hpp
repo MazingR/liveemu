@@ -4,10 +4,10 @@
 #include "filesystem.hpp"
 #include "string.hpp"
 
-#define JSON_HEAP 1
+#define FE_HEAPID_JSONPARSER 2
 
-#define RAPIDJSON_NEW(x) FeNew(x, JSON_HEAP)
-#define RAPIDJSON_DELETE(x) FeDelete(x, JSON_HEAP)
+#define RAPIDJSON_NEW(x) FeNew(x, FE_HEAPID_JSONPARSER)
+#define RAPIDJSON_DELETE(x) FeDelete(x, FE_HEAPID_JSONPARSER)
 
 #if HOOK_MALLOC
 
@@ -22,10 +22,10 @@
 	#undef realloc
 	#undef free
 
-	#define malloc(size)		std_FeMallocHook(size, JSON_HEAP)
-	#define calloc(nmemb, size)	std_FeCallocHook(nmemb, size, JSON_HEAP)
-	#define realloc(ptr, size)	std_FeReallocHook(ptr, size, JSON_HEAP,1)
-	#define free(ptr)			std_FeFreeHook(ptr, JSON_HEAP)
+	#define malloc(size)		std_FeMallocHook(size, FE_HEAPID_JSONPARSER)
+	#define calloc(nmemb, size)	std_FeCallocHook(nmemb, size, FE_HEAPID_JSONPARSER)
+	#define realloc(ptr, size)	std_FeReallocHook(ptr, size, FE_HEAPID_JSONPARSER,1)
+	#define free(ptr)			std_FeFreeHook(ptr, FE_HEAPID_JSONPARSER)
 
 	#pragma warning(disable: 4244)
 	#include <rapidjson/document.h>
@@ -37,10 +37,10 @@
 	#undef realloc
 	#undef free
 
-	#define malloc(size)		FeMallocHook(size, JSON_HEAP)
-	#define calloc(nmemb, size)	FeCallocHook(nmemb, size, JSON_HEAP)
-	#define realloc(ptr, size)	FeReallocHook(ptr, size, JSON_HEAP, 1)
-	#define free(ptr)			FeFreeHook(ptr, JSON_HEAP)
+	#define malloc(size)		FeMallocHook(size, FE_HEAPID_JSONPARSER)
+	#define calloc(nmemb, size)	FeCallocHook(nmemb, size, FE_HEAPID_JSONPARSER)
+	#define realloc(ptr, size)	FeReallocHook(ptr, size, FE_HEAPID_JSONPARSER, 1)
+	#define free(ptr)			FeFreeHook(ptr, FE_HEAPID_JSONPARSER)
 
 #else
 	#pragma warning(disable: 4244)
@@ -160,7 +160,7 @@ namespace FeJsonParser
 
 			FE_DELETE_ARRAYD(char, szLine, iLineLen);
 
-			FE_FREE(szContent, 1);
+			FE_FREE(szContent, FE_HEAPID_FILESYSTEM);
 			return FeEReturnCode::Failed;
 		}
 

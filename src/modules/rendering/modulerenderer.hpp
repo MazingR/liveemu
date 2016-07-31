@@ -31,7 +31,7 @@ struct FeRenderBatch
 	FeRenderBatch()
 	{
 		GeometryInstances.Clear();
-		GeometryInstances.SetHeapId(RENDERER_HEAP);
+		GeometryInstances.SetHeapId(FE_HEAPID_RENDERER);
 	}
 };
 

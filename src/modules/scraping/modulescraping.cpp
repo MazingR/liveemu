@@ -4,7 +4,163 @@
 #include <common/maths.hpp>
 #include <queue>
 
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
+class FeGameScrapperArcadeHistoryImpl
+{
+public:
+	void LoadDatFileInfos()
+	{
+		char* szContent;
+		size_t iFileSize;
+		FePath path;
 
+		FeFileTools::ComputeFullPath(path, "scrappers/arcadehistory/history.dat");
+		
+		auto iResult = FeFileTools::ReadTextFile(path, &szContent, &iFileSize);
+		
+		if (iResult == FeEReturnCode::Success)
+		{
+			char* line = szContent;
+			uint32 iLineLen = FeStringTools::IndexOf(line, '\r', 0, 2048);
+
+			uint32 iReadChars = 0;
+
+			auto readChar = [&]() 
+			{
+				line++;
+				iReadChars++;
+			};
+			auto readLine = [&]()
+			{
+				iLineLen = FeStringTools::IndexOf(line, '\r', 0, 2048);
+
+				if (iLineLen > iFileSize - iReadChars)
+					iLineLen = iFileSize - iReadChars;
+
+				line += iLineLen + 1;
+				iReadChars += iLineLen + 1;
+
+				if (line[0] == '\n')
+					readChar(); // read '\n
+
+				iLineLen = FeStringTools::IndexOf(line, '\r', 0, 2048);
+			};
+			
+			char szParsedRomNames[512];
+			char szParsedName[512];
+			char szParsedRomName[32];
+			
+			GamesList.SetHeapId(FE_HEAPID_FILESYSTEM);
+			GamesList.Reserve(20000);
+
+			while (iReadChars < iFileSize)
+			{
+				uint32 iCharsLeft = iFileSize - iReadChars;
+
+				char* parsedLine = line;
+				if (FeStringTools::TrimLeft(&parsedLine, "$info=", 2048))
+				{
+					memset(szParsedRomNames, 0, 512);
+					memset(szParsedName, 0, 512);
+					
+					memcpy_s(szParsedRomNames, 512, parsedLine, FeStringTools::IndexOf(parsedLine, '\r', 0, 2048) - 1); // line minus 1 char ','
+					// jump 3 lines
+					readLine();readLine();readLine();
+					uint32 iNameLen = FeStringTools::IndexOf(line, " (c)", 0, iLineLen);
+					if (iNameLen == iLineLen)
+						iNameLen = FeStringTools::IndexOf(line, "(c)", 0, iLineLen);
+					
+					if (iNameLen == iLineLen)
+						continue;
+
+					memcpy_s(szParsedName, 512, line, iNameLen); // line minus 1 char '.'
+
+					if (strlen(szParsedName) && strlen(szParsedRomNames))
+					{
+						FeDataGame& Game = GamesList.Add();
+						Game.SetName(szParsedName);
+						Game.GetData().New();
+
+						uint32 iRomNamesOffset = 0;
+						uint32 iRomNamesLen = strlen(szParsedRomNames);
+						uint32 iRomIdx = 0;
+
+						while (iRomNamesOffset < iRomNamesLen)
+						{
+							memset(szParsedRomName, 0, 32);
+							uint32 nameLen = FeStringTools::IndexOf(szParsedRomNames + iRomNamesOffset, ',');
+							memcpy_s(szParsedRomName, 32, szParsedRomNames+iRomNamesOffset, nameLen);
+							iRomNamesOffset += nameLen+1;
+
+							FeDataGameDump* pDump = Game.GetData().Ptr->NewDumpPtr(iRomIdx);
+							pDump->SetName(szParsedRomName);
+							iRomIdx++;
+
+							if (iRomIdx > 4)
+								break;
+						}
+					}
+				}
+				else
+				{
+					readLine();
+				}
+			}
+
+			FE_FREE(szContent, FE_HEAPID_FILESYSTEM);
+		}
+	}
+	void FetchRomFilesChecksum()
+	{
+
+	}
+	void InjectInfosInDatabase()
+	{
+
+	}
+	
+private:
+	FeNTArray<FeDataGame> GamesList;
+};
+uint32 FeGameScrapperArcadeHistory::Load()
+{
+	Impl = FE_NEW(FeGameScrapperArcadeHistoryImpl, 0);
+	
+	Impl->LoadDatFileInfos();
+	Impl->FetchRomFilesChecksum();
+	Impl->InjectInfosInDatabase();
+
+	return FeEReturnCode::Success;
+}
+uint32 FeGameScrapperArcadeHistory::Unload()
+{
+	FE_DELETE(FeGameScrapperArcadeHistoryImpl, Impl, 0);
+	return FeEReturnCode::Success;
+}
+uint32 FeGameScrapperArcadeHistory::Scrap(FeDataGame& Game)
+{
+	return FeEReturnCode::Success;
+}
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
+class FeGameScrapperGiantBombImpl
+{
+
+};
+uint32 FeGameScrapperGiantBomb::Load()
+{
+	Impl = FE_NEW(FeGameScrapperGiantBombImpl, 0);
+	return FeEReturnCode::Success;
+}
+uint32 FeGameScrapperGiantBomb::Unload()
+{
+	FE_DELETE(FeGameScrapperGiantBombImpl, Impl, 0);
+	return FeEReturnCode::Success;
+}
+uint32 FeGameScrapperGiantBomb::Scrap(FeDataGame& Game)
+{
+	return FeEReturnCode::Success;
+}
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
 static int DbCallback(void *NotUsed, int argc, char **argv, char **azColName)
 {
 	//int i;
@@ -75,18 +231,16 @@ private:
 	const uint32 SqlScriptLen = 2048;
 	char* SqlScript;
 };
-uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
+void FeModuleScraping::Test()
 {
-	auto init = (FeModuleScrapingInit*)initBase;
-	Impl = FE_NEW(FeModuleScrapingImpl, 0);
-	
+
 	//FeTArray<FeDataFile>			DataFiles;
 
 	//FeTArray<FePath> dbFiles;
 	//dbFiles.SetHeapId(2);
 	//FeFileTools::ListFilesRecursive(dbFiles, "test/data", ".*\\.json");
 
-	//DataFiles.SetHeapId(JSON_HEAP);
+	//DataFiles.SetHeapId(FE_HEAPID_JSONPARSER);
 	//DataFiles.Clear();
 	//DataFiles.Reserve(dbFiles.GetSize());
 
@@ -94,13 +248,13 @@ uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 	//{
 	//	FeDataFile& dataFile = DataFiles.Add();
 
-	//	auto iRes = FeJsonParser::DeserializeObject(dataFile, file, JSON_HEAP);
+	//	auto iRes = FeJsonParser::DeserializeObject(dataFile, file, FE_HEAPID_JSONPARSER);
 	//	if (iRes != FeEReturnCode::Success)
 	//		DataFiles.PopBack();
 	//}
 
 	FePath dbPath;
-	dbPath.SetR("db/main.db");
+	FeFileTools::ComputeFullPath(dbPath, "db/main.db");
 
 	FeDatabase::StaticInstance.Load(dbPath);
 
@@ -113,30 +267,30 @@ uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 	FeTArray<FeDataGame> Games;
 	FeTArray<FeDataPlatform> Platforms;
 	FeTArray<FeDataGameGenre> GameGenres;
-	
+
 	char platforms[][32]
 	{
 		"Sega Genesis",
-		"Arcade",
-		"Super Nes",
-		"Sega Saturn",
+			"Arcade",
+			"Super Nes",
+			"Sega Saturn",
 	};
 
 	char genres[][32]
 	{
 		"Action",
-		"Platform",
-		"Shooter",
-		"Sport",
-		"Race",
+			"Platform",
+			"Shooter",
+			"Sport",
+			"Race",
 	};
 	char games[][2][32]
 	{
-		{ "Sonic",			"sonic c'est cool" },
-		{ "Mario",			"mario tuyaux" },
-		{ "Street Fighter",	"on saute pas sur le gros" },
-		{ "Virtua Fighter",	"ora ora ora !" },
-		{ "Panzer Dragoon",	"azel" },
+		{ "Sonic", "sonic c'est cool" },
+		{ "Mario", "mario tuyaux" },
+		{ "Street Fighter", "on saute pas sur le gros" },
+		{ "Virtua Fighter", "ora ora ora !" },
+		{ "Panzer Dragoon", "azel" },
 	};
 
 	uint32 iPlatformsCount = sizeof(platforms) / 32;
@@ -147,13 +301,13 @@ uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 	}
 
 	uint32 iGenresCount = sizeof(genres) / 32;
-	for (uint32 i = 0; i < iGenresCount;++i)
+	for (uint32 i = 0; i < iGenresCount; ++i)
 	{
 		GameGenres.Add();
 		GameGenres[i].SetName(genres[i]);
 	}
 
-	uint32 iGamesCount = sizeof(games) / (32*2);
+	uint32 iGamesCount = sizeof(games) / (32 * 2);
 	for (uint32 i = 0; i < iGamesCount; ++i)
 	{
 		Games.Add();
@@ -216,6 +370,18 @@ uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 	//}
 	//FE_DELETE_ARRAY(char, szSql, iSqlLen, 0);
 
+}
+uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
+{
+	auto init = (FeModuleScrapingInit*)initBase;
+	Impl = FE_NEW(FeModuleScrapingImpl, 0);
+
+	CreateScrapper<FeGameScrapperArcadeHistory>();
+	CreateScrapper<FeGameScrapperGiantBomb>();
+
+	GetScrapper<FeGameScrapperArcadeHistory>()->Load();
+	GetScrapper<FeGameScrapperGiantBomb>()->Load();
+	
 	return FeEReturnCode::Success;
 }
 uint32 FeModuleScraping::Unload()

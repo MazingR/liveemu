@@ -1,0 +1,6 @@
+{
+	"Name" : "ArcadeHistory",
+	"IsOnline" : false,
+	"IsPlatformSpecific" : false,
+	"Type" : "GameScrapperArcadeHistory"
+}

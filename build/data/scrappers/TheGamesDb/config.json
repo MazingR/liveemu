@@ -1,0 +1,6 @@
+{
+	"Name" : "TheGamesDb",
+	"IsOnline" : true,
+	"IsPlatformSpecific" : true,
+	"Type" : "GameScrapperTheGamesDb"
+}

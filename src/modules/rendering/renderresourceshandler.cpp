@@ -367,7 +367,7 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 
 	FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
 
-	pFont->MapTmpData = FE_ALLOCATE(iDepthPitch, RENDERER_HEAP);
+	pFont->MapTmpData = FE_ALLOCATE(iDepthPitch, FE_HEAPID_RENDERER);
 	pFont->MapDepthPitch = iDepthPitch;
 
 	memset(pFont->MapTmpData, 0, iDepthPitch);
@@ -494,7 +494,7 @@ uint32 FeModuleRenderResourcesHandler::PostLoadFont(FeRenderLoadingResource& res
 	if (FAILED(hr))
 		return FeEReturnCode::Failed;
 
-	FE_FREE(pFont->MapTmpData, RENDERER_HEAP);
+	FE_FREE(pFont->MapTmpData, FE_HEAPID_RENDERER);
 
 	return FeEReturnCode::Success;
 }

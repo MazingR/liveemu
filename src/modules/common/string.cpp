@@ -4,6 +4,8 @@
 #include "serializable.hpp"
 #include <string>
 
+#define FE_HEAPID_STRINGPOOL 5
+
 static FeStringPool* StaticInstance = nullptr;
 
 FeString::FeString(const FeString& other) : FeString()
@@ -52,19 +54,22 @@ void FeStringPool::DeleteString(FeString* pStr)
 	if (pStr->Pooled)
 	{
 		FePooledString& pooledStr = *pStr->Pooled;
-		pStr->Pooled = nullptr;
-
-		FE_ASSERT(pooledStr.RefCount > 0, "Invalid pooled string ref count !");
-		if (pooledStr.RefCount == 0)
-			return;
-
-		pooledStr.RefCount--;
-
-		if (pooledStr.RefCount == 0)
+		if (pooledStr.Size > 64)
 		{
-			// delete pooled string from memory
-			FE_DELETE_ARRAY(char, pooledStr.Cstr, pooledStr.Size, 1);
-			Pool.erase(pooledStr.Id);
+			pStr->Pooled = nullptr;
+
+			FE_ASSERT(pooledStr.RefCount > 0, "Invalid pooled string ref count !");
+			if (pooledStr.RefCount == 0)
+				return;
+
+			pooledStr.RefCount--;
+
+			if (pooledStr.RefCount == 0)
+			{
+				// delete pooled string from memory
+				FE_DELETE_ARRAY(char, pooledStr.Cstr, pooledStr.Size, FE_HEAPID_STRINGPOOL);
+				Pool.erase(pooledStr.Id);
+			}
 		}
 	}
 }
@@ -91,7 +96,7 @@ FePooledString* FeStringPool::CreatePooledString(const char* szValue)
 	FePooledString* pooledStr = &Pool[iId];
 
 	iLen++; // add one char for end of str
-	pooledStr->Cstr = FE_NEW_ARRAY(char, iLen, 1);
+	pooledStr->Cstr = FE_NEW_ARRAY(char, iLen, FE_HEAPID_STRINGPOOL);
 
 	memcpy_s(pooledStr->Cstr, iLen, szValue, iLen);
 	pooledStr->Cstr[iLen] = '\0';
@@ -220,8 +225,7 @@ namespace FeStringTools
 
 	size_t Count(const char* szString, char szChar, size_t iStart, size_t iEnd)
 	{
-		size_t iLen = strlen(szString);
-		iLen = iLen > iEnd ? iEnd : iLen;
+		size_t iLen = iEnd ? iEnd : strlen(szString);
 		size_t iCount = 0;
 
 		for (size_t i = iStart; i < iLen; ++i)
@@ -234,8 +238,7 @@ namespace FeStringTools
 	}
 	size_t DoIndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd, bool bReverse)
 	{
-		size_t iLen = strlen(szString);
-		iLen = iLen > iEnd ? iEnd : iLen;
+		size_t iLen = iEnd ? iEnd : strlen(szString);
 
 		for (size_t i = bReverse ? iLen - 1 : iStart; bReverse ? (i >= iStart) : (i < iLen); bReverse ? (--i) : (++i))
 		{
@@ -246,16 +249,44 @@ namespace FeStringTools
 				break;
 		}
 
-		return (size_t)-1;
+		return iLen;
+	}
+	size_t DoIndexOf(const char* szString, const char* szFind, size_t iStart, size_t iEnd, bool bReverse)
+	{
+		size_t iLen = iEnd ? iEnd : strlen(szString);
+		
+		size_t iFindIdx = 0;
+		size_t iFindLen = strlen(szFind);
+
+		if (iFindLen > iLen)
+			return iLen;
+
+		for (size_t i = bReverse ? iLen - 1 : iStart; bReverse ? (i >= iStart) : (i < iLen); bReverse ? (--i) : (++i))
+		{
+			if (szString[i] == szFind[iFindIdx])
+			{
+				iFindIdx++;
+				if (iFindIdx == iFindLen)
+					return i - iFindLen + 1;
+			}
+
+			if (bReverse&&i == 0)
+				break;
+		}
+
+		return iLen;
 	}
 	size_t IndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd)
 	{
 		return DoIndexOf(szString, szChar, iStart, iEnd, false);
 	}
-
 	size_t LastIndexOf(const char* szString, char szChar, size_t iStart, size_t iEnd)
 	{
 		return DoIndexOf(szString, szChar, iStart, iEnd, true);
+	}
+	size_t IndexOf(const char* szString, const char* szFind, size_t iStart, size_t iEnd)
+	{
+		return DoIndexOf(szString, szFind, iStart, iEnd, false);
 	}
 	size_t Replace(char* szString, char szFind, char szReplace)
 	{
@@ -291,5 +322,24 @@ namespace FeStringTools
 		}
 
 		return iNewSize;
+	}
+
+	bool TrimLeft(char** szString, char* szTrimed, uint32 strLimit)
+	{
+		uint32 strLen = strLimit == 0 ? strlen(*szString) : strLimit;
+		uint32 strTrimLen = strlen(szTrimed);
+
+		if (strTrimLen > strLen)
+			return false;
+
+		for (uint32 i = 0; i < strTrimLen; ++i)
+		{
+			if ((*szString)[i] != szTrimed[i])
+				return false;
+		}
+
+		*szString += strTrimLen;
+
+		return true;
 	}
 }

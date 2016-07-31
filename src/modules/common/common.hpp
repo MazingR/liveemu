@@ -172,8 +172,7 @@ struct FePath
 		return *this;
 	}
 	
-	void Set(const char* str);
-	void SetR(const char* str);
+	void Set(const char* str, bool bRelative=false);
 };
 
 #define SafeDelete(ptr) {if (ptr) delete ptr; }

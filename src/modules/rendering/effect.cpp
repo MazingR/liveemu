@@ -136,9 +136,10 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 	ID3DBlob* pVSBlob = nullptr;
 	ID3D11Device* pD3DDevice = FeModuleRendering::GetDevice().GetD3DDevice();
 
-	char szFullPath[1024];
-	sprintf_s(szFullPath, "%s%s", FeFileTools::GetRootDir().Value, szFilePath);
-	FE_FAILEDRETURN( CompileShaderFromFile(szFullPath, "VS", "vs_5_0", (void**)&pVSBlob) );
+	FePath shaderPath;
+	FeFileTools::ComputeFullPath(shaderPath, szFilePath);
+
+	FE_FAILEDRETURN(CompileShaderFromFile(shaderPath.Value, "VS", "vs_5_0", (void**)&pVSBlob));
 
 	// Create the vertex shader
 	hr = pD3DDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, (ID3D11VertexShader**)&VertexShader);
@@ -164,7 +165,7 @@ uint32 FeRenderEffect::CreateFromFile(const char* szFilePath)
 
 	// Compile the pixel shader
 	ID3DBlob* pPSBlob = nullptr;
-	hr = CompileShaderFromFile(szFullPath, "PS", "ps_5_0", (void**)&pPSBlob);
+	hr = CompileShaderFromFile(shaderPath.Value, "PS", "ps_5_0", (void**)&pPSBlob);
 
 	if (FAILED(hr) || !pPSBlob)
 	{

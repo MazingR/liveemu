@@ -1,6 +1,7 @@
 #pragma once
 
 #define MAX_HEAP_COUNT 64
+#define FE_HEAPID_FILESYSTEM 1
 
 #include <common.hpp>
 #include <tarray.hpp>
@@ -51,6 +52,8 @@ namespace FeFileTools
 {
 	void SetRootDir(const char* szPath);
 	const FePath& GetRootDir();
+	void ComputeFullPath(FePath& output, const char* relative);
+	FePath ComputeFullPath(const char* relative);
 
 	uint32 ListFiles(FeTArray<FePath>& files, const char* szPath, const char* szFilter = nullptr);
 	uint32 ListFilesRecursive(FeTArray<FePath>& files, const char* szPath, const char* szFilter=nullptr);

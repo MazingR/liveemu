@@ -9,7 +9,7 @@
 uint32 FeModuleUi::LoadUnitTest(uint32 iTest)
 {
 	FeTArray<FePath> files;
-	files.SetHeapId(RENDERER_HEAP);
+	files.SetHeapId(FE_HEAPID_RENDERER);
 
 	FeFileTools::ListFilesRecursive(files, "../data/test/textures/boxfronts", "*.jpg");
 	FeFileTools::ListFilesRecursive(files, "../data/test/textures/bb2VFX", "*");

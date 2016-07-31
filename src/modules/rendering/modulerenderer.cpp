@@ -399,7 +399,7 @@ void FeModuleRendering::SwitchDebugRenderTextMode()
 }
 FeRenderBatch* FeModuleRendering::CreateRenderBatch()
 {
-	FeRenderBatch* renderBatch = FE_NEW(FeRenderBatch, RENDERER_HEAP);
+	FeRenderBatch* renderBatch = FE_NEW(FeRenderBatch, FE_HEAPID_RENDERER);
 	renderBatch->Viewport = &DefaultViewport;
 
 	return renderBatch;

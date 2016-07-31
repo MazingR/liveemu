@@ -6,7 +6,7 @@
 #include <common/maths.hpp>
 #include <queue>
 
-#define UI_HEAP 2
+#define FE_HEAPID_UI 4
 
 void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
 {
@@ -124,7 +124,7 @@ uint32 FeModuleUi::ReloadScripts()
 
 	// Load scripts from files
 	FeTArray<FePath> files;
-	files.SetHeapId(UI_HEAP);
+	files.SetHeapId(FE_HEAPID_UI);
 
 	FeFileTools::ListFilesRecursive(files, "themes/common", ".*\\.fes");
 	FeFileTools::ListFilesRecursive(files, "themes/default", ".*\\.fes"); // load default theme
@@ -134,7 +134,7 @@ uint32 FeModuleUi::ReloadScripts()
 	for (auto& file : files)
 	{
 		FeScriptFile& scriptFile = ScriptFiles.Add();
-		auto iRes = FeJsonParser::DeserializeObject(scriptFile, file, UI_HEAP);
+		auto iRes = FeJsonParser::DeserializeObject(scriptFile, file, FE_HEAPID_UI);
 
 		if (iRes == FeEReturnCode::Success)
 		{
@@ -163,7 +163,7 @@ uint32 FeModuleUi::ReloadScripts()
 		for (auto& uiFont : script.GetFonts())
 		{
 			FeRenderLoadingResource resource;
-			resource.Resource = FE_NEW(FeRenderFont, RENDERER_HEAP);
+			resource.Resource = FE_NEW(FeRenderFont, FE_HEAPID_RENDERER);
 			resource.Path = uiFont.GetTrueTypeFile();
 			resource.Type = FeEResourceType::Font;
 			resource.Id = FeStringTools::GenerateUIntIdFromString(uiFont.GetName().Cstr());
@@ -289,7 +289,7 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 		{
 			FeRenderLoadingResource resource;
 			resource.Path.Set(sourceData.Cstr());
-			resource.Resource = FE_NEW(FeRenderTexture, RENDERER_HEAP);
+			resource.Resource = FE_NEW(FeRenderTexture, FE_HEAPID_RENDERER);
 			resource.Type = FeEResourceType::Texture;
 			pResourcesHandler->LoadResource(resource); // schedule resource loading
 			

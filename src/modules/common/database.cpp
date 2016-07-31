@@ -33,7 +33,6 @@ public:
 		if (rc)
 		{
 			FE_ASSERT(false, "Can't open database: %s\n", sqlite3_errmsg(SqlDb))
-			sqlite3_close(SqlDb);
 
 			return FeEReturnCode::Failed;
 		}
@@ -64,7 +63,6 @@ public:
 			FE_ASSERT(false, "SQL error: %s\n", zErrMsg);
 
 			sqlite3_free(zErrMsg);
-			sqlite3_close(SqlDb);
 
 			return FeEReturnCode::Failed;
 		}
@@ -95,7 +93,7 @@ public:
 	{
 		if (IsDbLoaded)
 		{
-			sqlite3_close(SqlDb);
+			//sqlite3_close(SqlDb);
 			IsDbLoaded = false;
 		}
 	}
@@ -107,9 +105,11 @@ public:
 
 FeDatabase::~FeDatabase()
 {
-	Impl->Unload();
-
-	FE_DELETE(FeDatabaseImpl, Impl, 0);
+	if (Impl)
+	{
+		Impl->Unload();
+		FE_DELETE(FeDatabaseImpl, Impl, 0);
+	}
 }
 
 uint32 FeDatabase::Load(const FePath& path)
