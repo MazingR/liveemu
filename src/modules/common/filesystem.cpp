@@ -140,7 +140,8 @@ uint32 sdl_file_write(const char* filename, const char* szContent)
 
 	return FeEReturnCode::Success;
 }
-uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize) {
+uint32 sdl_file_read(const char* filename, void** outputBuff, size_t* pFileSize) 
+{
 	SDL_RWops *rw = SDL_RWFromFile(filename, "r");
 
 	if (rw == nullptr)
@@ -368,5 +369,30 @@ namespace FeFileTools
 	const FePath& GetRootDir()
 	{
 		return RootPath;
+	}
+
+	uint32 GetFileChecksum(const FePath& file)
+	{
+		char szTmpPath[1024];
+		sprintf_s(szTmpPath, "%s%s", RootPath.Value, file.Value);
+
+		SDL_RWops *rw = SDL_RWFromFile(szTmpPath, "r");
+
+		if (rw == nullptr)
+			return 0;
+
+		uint32 sum = 0;
+		uint32 word = 0;
+
+		while (SDL_RWread(rw, reinterpret_cast<char*>(&word), sizeof(word), 1)) {
+			sum += word;
+			word = 0;
+		}
+		SDL_RWclose(rw);
+
+		sum += word; // add the last word, could be 0
+		// if the file size is divisible by 4
+
+		return sum;
 	}
 };

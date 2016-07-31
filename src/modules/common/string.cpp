@@ -14,6 +14,10 @@ FeString::FeString(const FeString& other) : FeString()
 		Pooled->RefCount++;
 	}
 }
+FeString::FeString(const char* other) : FeString()
+{
+	FeStringPool::GetInstance()->CreateString(other, *this);
+}
 FeString::FeString(FePooledString& pooledStr) : FeString()
 {
 	Pooled = &pooledStr;
@@ -21,6 +25,9 @@ FeString::FeString(FePooledString& pooledStr) : FeString()
 }
 FeString& FeString::operator= (const FeString& other)
 {
+	if (Pooled)
+		Pooled->RefCount--;
+
 	if (other.Pooled)
 	{
 		Pooled = other.Pooled;
@@ -28,6 +35,12 @@ FeString& FeString::operator= (const FeString& other)
 	}
 	return *this;
 }
+FeString& FeString::operator= (const char* other)
+{
+	FeStringPool::GetInstance()->CreateString(other, *this);
+	return *this;
+}
+
 FeString::~FeString()
 {
 	FeStringPool::GetInstance()->DeleteString(this);
@@ -55,18 +68,21 @@ void FeStringPool::DeleteString(FeString* pStr)
 		}
 	}
 }
-FeString FeStringPool::CreateString(const char* szValue)
+FePooledString* FeStringPool::CreatePooledString(const char* szValue)
 {
+	if (!szValue)
+		return nullptr;
+
 	size_t iLen = strlen(szValue);
 	if (!iLen)
-		return FeString();
+		return nullptr;
 
 	uint32 iId = FeStringTools::GenerateUIntIdFromString(szValue);
 	static StringPoolMapIt itEnd = Pool.end();
 
 	if (Pool.find(iId) != itEnd)
 	{
-		return FeString(Pool[iId]);
+		return &Pool[iId];
 	}
 
 	// Create new pooled string
@@ -76,7 +92,7 @@ FeString FeStringPool::CreateString(const char* szValue)
 
 	iLen++; // add one char for end of str
 	pooledStr->Cstr = FE_NEW_ARRAY(char, iLen, 1);
-	
+
 	memcpy_s(pooledStr->Cstr, iLen, szValue, iLen);
 	pooledStr->Cstr[iLen] = '\0';
 	//sprintf_s(pooledStr->Cstr, iLen, szValue);
@@ -85,7 +101,16 @@ FeString FeStringPool::CreateString(const char* szValue)
 	pooledStr->Size = iLen;
 	pooledStr->RefCount = 1;
 
-	return FeString(*pooledStr);
+	return pooledStr;
+}
+void FeStringPool::CreateString(const char* szValue, FeString& output)
+{
+	FePooledString* pooledStr = CreatePooledString(szValue);
+	output.SetPooledStr(pooledStr);
+}
+FeString FeStringPool::CreateString(const char* szValue)
+{
+	return FeString(*CreatePooledString(szValue));
 }
 FeStringPool* FeStringPool::GetInstance()
 {

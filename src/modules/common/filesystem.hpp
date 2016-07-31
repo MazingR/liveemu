@@ -80,4 +80,5 @@ namespace FeFileTools
 	void GetFullPathChangeExtension(FePath&, const char*, const char*);
 
 	bool FileExists(const FePath&);
+	uint32 GetFileChecksum(const FePath& file);
 };

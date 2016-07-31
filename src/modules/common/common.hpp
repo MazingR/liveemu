@@ -70,7 +70,9 @@ int __cdecl vs_printf(const char *format, ...);
 void FeSetLastError(const char* fmt, ...);
 const char* FeGetLastError();
 
-#define FE_FAILED(a) (a!=FeEReturnCode::Success)
+#define FE_FAILED(a) ((a)!=FeEReturnCode::Success)
+#define FE_SUCCEEDED(a) ((a)==FeEReturnCode::Success)
+#define FE_INVALID_ID ((uint32)-1)
 #define FE_FAILEDRETURN(a) { uint32 ___iResult = (a); { if FE_FAILED(___iResult) return ___iResult; } }
 
 #define FE_LOG(fmt, ...)				\

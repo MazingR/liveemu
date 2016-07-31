@@ -2,6 +2,21 @@
 
 #include "serializable.hpp"
 
+void ComputeSqlRefPropertyInsert(const FeTPtr<FeSerializable>* pValue, const char* sTypeName, const char* sName, char* output, uint32 iOutputLen, bool bInsert, uint32& iOutputedLen)
+{
+}
+void ComputeSqlRefPropertyLink(const FeTPtr<FeSerializable>* pValue, const char* sTypeName, const char* sName, char* output, uint32 iOutputLen, bool bInsert, uint32& iOutputedLen)
+{
+}
+void ComputeSqlPropertyName(const FeTPtr<FeSerializable>* pValue, const char* sTypeName, const char* sName, char* output, uint32 iOutputLen, bool bInsert, uint32& iOutputedLen)
+{
+	FE_ASSERT(false, "Do nothing");
+}
+void ComputeSqlPropertyValue(const FeTPtr<FeSerializable>* pValue, const char* sTypeName, const char* sName, char* output, uint32 iOutputLen, bool bInsert, uint32& iOutputedLen)
+{
+	FE_ASSERT(false, "Do nothing");
+}
+
 bool FetchProperty(FeSerializerValue& obj, FeSerializerValue& property, const char* sPropertyName)
 {
 	if (strcmp(sPropertyName, ".") == 0)

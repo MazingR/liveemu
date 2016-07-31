@@ -50,6 +50,10 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		FeModuleUiInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleUi>(init));
 	}
+	{
+		FeModuleScrapingInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleScraping>(init));
+	}
 
 	return FeEReturnCode::Success;
 }

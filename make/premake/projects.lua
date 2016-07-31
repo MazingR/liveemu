@@ -283,6 +283,7 @@ groups =
 			{
 				{"modules", "renderer"},
 				{"modules", "ui"},
+				{"modules", "scraping"},
 				{"modules", "common"},
 			},
 		},

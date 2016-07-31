@@ -413,7 +413,7 @@ uint32 FeModuleRenderResourcesHandler::LoadFont(FeRenderLoadingResource& resourc
 		charData.Left = iXOffset;
 		charData.Top = iYOffset;
 
-#define SetIfValid(a, b) if (b!=(uint32)-1)  { a=b; }
+#define SetIfValid(a, b) if (b!=FE_INVALID_ID)  { a=b; }
 		
 		SetIfValid (charData.OffsetLeft, slot->bitmap_left);
 		SetIfValid (charData.OffsetTop, slot->bitmap_top);

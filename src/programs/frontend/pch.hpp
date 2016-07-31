@@ -9,6 +9,7 @@
 #include <common/memorymanager.hpp>
 
 #include <ui/moduleui.hpp>
+#include <scraping/modulescraping.hpp>
 
 #include <map>
 #include <iostream>

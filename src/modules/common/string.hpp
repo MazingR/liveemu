@@ -33,11 +33,15 @@ public:
 	inline const uint32 Id() const { return Pooled ? Pooled->Id : 0; }
 	
 	FeString() : Pooled(nullptr) {}
+	FeString(FePooledString& pooledStr);
+	FeString(const FeString& copy);
+	FeString(const char* other);
+
 	~FeString();
 
 	FeString& operator=(const FeString& other);
-	FeString(FePooledString& pooledStr);
-	FeString(const FeString& copy);
+	FeString& operator=(const char* other);
+	
 	bool IsEmpty() const
 	{
 		return !Pooled;
@@ -45,6 +49,16 @@ public:
 	bool operator==(const FeString& other) const
 	{
 		return other.Pooled == this->Pooled;
+	}
+	void SetPooledStr(FePooledString* pooledStr)
+	{
+		if (Pooled)
+			Pooled->RefCount--;
+		
+		Pooled = pooledStr;
+		
+		if (Pooled)
+			Pooled->RefCount++;
 	}
 private:
 	FePooledString* Pooled;
@@ -55,8 +69,11 @@ class FeStringPool
 public:
 	static FeStringPool* GetInstance();
 	FeString CreateString(const char* szValue);
+	void FeStringPool::CreateString(const char* szValue, FeString& output);
 	void DeleteString(FeString* pStr);
 private:
+	FePooledString* CreatePooledString(const char* szValue);
+	
 	typedef std::map<uint32, FePooledString> StringPoolMap;
 	typedef StringPoolMap::iterator StringPoolMapIt;
 

@@ -5,16 +5,16 @@
 
 FeDatabase FeDatabase::StaticInstance;
 
-static int callback(void *NotUsed, int argc, char **argv, char **azColName)
-{
-	int i;
-	for (i = 0; i<argc; i++)
-	{
-		printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "nullptr");
-	}
-	printf("\n");
-	return 0;
-}
+//static int callback(void *NotUsed, int argc, char **argv, char **azColName)
+//{
+//	int i;
+//	for (i = 0; i<argc; i++)
+//	{
+//		printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "nullptr");
+//	}
+//	printf("\n");
+//	return 0;
+//}
 
 class FeDatabaseImpl
 {
@@ -43,16 +43,16 @@ public:
 		return FeEReturnCode::Success;
 	}
 
-	uint32 ExecuteInsert(const char* szExec, uint32& ID)
+	uint32 ExecuteInsert(const char* szExec, uint32& ID, int(*callback)(void*, int, char**, char**))
 	{
-		uint32 iRes = Execute(szExec);
+		uint32 iRes = Execute(szExec, callback);
 		if (!FE_FAILED(iRes))
 		{
 			ID = (uint32)sqlite3_last_insert_rowid(SqlDb);
 		}
 		return iRes;
 	}
-	uint32 Execute(const char* szExec)
+	uint32 Execute(const char* szExec, int(*callback)(void*, int, char**, char**))
 	{
 		FE_ASSERT(IsDbLoaded, "Db not loaded !");
 
@@ -69,6 +69,27 @@ public:
 			return FeEReturnCode::Failed;
 		}
 		return FeEReturnCode::Success;
+	}
+	uint32 GetRowID(const char* sTable, const char* sSecondaryKey, const char* sValue)
+	{
+		static uint32 iID = 0;
+		static char szSql[1024];
+		memset(szSql, 0, 1024);
+
+		iID = FE_INVALID_ID;
+
+		int(*callback)(void*, int, char**, char**) = [](void *NotUsed, int argc, char **argv, char **azColName) -> int
+		{
+			if (argc==1)
+				iID = (uint32)atoi(argv[0]);
+
+			return argc == 1 ? 0 : 1;
+		};
+		sprintf_s(szSql, "SELECT ID FROM %s WHERE %s='%s'", sTable, sSecondaryKey, sValue);
+
+		Execute(szSql, callback);
+
+		return iID;
 	}
 	void Unload()
 	{
@@ -98,11 +119,15 @@ uint32 FeDatabase::Load(const FePath& path)
 
 	return Impl->Load(path);
 }
-uint32 FeDatabase::Execute(const char* szExec)
+uint32 FeDatabase::Execute(const char* szExec, int(*callback)(void*, int, char**, char**))
 {
-	return Impl ? Impl->Execute(szExec) : FeEReturnCode::Failed;
+	return Impl ? Impl->Execute(szExec, callback) : FeEReturnCode::Failed;
 }
-uint32 FeDatabase::ExecuteInsert(const char* szExec, uint32& ID)
+uint32 FeDatabase::ExecuteInsert(const char* szExec, uint32& ID, int(*callback)(void*, int, char**, char**))
 {
-	return Impl ? Impl->ExecuteInsert(szExec, ID) : FeEReturnCode::Failed;
+	return Impl ? Impl->ExecuteInsert(szExec, ID, callback) : FeEReturnCode::Failed;
+}
+uint32 FeDatabase::GetRowID(const char* sTable, const char* sSecondaryKey, const char* sValue)
+{
+	return Impl ? Impl->GetRowID(sTable, sSecondaryKey, sValue) : FeEReturnCode::Failed;
 }

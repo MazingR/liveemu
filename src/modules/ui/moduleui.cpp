@@ -354,7 +354,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 		if (szChar == ' ')
 		{
 			uint32 iNextSpace = FeStringTools::IndexOf(szText, ' ', iCharIdx + 1, iTextLen);
-			if (iNextSpace == (uint32)-1)
+			if (iNextSpace == FE_INVALID_ID)
 				iNextSpace = iTextLen;
 
 			if ((iNextSpace - iCharIdx)*fSpace + tOffset[0] > fLineSizeX)
