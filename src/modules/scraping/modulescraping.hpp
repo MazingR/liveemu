@@ -52,8 +52,6 @@ public:
 	virtual uint32 Unload() override;
 	virtual uint32 Update(const FeDt& fDt) override;
 
-	void Test();
-
 	template<class T>
 	T* CreateScrapper()
 	{
@@ -92,7 +90,7 @@ public:
 
 				if (pKeyValue)
 				{
-					RowID = FeDatabase::StaticInstance.GetRowID(pEntry->ClassName, pEntry->GetSecondaryKey(), pKeyValue->Cstr());
+					RowID = FeDatabase::StaticInstance.GetRowID(pEntry->ClassName(), pEntry->GetSecondaryKey(), pKeyValue->Cstr());
 					pEntry->SetID(RowID);
 				}
 			}
@@ -112,17 +110,11 @@ public:
 
 		uint32 iOutputed = 0;
 		memset(SqlScript, 0, SqlScriptLen);
-
-		/*int(*callback)(void*, int, char**, char**) = [](void *NotUsed, int argc, char **argv, char **azColName) -> int
-		{
-		return 0;
-		};*/
-
 		// New entry
 		if (pEntry->GetID() == FE_INVALID_ID)
 		{
 			pEntry->ComputeSqlInsert(SqlScript, SqlScriptLen, iOutputed);
-			if (FE_SUCCEEDED(FeDatabase::StaticInstance.ExecuteInsert(SqlScript, RowID, DbCallback)))
+			if (FE_SUCCEEDED(FeDatabase::StaticInstance.ExecuteInsert(SqlScript, RowID)))
 				pEntry->SetID(RowID);
 			else
 				return FeEReturnCode::Failed;
@@ -130,7 +122,7 @@ public:
 		else
 		{
 			pEntry->ComputeSqlUpdate(SqlScript, SqlScriptLen, iOutputed);
-			return FeDatabase::StaticInstance.Execute(SqlScript, DbCallback);
+			return FeDatabase::StaticInstance.Execute(SqlScript);
 		}
 		return FeEReturnCode::Success;
 	}

@@ -5,17 +5,6 @@
 
 FeDatabase FeDatabase::StaticInstance;
 
-//static int callback(void *NotUsed, int argc, char **argv, char **azColName)
-//{
-//	int i;
-//	for (i = 0; i<argc; i++)
-//	{
-//		printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "nullptr");
-//	}
-//	printf("\n");
-//	return 0;
-//}
-
 class FeDatabaseImpl
 {
 public:
@@ -44,19 +33,19 @@ public:
 
 	uint32 ExecuteInsert(const char* szExec, uint32& ID, int(*callback)(void*, int, char**, char**))
 	{
-		uint32 iRes = Execute(szExec, callback);
+		uint32 iRes = Execute(szExec, callback, nullptr);
 		if (!FE_FAILED(iRes))
 		{
 			ID = (uint32)sqlite3_last_insert_rowid(SqlDb);
 		}
 		return iRes;
 	}
-	uint32 Execute(const char* szExec, int(*callback)(void*, int, char**, char**))
+	uint32 Execute(const char* szExec, int(*callback)(void*, int, char**, char**), void* userData)
 	{
 		FE_ASSERT(IsDbLoaded, "Db not loaded !");
 
 		char *zErrMsg = 0;
-		int rc = sqlite3_exec(SqlDb, szExec, callback, 0, &zErrMsg);
+		int rc = sqlite3_exec(SqlDb, szExec, callback, userData, &zErrMsg);
 		
 		if (rc != SQLITE_OK)
 		{
@@ -85,7 +74,7 @@ public:
 		};
 		sprintf_s(szSql, "SELECT ID FROM %s WHERE %s='%s'", sTable, sSecondaryKey, sValue);
 
-		Execute(szSql, callback);
+		Execute(szSql, callback, nullptr);
 
 		return iID;
 	}
@@ -119,11 +108,11 @@ uint32 FeDatabase::Load(const FePath& path)
 
 	return Impl->Load(path);
 }
-uint32 FeDatabase::Execute(const char* szExec, int(*callback)(void*, int, char**, char**))
+uint32 FeDatabase::Execute(const char* szExec, int(*callback)(void*, int, char**, char**)/* = nullptr*/, void* userData/* = nullptr*/)
 {
-	return Impl ? Impl->Execute(szExec, callback) : FeEReturnCode::Failed;
+	return Impl ? Impl->Execute(szExec, callback, userData) : FeEReturnCode::Failed;
 }
-uint32 FeDatabase::ExecuteInsert(const char* szExec, uint32& ID, int(*callback)(void*, int, char**, char**))
+uint32 FeDatabase::ExecuteInsert(const char* szExec, uint32& ID, int(*callback)(void*, int, char**, char**)/* = nullptr*/)
 {
 	return Impl ? Impl->ExecuteInsert(szExec, ID, callback) : FeEReturnCode::Failed;
 }

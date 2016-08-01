@@ -165,7 +165,7 @@ void ComputeSqlPropertyValue(const FeTPtr<FeSerializable>* pValue, const char* s
 /// </summary>
 #define FE_DECLARE_CLASS_BODY(properties, thisClass, baseClass)	\
 	public:														\
-	const char* ClassName = #thisClass;							\
+	static const char* ClassName() { return #thisClass; }		\
 	protected:													\
 	DECLARE_CLASS_MEMBERS(properties)							\
 	public:														\

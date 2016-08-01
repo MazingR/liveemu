@@ -29,6 +29,8 @@ public:
 		
 		auto iResult = FeFileTools::ReadTextFile(path, &szContent, &iFileSize);
 		
+		uint32 iDebugGamesCountLimit = 50;
+
 		if (iResult == FeEReturnCode::Success)
 		{
 			char* line = szContent;
@@ -71,6 +73,9 @@ public:
 
 			while (iReadChars < iFileSize)
 			{
+				if (GamesList.GetSize() == iDebugGamesCountLimit)
+					break;
+
 				uint32 iCharsLeft = iFileSize - iReadChars;
 
 				char* parsedLine = line;
@@ -191,141 +196,24 @@ uint32 FeGameScrapperGiantBomb::Scrap(FeDataGame& Game)
 	return FeEReturnCode::Success;
 }
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-void FeModuleScraping::Test()
+template<typename TableType, typename PropertyType>
+void FetchListEntriesPropertyFromDb(const char* szPropertyName, FeTArray<PropertyType>& Result)
 {
+	char szSql[512];
+	memset(szSql, 0, 512);
+	sprintf_s(szSql, "SELECT %s FROM %s", szPropertyName, TableType::ClassName());
 
-	//FeTArray<FeDataFile>			DataFiles;
-
-	//FeTArray<FePath> dbFiles;
-	//dbFiles.SetHeapId(2);
-	//FeFileTools::ListFilesRecursive(dbFiles, "test/data", ".*\\.json");
-
-	//DataFiles.SetHeapId(FE_HEAPID_JSONPARSER);
-	//DataFiles.Clear();
-	//DataFiles.Reserve(dbFiles.GetSize());
-
-	//for (auto& file : dbFiles)
-	//{
-	//	FeDataFile& dataFile = DataFiles.Add();
-
-	//	auto iRes = FeJsonParser::DeserializeObject(dataFile, file, FE_HEAPID_JSONPARSER);
-	//	if (iRes != FeEReturnCode::Success)
-	//		DataFiles.PopBack();
-	//}
-
-	//const uint32 iSqlLen = 2048;
-
-	//char* szSql = FE_NEW_ARRAY(char, iSqlLen, 0);
-
-	//DataFiles.Add();
-
-	FeTArray<FeDataGame> Games;
-	FeTArray<FeDataPlatform> Platforms;
-	FeTArray<FeDataGameGenre> GameGenres;
-
-	char platforms[][32]
+	int(*callback)(void*, int, char**, char**) = [](void *userData, int argc, char **argv, char **azColName) -> int
 	{
-		"Sega Genesis",
-			"Arcade",
-			"Super Nes",
-			"Sega Saturn",
+		auto results = (FeTArray<PropertyType>*)userData;
+		if (argc == 1)
+		{
+			PropertyType& result = results->Add();
+			result = argv[0];
+		}
+		return 0;
 	};
-
-	char genres[][32]
-	{
-		"Action",
-			"Platform",
-			"Shooter",
-			"Sport",
-			"Race",
-	};
-	char games[][2][32]
-	{
-		{ "Sonic", "sonic c'est cool" },
-		{ "Mario", "mario tuyaux" },
-		{ "Street Fighter", "on saute pas sur le gros" },
-		{ "Virtua Fighter", "ora ora ora !" },
-		{ "Panzer Dragoon", "azel" },
-	};
-
-	uint32 iPlatformsCount = sizeof(platforms) / 32;
-	for (uint32 i = 0; i < iPlatformsCount; ++i)
-	{
-		Platforms.Add();
-		Platforms[i].SetName(platforms[i]);
-	}
-
-	uint32 iGenresCount = sizeof(genres) / 32;
-	for (uint32 i = 0; i < iGenresCount; ++i)
-	{
-		GameGenres.Add();
-		GameGenres[i].SetName(genres[i]);
-	}
-
-	uint32 iGamesCount = sizeof(games) / (32 * 2);
-	for (uint32 i = 0; i < iGamesCount; ++i)
-	{
-		Games.Add();
-		Games[i].SetName(games[i][0]);
-		Games[i].SetOverview(games[i][1]);
-
-		Games[0].SetPlatform(FeTPtr<FeDataPlatform>(&Platforms[0]));
-		Games[0].SetGenre(FeTPtr<FeDataGameGenre>(&GameGenres[0]));
-	}
-
-	for (auto& platform : Platforms)
-		InsertOrUpdateEntry(&platform);
-	for (auto& genre : GameGenres)
-		InsertOrUpdateEntry(&genre);
-	for (auto& game : Games)
-		InsertOrUpdateEntry(&game);
-
-
-	//uint32 iOutputed = 0;
-	//uint32 ID = FE_INVALID_ID;
-
-	//memset(szSql, 0, iSqlLen);
-	//int(*callback)(void*, int, char**, char**) = [](void *NotUsed, int argc, char **argv, char **azColName) -> int
-	//{
-	//	return 0;
-	//};
-	//
-	//ID = FeDatabase::StaticInstance.GetRowID(Platforms[0].ClassName, Platforms[0].GetSecondaryKey(), Platforms[0].GetName().Cstr());
-
-	//Platforms[0].ComputeSqlInsert(szSql, iSqlLen, iOutputed);
-	//if (FE_SUCCEEDED(FeDatabase::StaticInstance.ExecuteInsert(szSql, ID, callback)))
-	//	Platforms[0].SetID(ID);
-
-	//memset(szSql, 0, iSqlLen);
-	//GameGenres[0].ComputeSqlInsert(szSql, iSqlLen, iOutputed);
-	//if (FE_SUCCEEDED(FeDatabase::StaticInstance.ExecuteInsert(szSql, ID, callback)))
-	//	GameGenres[0].SetID(ID);
-
-	//memset(szSql, 0, iSqlLen);
-	//Games[0].ComputeSqlInsert(szSql, iSqlLen, iOutputed);
-	//if (FE_SUCCEEDED(FeDatabase::StaticInstance.ExecuteInsert(szSql, ID, callback)))
-	//	Games[0].SetID(ID);
-
-	//for (auto & dataFile : DataFiles)
-	//{
-	//	memset(szSql, 0, iSqlLen);
-
-	//	for (auto& game : dataFile.GetGames())
-	//	{
-	//		FE_LOG("Game\t% ", game.GetTitle().Cstr());
-
-	//		uint32 iOutputed = 0;
-	//		game.ComputeSqlInsert(szSql, iSqlLen, iOutputed);
-
-	//		uint32 ID;
-	//		if (FE_FAILED(FeDatabase::StaticInstance.ExecuteInsert(szSql, ID)))
-	//			continue;
-	//		game.SetID(ID);
-	//	}
-	//}
-	//FE_DELETE_ARRAY(char, szSql, iSqlLen, 0);
-
+	FeDatabase::StaticInstance.Execute(szSql, callback, &Result);
 }
 uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 {
@@ -343,6 +231,14 @@ uint32 FeModuleScraping::Load(const FeModuleInit* initBase)
 
 	GetScrapper<FeGameScrapperArcadeHistory>()->Load(this);
 	GetScrapper<FeGameScrapperGiantBomb>()->Load(this);
+
+	FeTArray<FeString> gameNames;
+	FetchListEntriesPropertyFromDb<FeDataGame>("Name", gameNames);
+
+	//for (auto& gameName : gameNames)
+	//{
+	//	FE_LOG("%s", gameName.Cstr());
+	//}
 	
 	return FeEReturnCode::Success;
 }

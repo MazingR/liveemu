@@ -43,10 +43,11 @@ class FeDataGameDump : public FeDbSerializable
 {
 public:
 	#define props(_d)							\
-	_d(uint32,	Checksum)						\
-	_d(FeString,Name)							\
-	_d(uint32,	CountryCode)					\
-	_d(uint32,	Flags)							\
+	_d(uint32,		Checksum)					\
+	_d(FeString,	Name)						\
+	_d(uint32,		CountryCode)				\
+	_d(uint32,		Flags)						\
+	_d(FeString,	LocalPath)					\
 
 	FeDataGameDump() : FeDbSerializable()
 	{}
