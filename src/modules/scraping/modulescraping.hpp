@@ -16,6 +16,7 @@ public:
 	virtual uint32 Load(FeModuleScraping* module) = 0;
 	virtual uint32 Unload() = 0;
 	virtual uint32 Scrap(FeDataGame& Game) = 0;
+	virtual void FeedDatabase(FeModuleScraping* module) = 0;
 };
 // -----------------------------------------------------------------------------
 class FeGameScrapperArcadeHistoryImpl;
@@ -25,6 +26,7 @@ public:
 	virtual uint32 Load(FeModuleScraping* module);
 	virtual uint32 Unload();
 	virtual uint32 Scrap(FeDataGame& Game);
+	virtual void FeedDatabase(FeModuleScraping* module);
 private:
 	FeGameScrapperArcadeHistoryImpl* Impl;
 };
@@ -36,6 +38,7 @@ public:
 	virtual uint32 Load(FeModuleScraping* module);
 	virtual uint32 Unload();
 	virtual uint32 Scrap(FeDataGame& Game);
+	virtual void FeedDatabase(FeModuleScraping* module);
 private:
 	FeGameScrapperGiantBombImpl* Impl;
 };

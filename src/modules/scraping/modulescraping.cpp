@@ -137,7 +137,9 @@ public:
 	}
 	void FetchRomFilesChecksum()
 	{
-
+		FeTArray<FePath> files;
+		files.SetHeapId(FE_HEAPID_FILESYSTEM);
+		FeFileTools::ListFilesRecursive(files, "themes/common", ".*\\.fes");
 	}
 	void InjectInfosInDatabase(FeModuleScraping* module)
 	{
@@ -161,10 +163,6 @@ uint32 FeGameScrapperArcadeHistory::Load(FeModuleScraping* module)
 {
 	Impl = FE_NEW(FeGameScrapperArcadeHistoryImpl, 0);
 	
-	Impl->LoadDatFileInfos();
-	Impl->FetchRomFilesChecksum();
-	Impl->InjectInfosInDatabase(module);
-
 	return FeEReturnCode::Success;
 }
 uint32 FeGameScrapperArcadeHistory::Unload()
@@ -176,10 +174,15 @@ uint32 FeGameScrapperArcadeHistory::Scrap(FeDataGame& Game)
 {
 	return FeEReturnCode::Success;
 }
+void FeGameScrapperArcadeHistory::FeedDatabase(FeModuleScraping* module)
+{
+	Impl->LoadDatFileInfos();
+	Impl->FetchRomFilesChecksum();
+	Impl->InjectInfosInDatabase(module);
+}
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------
 class FeGameScrapperGiantBombImpl
 {
-
 };
 uint32 FeGameScrapperGiantBomb::Load(FeModuleScraping* module)
 {
@@ -194,6 +197,9 @@ uint32 FeGameScrapperGiantBomb::Unload()
 uint32 FeGameScrapperGiantBomb::Scrap(FeDataGame& Game)
 {
 	return FeEReturnCode::Success;
+}
+void FeGameScrapperGiantBomb::FeedDatabase(FeModuleScraping* module)
+{
 }
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------
 template<typename TableType, typename PropertyType>
