@@ -1,12 +1,39 @@
 #include <moduleui.hpp>
+
 #include <rendering/modulerenderer.hpp>
 #include <rendering/renderresourceshandler.hpp>
 
+#include <common/database.hpp>
 #include <common/serializable.hpp>
 #include <common/maths.hpp>
 #include <queue>
 
 #define FE_HEAPID_UI 4
+
+FeUiRootPanel::FeUiRootPanel()
+{
+	RenderBatch.GeometryInstances.SetHeapId(FE_HEAPID_UI);
+	DefferedApplyBindingData.SetHeapId(FE_HEAPID_UI);
+}
+FeUiRootPanel::~FeUiRootPanel()
+{
+	RenderBatch.GeometryInstances.Free();
+	DefferedApplyBindingData.Free();
+}
+FeUiElementTraversalList::FeUiElementTraversalList()
+{
+	Nodes.SetHeapId(FE_HEAPID_UI);
+}
+FeUiElementTraversalList::~FeUiElementTraversalList()
+{
+	Nodes.Free();
+}
+FeUiElementTraversalNode* FeUiElementTraversalList::AddNode()
+{
+	FeUiElementTraversalNode* pNode = FE_NEW(FeUiElementTraversalNode, FE_HEAPID_UI);
+	Nodes.Add(pNode);
+	return pNode;
+}
 
 void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath, void* pUserData)
 {
@@ -14,86 +41,100 @@ void OnScriptFileChanged(FeEFileChangeType::Type eChangeType, const char* szPath
 	((FeModuleUi*)pUserData)->ReloadScripts();
 }
 
-void FeModuleUi::TraverseElements(FeScriptFile& script, FeUiElementTraversalList& traversal)
+void FeModuleUi::TraverseElements(FeUiRootPanel& RootPanel)
 {
-	std::queue<FeUiElementTraversalNode*> uiElements;
+	std::queue<FeUiElementTraversalNode*> nodesToTraverse;
+	auto pRenderingModule = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	// Count entries first
-
-	for (auto& panel : script.GetPanels())
+	// Create root pNode
 	{
-		FeUiElementTraversalNode& node = traversal.Nodes.Add();
-		node.Current = &panel;
-		node.Parent = nullptr;
-
-		uiElements.push(&node);
+		FeUiElementTraversalNode* pNode = RootPanel.TraversalList.AddNode();
+		pNode->Current = RootPanel.Panel;
+		pNode->Parent = nullptr;
+		nodesToTraverse.push(pNode);
 	}
 
-	while (uiElements.size())
+	while (nodesToTraverse.size())
 	{
-		FeUiElementTraversalNode* pNode = uiElements.front();
+		FeUiElementTraversalNode* pNode = nodesToTraverse.front();
 		FeUiElement* pElement = pNode->Current;
+		
+		pElement->PreTraversal(RootPanel, pNode);
 
-		uiElements.pop();
-
+		nodesToTraverse.pop();
+		FeTArray<FeUiElement*> ElementChildren;
+		
 		for (auto& child : pElement->GetChildren())
+			ElementChildren.Add(child.Get());
+
+		for (auto& child : pElement->Transient.Children)
+			ElementChildren.Add(child);
+
+		for (auto& childElement : ElementChildren)
 		{
-			FeUiElementTraversalNode& childNode = traversal.Nodes.Add();
+			FeUiElementTraversalNode* pChildNode = RootPanel.TraversalList.AddNode();;
 
-			childNode.Current = child.Get();
-			childNode.Parent = pElement;
+			pChildNode->Current = childElement;
+			pChildNode->Parent = pElement;
 
-			if (childNode.Current->GetFontEffect().IsEmpty())
-				childNode.Current->SetFontEffect(childNode.Parent->GetFontEffect());
+			if (pChildNode->Current->GetFontEffect().IsEmpty())
+				pChildNode->Current->SetFontEffect(pChildNode->Parent->GetFontEffect());
 
-			uiElements.push(&childNode);
-			pNode->Children.Add(&childNode);
+			nodesToTraverse.push(pChildNode);
+			pNode->Children.Add(pChildNode);
 		}
 	}
 }
 void FeModuleUi::ComputeRenderingInstances()
 {
 	// Pre compute rendering instances
-	for (auto& node : TraversalList.Nodes)
+	for (auto& panel : RootPanels)
 	{
-		FeUiElement* pCurrent = node.Current;
-		FeUiElement* pParent = node.Parent;
-
-		FeRenderGeometryInstance& geomInstance = RenderBatches[0].GeometryInstances.Add();
-		geomInstance.Reset();
-		
-		// two sided ref
-		node.GeometryInstance = &geomInstance;
-		geomInstance.Owner = &node;
-
-		geomInstance.Effect = pCurrent->GetEffect().Id();
-		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-
-		//pRenderingInstance->Geometry.Textures.Clear();
-
-		FeVector3	t = pCurrent->GetTransform().Translation;
-		FeRotation	r = pCurrent->GetTransform().Rotation;
-		FeVector3	s = pCurrent->GetTransform().Scale;
-
-		if (pParent) // compute world transformation using parent m matrix
+		for (auto& pNode : panel.TraversalList.Nodes)
 		{
-			auto& pT = pParent->GetTransform().Translation;
-			auto& pR = pParent->GetTransform().Rotation;
-			auto& pS = pParent->GetTransform().Scale;
+			FeUiElement* pCurrent= pNode->Current;
+			FeUiElement* pParent = pNode->Parent;
 
-			for (uint32 i = 0; i < 3; ++i)
+			FeRenderGeometryInstance& geomInstance = panel.RenderBatch.GeometryInstances.Add();
+
+			geomInstance.Reset();
+
+			// two sided ref
+			pNode->GeometryInstance = &geomInstance;
+			
+			geomInstance.Owner = &pNode;
+			geomInstance.Effect = pCurrent->GetEffect().Id();
+			geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
+
+			//pRenderingInstance->Geometry.Textures.Clear();
+
+			FeVector3	t = pCurrent->Transient.Transform.Translation;
+			FeRotation	r = pCurrent->Transient.Transform.Rotation;
+			FeVector3	s = pCurrent->Transient.Transform.Scale;
+
+			if (pParent) // compute world transformation using parent m matrix
 			{
-				t[i] += pT[i];
-				r[i] += pR[i];
-				s[i] *= pS[i];
+				auto& pT = pParent->Transient.Transform.Translation;
+				auto& pR = pParent->Transient.Transform.Rotation;
+				auto& pS = pParent->Transient.Transform.Scale;
 
-				if (s[i] == 0)
-					__debugbreak();
+				for (uint32 i = 0; i < 3; ++i)
+				{
+					t[i] += pT[i];
+					r[i] += pR[i];
+					s[i] *= pS[i];
+
+					if (s[i] == 0)
+						__debugbreak();
+				}
 			}
-		}
-		FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, t, r, s);
-	}
+			pNode->TraversalTransform.Translation	= t;
+			pNode->TraversalTransform.Rotation		= r;
+			pNode->TraversalTransform.Scale			= s;
 
+			FeGeometryHelper::ComputeAffineTransform(geomInstance.Transform, t, r, s);
+		}
+	}
 }
 uint32 FeModuleUi::ReloadScripts()
 {
@@ -101,65 +142,76 @@ uint32 FeModuleUi::ReloadScripts()
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 
 	// Clear stuff
-	for (auto& batch : RenderBatches)
 	{
-		batch.GeometryInstances.Clear();
+		RootPanels.Free();
+		ScriptFiles.Free();
+
+		RootPanels.Reserve(128);
+		ScriptFiles.Reserve(128);
+
+		pRenderingModule->UnloadEffects();
+		pResourcesHandler->UnloadResources();
 	}
-
-	pRenderingModule->UnloadEffects(); 
-	ScriptFiles.Clear();
-
-	RenderBatches.Clear();
-	RenderBatches.Reserve(64);
-	RenderBatches.Add(); // Defeault batch
-
-	RenderBatches[0].GeometryInstances.Reserve(1024);
-
-	RenderBatches[0].Viewport = &pRenderingModule->GetDefaultViewport();
-
-	Panels.Clear();
-	TraversalList.Nodes.Clear();
-
-	pResourcesHandler->UnloadResources();
 
 	// Load scripts from files
-	FeTArray<FePath> files;
-	files.SetHeapId(FE_HEAPID_UI);
-
-	FeFileTools::ListFilesRecursive(files, "themes/common", ".*\\.fes");
-	FeFileTools::ListFilesRecursive(files, "themes/default", ".*\\.fes"); // load default theme
-
-	ScriptFiles.Reserve(files.GetSize());
-
-	for (auto& file : files)
 	{
-		FeScriptFile& scriptFile = ScriptFiles.Add();
-		auto iRes = FeJsonParser::DeserializeObject(scriptFile, file, FE_HEAPID_UI);
+		FeTArray<FePath> files;
+		files.SetHeapId(FE_HEAPID_UI);
 
-		if (iRes == FeEReturnCode::Success)
-		{
-			pRenderingModule->LoadEffects(scriptFile.GetEffects());
+		FeFileTools::ListFilesRecursive(files, "themes/common", ".*\\.fes");
+		FeFileTools::ListFilesRecursive(files, "themes/default", ".*\\.fes"); // load default theme
 
-			for (auto& panel : scriptFile.GetPanels())		Panels.Add(&panel);
-			for (auto& font : scriptFile.GetFonts())		Fonts.Add(&font);
-			for (auto& effect : scriptFile.GetEffects())	Effects.Add(&effect);
-		}
-		else
+		ScriptFiles.Reserve(files.GetSize());
+
+		for (auto& file : files)
 		{
-			ScriptFiles.PopBack();
+			FeScriptFile& scriptFile = ScriptFiles.Add();
+			auto iRes = FeJsonParser::DeserializeObject(scriptFile, file, FE_HEAPID_UI);
+
+			if (iRes == FeEReturnCode::Success)
+			{
+				pRenderingModule->LoadEffects(scriptFile.GetEffects());
+				for (auto Template : scriptFile.GetTemplates())
+				{
+					if (!Template->GetName().IsEmpty())
+					{
+						if (Templates.find(Template->GetName().Id()) == Templates.end())
+						{
+							Templates[Template->GetName().Id()] = Template.Get();
+						}
+					}
+				}
+				for (auto& Panel : scriptFile.GetPanels())
+				{
+					FeUiRootPanel& NewPanel = RootPanels.Add();
+					
+					NewPanel.RenderBatch.GeometryInstances.Reserve(1024);
+					NewPanel.RenderBatch.Viewport = &pRenderingModule->GetDefaultViewport();
+					NewPanel.Panel = Panel.Get();
+				}
+			}
+			else
+			{
+				ScriptFiles.PopBack();
+			}
 		}
 	}
 
-	for (auto& script : ScriptFiles)
+	// Compute nodes traversal
+	for (auto& panel : RootPanels)
+		TraverseElements(panel);
+
+	for (auto& panel : RootPanels)
 	{
-		TraverseElements(script, TraversalList); // add all ui elments to flat list
+		for (auto& pNode : panel.TraversalList.Nodes)
+			pNode->Current->PostTraversal(panel, pNode);
 	}
 
 	ComputeRenderingInstances();
 	
+	// Create font resouces
 	for (auto& script : ScriptFiles)
 	{
-		// Create font resouces
 		for (auto& uiFont : script.GetFonts())
 		{
 			FeRenderLoadingResource resource;
@@ -179,47 +231,54 @@ uint32 FeModuleUi::ReloadScripts()
 			pResourcesHandler->LoadResource(resource);
 		}
 	}
+	
+	for (auto& panel : RootPanels)
+	{
+		for (auto& pNode : panel.TraversalList.Nodes)
+			pNode->Current->PreApplyBindingByType(panel, pNode);
+	}
+
 	// Apply data binding (texture, font, text,...)
 	ApplyBindingByType(FeETargetPropertyType::Font);
 	ApplyBindingByType(FeETargetPropertyType::Image);
 	ApplyBindingByType(FeETargetPropertyType::Other);
 	ApplyBindingByType(FeETargetPropertyType::Text);
 
-	for (auto& node : TraversalList.Nodes)
+	for (auto& panel : RootPanels)
 	{
-		if (node.FontResource)
-		{
-			if (node.GeometryInstance->Textures[0] == 0 &&
-				node.GeometryInstance->Textures[1] == 0)
-				node.IsCulled = true;
-		}
+		for (auto& pNode : panel.TraversalList.Nodes)
+			pNode->Current->PostInitialize(panel, pNode);
 	}
 
 	return FeEReturnCode::Success;
 }
 void FeModuleUi::ApplyBindingByType(FeETargetPropertyType::Type type)
 {
-	for (auto& node : TraversalList.Nodes)
+
+	for (auto& panel : RootPanels)
 	{
-		for (auto& dataBind : node.Current->GetBindings())
+		for (auto& pNode : panel.TraversalList.Nodes)
 		{
-			auto eTargetPropertyType = GetTargetPropertyType(dataBind.GetTarget());
-
-			if (eTargetPropertyType == type)
+			for (auto& dataBind : pNode->Current->GetBindings())
 			{
-				FeString sourceData = FetchBindingSourceData(dataBind.GetSource());
+				auto eTargetPropertyType = GetTargetPropertyType(dataBind.GetTarget());
 
-				if (!sourceData.IsEmpty())
+				if (eTargetPropertyType == type)
 				{
-					auto iRes = ApplyBindingToTargetProperty(node, sourceData, dataBind.GetTarget(), eTargetPropertyType);
-					if (iRes != FeEReturnCode::Success)
-					{
-						FeUiDefferedApplyBinding& deffered = DefferedApplyBindingData.Add();
+					FeString sourceData = FetchBindingSourceData(dataBind.GetSource());
 
-						deffered.SourceData = sourceData;
-						deffered.BindingTarget = &dataBind.GetTarget();
-						deffered.TargetPropertyType = type;
-						deffered.TraversalNode = &node;
+					if (!sourceData.IsEmpty())
+					{
+						auto iRes = ApplyBindingToTargetProperty(panel, pNode, sourceData, dataBind.GetTarget(), eTargetPropertyType);
+						if (iRes != FeEReturnCode::Success)
+						{
+							FeUiDefferedApplyBinding& deffered = panel.DefferedApplyBindingData.Add();
+
+							deffered.SourceData = sourceData;
+							deffered.BindingTarget = &dataBind.GetTarget();
+							deffered.TargetPropertyType = type;
+							deffered.TraversalNode = pNode;
+						}
 					}
 				}
 			}
@@ -246,12 +305,11 @@ FeETargetPropertyType::Type FeModuleUi::GetTargetPropertyType(const FeUiBinding&
 	}
 	return FeETargetPropertyType::Other;
 }
-uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, const FeString& sourceData, const FeUiBinding& targetBinding, FeETargetPropertyType::Type type)
+uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiRootPanel& RootPanel, FeUiElementTraversalNode* pNode, const FeString& sourceData, const FeUiBinding& targetBinding, FeETargetPropertyType::Type type)
 {
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	auto pRenderer = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	FeUiElementTraversalNode* pNode = &node;
 	const FeTArray<FeString>& targetPath = targetBinding.GetPath();
 	const FeString& targetProperty = targetBinding.GetProperty();
 
@@ -308,7 +366,7 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 		} break;
 		case FeETargetPropertyType::Text:
 		{
-			return GenerateTextRenderingNodes(*pNode, sourceData);
+			return GenerateTextRenderingNodes(RootPanel, pNode, sourceData);
 		} break;
 		case FeETargetPropertyType::Other:
 		{
@@ -318,12 +376,12 @@ uint32 FeModuleUi::ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, 
 
 	return FeEReturnCode::Success;
 }
-uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, const FeString& sourceData)
+uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiRootPanel& RootPanel, FeUiElementTraversalNode* pNode, const FeString& sourceData)
 {
 	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
 	auto pRenderer = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
 
-	const FeRenderResource* pResource = pResourcesHandler->GetResource(node.FontResource);
+	const FeRenderResource* pResource = pResourcesHandler->GetResource(pNode->FontResource);
 	
 	if (!pResource || pResource->LoadingState != FeEResourceLoadingState::Loaded)
 		return FeEReturnCode::Failed;
@@ -333,7 +391,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	
 	uint32 iTextLen = strlen(szText);
 
-	FeUiElement* pCurrent = node.Current;
+	FeUiElement* pCurrent = pNode->Current;
 	auto& resolution = pRenderer->GetDevice().GetNativeResolution();
 
 	FeVector2 vRes(1.0f / (float)resolution.w, 1.0f / (float)resolution.h);
@@ -342,7 +400,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	float fLineSpace = pFontData->LineSpace*vRes[1];
 	float fSpace = pFontData->Space*vRes[0];
 	float fInterval = pFontData->Interval*vRes[0];
-	float fLineSizeX = pCurrent->GetTransform().Scale.mData[0];
+	float fLineSizeX = pNode->TraversalTransform.Scale.getData()[0];
 	
 	FeRotation	r;
 	FeVector3 tOffset;
@@ -387,16 +445,16 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 			charData.Width*vMapSize[0],
 			charData.Height*vMapSize[1]);
 
-		FeRenderGeometryInstance& geomInstance = RenderBatches[0].GeometryInstances.Add();
+		FeRenderGeometryInstance& geomInstance = RootPanel.RenderBatch.GeometryInstances.Add();
 		geomInstance.Reset();
 
 		// todo@mazingr : create text pre rendered batch
-		geomInstance.Owner = &node;
+		geomInstance.Owner = &pNode;
 
 		geomInstance.Effect = pCurrent->GetFontEffect().Id();
 		geomInstance.Geometry = FeGeometryHelper::GetStaticGeometry(FeEGemetryDataType::Quad);
-		//geomInstance.Textures.Add(node.RenderInstance->FontResource);
-		geomInstance.Textures[0] = node.FontResource;
+		//geomInstance.Textures.Add(pNode.RenderInstance->FontResource);
+		geomInstance.Textures[0] = pNode->FontResource;
 		geomInstance.UserData = vCharData;
 
 		float fCharWidth = charData.Width *vRes[0];
@@ -405,7 +463,7 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 		float fCharX = charData.OffsetLeft*vRes[0];
 		float fCharY = fSize-charData.OffsetTop*vRes[1];
 		
-		FeVector3	t = pCurrent->GetTransform().Translation;
+		FeVector3	t = pNode->TraversalTransform.Translation;
 		FeVector3	s(fCharWidth, fCharHeight, 1.0f);
 
 		t[0] += tOffset[0] + fCharX;
@@ -417,21 +475,38 @@ uint32 FeModuleUi::GenerateTextRenderingNodes(FeUiElementTraversalNode& node, co
 	}
 	return FeEReturnCode::Success;
 }
+int DbResultCallback(void *userData, int argc, char **argv, char **azColName)
+{
+	FeString* result = (FeString*)userData;
+
+	if (argc >= 1)
+	{
+		*result = argv[0];
+	}
+	return 0;
+};
+
 FeString FeModuleUi::FetchBindingSourceData(const FeUiBinding& binding)
 {
 	FeString strResult;
-
+	
 	switch (binding.GetType())
 	{
-		case FeEUiBindingType::Source_Static:
+		case FeEUiBindingType::Static:
 		{
 			strResult = binding.GetValue();
 		} break;
-		case FeEUiBindingType::Source_List:
+		case FeEUiBindingType::Database:
 		{
+			static char szSql[512];
+
+			memset(szSql, 0, 512);
+			sprintf_s(szSql, binding.GetValue().Cstr());
+			FeDatabase::StaticInstance.Execute(szSql, DbResultCallback, &strResult);
+
 			// todo : fetch value from database
 		} break;
-		case FeEUiBindingType::Source_Variable:
+		case FeEUiBindingType::Variable:
 		{
 			// todo : fetch value from database
 		} break;
@@ -442,7 +517,10 @@ FeString FeModuleUi::FetchBindingSourceData(const FeUiBinding& binding)
 uint32 FeModuleUi::Load(const FeModuleInit* initBase)
 {
 	auto init = (FeModuleUiInit*)initBase;
-	ReloadScripts();
+
+	RootPanels.Reserve(128);
+
+	ReloadScripts(); // <------ all the stuff is done here
 	//LoadUnitTest(0);
 
 	// register file watcher for script files
@@ -460,25 +538,84 @@ uint32 FeModuleUi::Update(const FeDt& fDt)
 	//UpdateUnitTest(0, fDt);
 
 	auto pRenderingModule = FeApplication::StaticInstance.GetModule<FeModuleRendering>();
-
+	
 	FeTArray<FeUiDefferedApplyBinding> failedApplies;
 
-	for (auto& apply : DefferedApplyBindingData)
+	for (auto& panel : RootPanels)
 	{
-		auto iRes = ApplyBindingToTargetProperty(*apply.TraversalNode, apply.SourceData, *apply.BindingTarget, apply.TargetPropertyType);
+		for (auto& apply : panel.DefferedApplyBindingData)
+		{
+			auto iRes = ApplyBindingToTargetProperty(panel, apply.TraversalNode, apply.SourceData, *apply.BindingTarget, apply.TargetPropertyType);
 
-		if (iRes != FeEReturnCode::Success)
-			failedApplies.Add(apply);
+			if (iRes != FeEReturnCode::Success)
+				failedApplies.Add(apply);
+		}
+
+		panel.DefferedApplyBindingData.Clear();
+		panel.DefferedApplyBindingData.Add(failedApplies);
+
+		// Compute inherited states
+		for (auto& pNode : panel.TraversalList.Nodes)
+		{
+			for (auto child : pNode->Children)
+			{
+				auto pCurrent = child->Current;
+
+				#define PROPAGATE_STATE(a) pCurrent->SetState(pCurrent->HasState(a) && pNode->Current->HasState(a), a);
+
+				PROPAGATE_STATE(FeEUiElementState::Visible);
+				PROPAGATE_STATE(FeEUiElementState::Enabled);
+				PROPAGATE_STATE(FeEUiElementState::Collapsed);
+				PROPAGATE_STATE(FeEUiElementState::Focused);
+				PROPAGATE_STATE(FeEUiElementState::Selected);
+			}
+		}
+
+
+		// Cull empty nodes (conainers)
+		//for (auto& pNode : panel.TraversalList.Nodes)
+		//{
+		//	pNode->IsCulled = true;
+
+		//	for (uint32 i = 0; i < FE_RENDERER_TEXTURES_CHANNELS_COUNT; ++i)
+		//	{
+		//		if (pNode->GeometryInstance->Textures[i] != 0)
+		//		{
+		//			pNode->IsCulled = false;
+		//			break;
+		//		}
+		//	}
+		//}
+
+		bool bHasNonCulledNode = false;
+
+		// Register all geometry to renderer
+		for (FeRenderGeometryInstance& geom : panel.RenderBatch.GeometryInstances)
+		{
+			geom.IsCulled = true;
+
+			for (uint32 i = 0; i < FE_RENDERER_TEXTURES_CHANNELS_COUNT; ++i)
+			{
+				if (geom.Textures[i] != 0)
+				{
+					geom.IsCulled = false;
+					bHasNonCulledNode = true;
+					break;
+				}
+			}
+
+			//FeUiElementTraversalNode* pNode = (FeUiElementTraversalNode*)geom.Owner;
+			//geom.IsCulled = pNode->IsCulled;
+			//
+			//if (!geom.IsCulled)
+			//	bHasNonCulledNode = false;
+		}
+		if (bHasNonCulledNode)
+		{
+			pRenderingModule->RegisterRenderBatch(&panel.RenderBatch);
+		}
 	}
 
-	DefferedApplyBindingData.Clear();
-	DefferedApplyBindingData.Add(failedApplies);
-
-	// Register all geometry to renderer
-	for (auto& batch : RenderBatches)
-	{
-		pRenderingModule->RegisterRenderBatch(&batch);
-	}
 
 	return FeEReturnCode::Success;
 }

@@ -1,0 +1,204 @@
+{
+	"Fonts" :
+	[
+		{
+			"Name" : "Font_Default0",
+			"Size" : 22,
+			"Interval" : 1,
+			"LineSpace" : 2,
+			"Space" : 8,
+			"TrueTypeFile" : "themes/common/fonts/calibrib.ttf"
+		}	
+	],
+	"Panels" :
+	[
+		{
+			"_serialize_type_" : "FeUiPanel",
+			"Name" : "Background",
+			"Effect" : "Background_03",
+			"Transform" : 
+			{
+				"T" : [0.0,		0.0,	0.1],
+				"S" : [1.0,		1.0,	1.0]
+			},
+			"Children" : []
+		},
+		{
+			"_serialize_type_" : "FeUiPanel",
+			"Name" : "Background",
+			"Effect" : "Effect_Default",
+			"FontEffect" : "Effect_Default_Font",
+			"Transform" : 
+			{
+				"T" : [0.0,	0.0,	0.0],
+				"S" : [1,	1.0,	1.0]
+			},
+			"Bindings" :
+			[
+				{
+					"Source" : 
+					{
+						"Type" : "Static",
+						"Value" :"Font_Default0"
+					},
+					"Target" : 
+					{
+						"Path" : ["Text"],
+						"Property" :"Font",
+						"Index" :0
+					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Static",
+						"Value" :"Most."
+					},
+					"Target" : 
+					{
+						"Path" : ["Text"],
+						"Property" :"Text",
+						"Index" :0
+					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Static",
+						"Value" : "test/textures/boxfronts/game_1873482493.dds"
+					},
+					"Target" : 
+					{
+						"Path" : ["Image"],
+						"Property" :"Image",
+						"Index" :0
+					}
+				},
+				{
+					"Source" : 
+					{
+						"Type" : "Static",
+						"Value" : "test/textures/boxfronts/game_-1019023171.dds"
+					},
+					"Target" : 
+					{
+						"Path" : ["Image2"],
+						"Property" :"Image",
+						"Index" :0
+					}
+				}
+			],
+			"Children" : 
+			[
+				{
+					"Name" : "Image",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default",
+					"Transform" : 
+					{
+						"T" : [0.2,		0.2,	-0.01],
+						"S" : [0.3,		0.8,	1.0]
+					}
+				},
+				{
+					"Name" : "Image2",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default",
+					"Transform" : 
+					{
+						"T" : [0.6,		0.2,	-0.01],
+						"S" : [0.3,		0.8,	1.0]
+					}
+				},
+				{
+					"Name" : "Text",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default",
+					"Transform" : 
+					{
+						"T" : [0.1,		0.0,	-0.02],
+						"S" : [0.8,		0.8,	1.0]
+					}
+				}
+			]
+		},
+		{
+			"_serialize_type_" : "FeUiPanel",
+			"Effect" : "Effect_Default",
+			"FontEffect" : "Effect_Default_Font",
+			"Transform" : 
+			{
+				"T" : [0.0,		0.0,	0.0],
+				"S" : [0.3,		0.2,	1.0]
+			},
+			"Bindings" :
+			[
+				{
+					"Source" : 
+					{
+						"Type" : "Static",
+						"Value" :"Font_Default0"
+					},
+					"Target" : 
+					{
+						"Path" : ["Text"],
+						"Property" :"Font",
+						"Index" :0
+					}
+				},
+				{
+					"Source" :
+					{
+						"Type" : "Database",
+						"Value" :"SELECT Name Adult FROM FeDataGame WHERE ID<10"
+					},
+					"Target" : 
+					{
+						"Path" : ["Text"], 
+						"Property" :"Text",
+						"Index" :0
+					}
+				}
+			],
+			"Children" : 
+			[
+				{
+					"Name" : "Text",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default"
+				}
+			]
+		}
+	],
+	"Effects" :
+	[
+		{
+			"Name" : "Effect_Default",
+			"TextureLevels" : 1,
+			"UseAlphaBlending" : true,
+			"File" : "themes/common/shaders/default.fx"
+		},
+		{
+			"Name" : "Effect_Default_Font",
+			"TextureLevels" : 1,
+			"UseAlphaBlending" : true,
+			"File" : "themes/common/shaders/default_font.fx",
+			"Type" : "Font"
+		}
+		,{
+			"Name" : "Background_02",
+			"TextureLevels" : 0,
+			"File" : "themes/common/shaders/background02.fx"
+		}
+		,{
+			"Name" : "Background_03",
+			"TextureLevels" : 0,
+			"File" : "themes/common/shaders/background03.fx"
+		}
+		,{
+			"Name" : "Background_04",
+			"TextureLevels" : 0,
+			"File" : "themes/common/shaders/background04.fx"
+		}
+	]
+}

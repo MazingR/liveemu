@@ -1,48 +1,61 @@
+#pragma once
+
 #include <rendering/effect.hpp>
 #include <common/serializable.hpp>
 #include <common/maths.hpp>
-#include <uielement.hpp>
 
-class FeUiPanel : public FeUiElement
+struct FeETargetPropertyType
 {
-public:
-#define FeUiPanel_Properties(_d)		\
-	_d(FeNTArray<FeUiElement>, Children)	\
-
-	FE_DECLARE_CLASS_BODY(FeUiPanel_Properties, FeUiPanel, FeUiElement)
-};
-FE_DECLARE_CLASS_BOTTOM(FeUiPanel)
-
-class FeUiFont : public FeSerializable
-{
-public:
-	FeUiFont()
+	enum Type
 	{
-		Size = 32;
-		Space = 16;
-		Interval = 1;
-		LineSpace = 2;
-	}
-#define FeUiFont_Properties(_d)	\
-	_d(FeString, Name)			\
-	_d(FePath, TrueTypeFile)	\
-	_d(uint32, Size)			\
-	_d(uint32, Space)			\
-	_d(uint32, Interval)		\
-	_d(uint32, LineSpace)		\
-
-	FE_DECLARE_CLASS_BODY(FeUiFont_Properties, FeUiFont, FeSerializable)
+		Text,
+		Font,
+		Image,
+		Other,
+	};
 };
-FE_DECLARE_CLASS_BOTTOM(FeUiFont)
 
-class FeScriptFile : public FeSerializable
+struct FeEUiElementState
+{
+	enum Type
+	{
+		Visible = 1 << 0,
+		Enabled = 1 << 1,
+		Collapsed = 1 << 2,
+		Focused = 1 << 3,
+		Selected = 1 << 4,
+	};
+};
+
+#define FeEUiBindingType_Values(_d)		\
+		_d(FeEUiBindingType, Variable)	\
+		_d(FeEUiBindingType, Database)	\
+		_d(FeEUiBindingType, Static)	\
+
+FE_DECLARE_ENUM(FeEUiBindingType, FeEUiBindingType_Values)
+
+class FeUiBinding : public FeSerializable
 {
 public:
-#define FeScriptFile_Properties(_d)				\
-	_d(FeNTArray<FeUiPanel>,		Panels)		\
-	_d(FeNTArray<FeRenderEffect>,	Effects)	\
-	_d(FeNTArray<FeUiFont>,			Fonts)		\
+#define FeUiBinding_Properties(_d)				\
+		_d(FeNTArray<FeString>,		Path)		\
+		_d(FeString,				Property)	\
+		_d(uint32,					Index)		\
+		_d(FeString,				Value)		\
+		_d(FeEUiBindingType::Type,	Type)		\
 
-	FE_DECLARE_CLASS_BODY(FeScriptFile_Properties, FeScriptFile, FeSerializable)
+	FE_DECLARE_CLASS_BODY(FeUiBinding_Properties, FeUiBinding, FeSerializable)
 };
-FE_DECLARE_CLASS_BOTTOM(FeScriptFile)
+FE_DECLARE_CLASS_BOTTOM(FeUiBinding)
+
+class FeUiDataBinding : public FeSerializable
+{
+public:
+
+#define FeUiDataBinding_Properties(_d)		\
+		_d(FeUiBinding,	Source)				\
+		_d(FeUiBinding,	Target)				\
+
+	FE_DECLARE_CLASS_BODY(FeUiDataBinding_Properties, FeUiDataBinding, FeSerializable)
+};
+FE_DECLARE_CLASS_BOTTOM(FeUiDataBinding)

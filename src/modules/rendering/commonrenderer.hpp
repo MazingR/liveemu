@@ -246,23 +246,27 @@ struct FeGeometryTransform
 	FeMatrix4	Matrix;
 	static const FeMatrix4& IdentityMatrix();
 };
+#define FE_RENDERER_TEXTURES_CHANNELS_COUNT 2
+
 struct FeRenderGeometryInstance
 {
 	FeResourceId					Geometry;
 	FeResourceId					Effect;
 	FeGeometryTransform				Transform;
 	FeVector4						UserData;
-	FeResourceId					Textures[2];
+	FeResourceId					Textures[FE_RENDERER_TEXTURES_CHANNELS_COUNT];
+	bool							IsCulled;
 	void*							Owner;
 
 	void Reset()
 	{
+		IsCulled = false;
 		Geometry	= 0;
 		Effect		= 0;
 		Owner		= 0;
 		
-		Textures[0] = 0;
-		Textures[1] = 0;
+		for (uint32 i = 0; i < FE_RENDERER_TEXTURES_CHANNELS_COUNT;++i)
+			Textures[i] = 0;
 		
 		Transform.Matrix = FeGeometryTransform::IdentityMatrix();
 	}
@@ -274,4 +278,16 @@ namespace FeEGemetryDataType
 		Quad,
 		Count
 	};
+};
+
+struct FeRenderBatch
+{
+	FeTArray<FeRenderGeometryInstance> GeometryInstances;
+	const FeRenderViewport* Viewport;
+
+	FeRenderBatch()
+	{
+		GeometryInstances.Clear();
+		GeometryInstances.SetHeapId(FE_HEAPID_RENDERER);
+	}
 };

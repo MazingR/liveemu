@@ -115,7 +115,11 @@ void FeStringPool::CreateString(const char* szValue, FeString& output)
 }
 FeString FeStringPool::CreateString(const char* szValue)
 {
-	return FeString(*CreatePooledString(szValue));
+	FePooledString* pooledStr = CreatePooledString(szValue);
+	if (pooledStr)
+		return FeString(*pooledStr);
+	else
+		return FeString();
 }
 FeStringPool* FeStringPool::GetInstance()
 {

@@ -6,24 +6,32 @@
 #include <common/filesystem.hpp>
 
 #include <rendering/commonrenderer.hpp>
-#include <commonui.hpp>
 
-struct FeRenderBatch;
+#include <commonui.hpp>
+#include <uielement.hpp>
+#include <uiscriptfile.hpp>
 
 struct FeUiElementTraversalNode
 {
+	typedef FeTArray<FeUiElementTraversalNode*> TraversalArray;
+
 	FeUiElement*				Current;
 	FeUiElement*				Parent;
-
 	FeResourceId				FontResource;
 	bool						IsCulled;
+	TraversalArray				Children;
+	FeRenderGeometryInstance*	GeometryInstance;
+	FeTransform					TraversalTransform;
 
-	FeTArray<FeUiElementTraversalNode*>	Children;
+	bool IsRoot() { return Parent == nullptr; }
 
-	FeRenderGeometryInstance*			GeometryInstance;
-
-	FeUiElementTraversalNode() : Parent(nullptr), Current(nullptr), GeometryInstance(nullptr) {}
+	FeUiElementTraversalNode() :
+		Parent(nullptr),
+		Current(nullptr),
+		GeometryInstance(nullptr)
+	{}
 };
+
 struct FeUiDefferedApplyBinding
 {
 	FeString					SourceData;
@@ -31,9 +39,26 @@ struct FeUiDefferedApplyBinding
 	const FeUiBinding*			BindingTarget;
 	FeETargetPropertyType::Type TargetPropertyType;
 };
+
 struct FeUiElementTraversalList
 {
-	FeTArray<FeUiElementTraversalNode> Nodes;
+	FeTArray<FeUiElementTraversalNode*> Nodes;
+
+	FeUiElementTraversalNode* AddNode();
+
+	FeUiElementTraversalList();
+	~FeUiElementTraversalList();
+};
+
+struct FeUiRootPanel
+{
+	FeUiElementTraversalList			TraversalList;
+	FeRenderBatch						RenderBatch;
+	FeTArray<FeUiDefferedApplyBinding>	DefferedApplyBindingData;
+	FeUiPanel*							Panel;
+
+	FeUiRootPanel();
+	~FeUiRootPanel();
 };
 
 struct FeModuleUiInit : public FeModuleInit
@@ -53,22 +78,17 @@ public:
 private:
 	uint32 LoadUnitTest(uint32 iTest);
 	uint32 UpdateUnitTest(uint32 iTest, const FeDt& fDt);
-	void TraverseElements(FeScriptFile& script, FeUiElementTraversalList& traversal);
+	void TraverseElements(FeUiRootPanel& RootPanel);
 	FeString FetchBindingSourceData(const FeUiBinding& binding);
-	uint32 ApplyBindingToTargetProperty(FeUiElementTraversalNode& node, const FeString& sourceData, const FeUiBinding& targetBinding, FeETargetPropertyType::Type type);
+	
+	uint32 ApplyBindingToTargetProperty(FeUiRootPanel& RootPanel, FeUiElementTraversalNode* node, const FeString& sourceData, const FeUiBinding& targetBinding, FeETargetPropertyType::Type type);
 	FeETargetPropertyType::Type GetTargetPropertyType(const FeUiBinding& targetBinding);
 	void ComputeRenderingInstances();
+
 	void ApplyBindingByType(FeETargetPropertyType::Type type);
-	uint32 GenerateTextRenderingNodes(FeUiElementTraversalNode& node, const FeString& sourceData);
+	uint32 GenerateTextRenderingNodes(FeUiRootPanel& RootPanel, FeUiElementTraversalNode* node, const FeString& sourceData);
 private:
-	FeNTArray<FeScriptFile>				ScriptFiles;
-	FeTArray<FeRenderBatch>				RenderBatches;
-	
-	FeTArray<FeUiPanel*>			Panels;
-	FeTArray<FeRenderEffect*>		Effects;
-	FeTArray<FeUiFont*>				Fonts;
-
-	FeUiElementTraversalList		TraversalList;
-
-	FeTArray<FeUiDefferedApplyBinding> DefferedApplyBindingData;
+	FeNTArray<FeScriptFile>			ScriptFiles;
+	FeNTArray<FeUiRootPanel>		RootPanels;
+	std::map<uint32, FeUiTemplate*>	Templates;
 };

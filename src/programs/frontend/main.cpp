@@ -43,16 +43,16 @@ uint32 FeApplication::Load(const FeApplicationInit& appInit)
 		FE_FAILEDRETURN(pModule->Load(&init));
 	}
 	{
+		FeModuleScrapingInit init;
+		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleScraping>(init));
+	}
+	{
 		FeModuleInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleRenderResourcesHandler>(init));
 	}
 	{
 		FeModuleUiInit init;
 		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleUi>(init));
-	}
-	{
-		FeModuleScrapingInit init;
-		FE_FAILEDRETURN(CreateAndLoadModule<FeModuleScraping>(init));
 	}
 
 	return FeEReturnCode::Success;

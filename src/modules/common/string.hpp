@@ -65,6 +65,7 @@ public:
 		if (Pooled)
 			Pooled->RefCount++;
 	}
+
 private:
 	FePooledString* Pooled;
 };

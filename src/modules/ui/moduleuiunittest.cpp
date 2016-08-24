@@ -8,37 +8,37 @@
 
 uint32 FeModuleUi::LoadUnitTest(uint32 iTest)
 {
-	FeTArray<FePath> files;
-	files.SetHeapId(FE_HEAPID_RENDERER);
+	//FeTArray<FePath> files;
+	//files.SetHeapId(FE_HEAPID_RENDERER);
 
-	FeFileTools::ListFilesRecursive(files, "../data/test/textures/boxfronts", "*.jpg");
-	FeFileTools::ListFilesRecursive(files, "../data/test/textures/bb2VFX", "*");
-	uint32 iTexturesCount = files.GetSize();
-	//iTexturesCount = 5;
+	//FeFileTools::ListFilesRecursive(files, "../data/test/textures/boxfronts", "*.jpg");
+	//FeFileTools::ListFilesRecursive(files, "../data/test/textures/bb2VFX", "*");
+	//uint32 iTexturesCount = files.GetSize();
+	////iTexturesCount = 5;
 
-	// Creat textures
-	auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
-	
-	const int InstancesCount = 1;
-	FeString szEffect = FeStringPool::GetInstance()->CreateString("Default");
+	//// Creat textures
+	//auto pResourcesHandler = FeApplication::StaticInstance.GetModule<FeModuleRenderResourcesHandler>();
+	//
+	//const int InstancesCount = 1;
+	//FeString szEffect = FeStringPool::GetInstance()->CreateString("Default");
 
-	for (uint32 i = 0; i < InstancesCount; ++i)
-	{
-		auto pPanel = FE_NEW(FeUiPanel, 1);
-		Panels.Add(pPanel);
+	//for (uint32 i = 0; i < InstancesCount; ++i)
+	//{
+	//	auto pPanel = FE_NEW(FeUiPanel, 1);
+	//	Panels.Add(pPanel);
 
-		pPanel->SetEffect(szEffect);
+	//	pPanel->SetEffect(szEffect);
 
-		if (iTexturesCount>0)
-		{
-			FeRenderLoadingResource resLoading;
-			resLoading.Type = FeEResourceType::Texture;
-			uint32 iTexIdx = i % iTexturesCount;
-			resLoading.Path = files[iTexIdx];
-			
-			pResourcesHandler->LoadResource(resLoading); 
-		}
-	}
+	//	if (iTexturesCount>0)
+	//	{
+	//		FeRenderLoadingResource resLoading;
+	//		resLoading.Type = FeEResourceType::Texture;
+	//		uint32 iTexIdx = i % iTexturesCount;
+	//		resLoading.Path = files[iTexIdx];
+	//		
+	//		pResourcesHandler->LoadResource(resLoading); 
+	//	}
+	//}
 
 	return FeEReturnCode::Success;
 }

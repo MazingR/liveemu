@@ -8,64 +8,30 @@
 			"LineSpace" : 2,
 			"Space" : 8,
 			"TrueTypeFile" : "themes/common/fonts/calibrib.ttf"
-		}	
+		}		
 	],
 	"Panels" :
 	[
 		{
-			"Effect" : "Background_03",
-			"Transform" : 
-			{
-				"T" : [0.0,		0.0,	0.1],
-				"S" : [1.0,		1.0,	1.0]
-			},
-			"Children" : []
-		},
-		{
+			"_serialize_type_" : "FeUiPanel",
 			"Effect" : "Effect_Default",
 			"FontEffect" : "Effect_Default_Font",
 			"Transform" : 
 			{
-				"T" : [0.0,	0.0,	0.0],
-				"S" : [1,	1.0,	1.0]
+				"T" : [0.1,		0.0,	0.0],
+				"S" : [0.4,		1.0,	1.0]
 			},
 			"Bindings" :
 			[
 				{
 					"Source" : 
 					{
-						"Type" : "Source_Static",
-						"Value" :"Font_Default0"
-					},
-					"Target" : 
-					{
-						"Path" : ["Text"],
-						"Property" :"Font",
-						"Index" :0
-					}
-				},
-				{
-					"Source" : 
-					{
-						"Type" : "Source_Static",
-						"Value" :"Most emulators just emulate a hardware architecture—if operating system firmware or software is required for the desired software, it must be provided as well (and may itself be emulated). Both the OS and the software will then be interpreted by the emulator, rather than being run by native hardware. Apart from this interpreter for the emulated binary machine's language, some other hardware (such as input or output devices) must be provided in virtual form as well; for example, if writing to a specific memory location should influence what is displayed on the screen, then this would need to be emulated.\n\nWhile emulation could, if taken to the extreme, go down to the atomic level, basing its output on a simulation of the actual circuitry from a virtual power source, this would be a highly unusual solution. Emulators typically stop at a simulation of the documented hardware specifications and digital logic. Sufficient emulation of some hardware platforms requires extreme accuracy, down to the level of individual clock cycles, undocumented features, unpredictable analog elements, and implementation bugs. This is particularly the case with classic home computers such as the Commodore 64, whose software often depends on highly sophisticated low-level programming tricks invented by game programmers and the demoscene.\n\nIn contrast, some other platforms have had very little use of direct hardware addressing. In these cases, a simple compatibility layer may suffice. This translates system calls for the emulated system into system calls for the host system e.g., the Linux compatibility layer used on *BSD to run closed source Linux native software on FreeBSD, NetBSD and OpenBSD. For example, while the Nintendo 64 graphic processor was fully programmable, most games used one of a few pre-made programs, which were mostly self-contained and communicated with the game via FIFO; therefore, many emulators do not emulate the graphic processor at all, but simply interpret the commands received from the CPU as the original program would.\n\nDevelopers of software for embedded systems or video game consoles often design their software on especially accurate emulators called simulators before trying it on the real hardware. This is so that software can be produced and tested before the final hardware exists in large quantities, so that it can be tested without taking the time to copy the program to be debugged at a low level and without introducing the side effects of a debugger. In many cases, the simulator is actually produced by the company providing the hardware, which theoretically increases its accuracy.\n\nMath coprocessor emulators allow programs compiled with math instructions to run on machines that don't have the coprocessor installed, but the extra work done by the CPU may slow the system down. If a math coprocessor isn't installed or present on the CPU, when the CPU executes any coprocessor instruction it will make a determined interrupt (coprocessor not available), calling the math emulator routines. When the instruction is successfully emulated, the program continues executing.Most emulators just emulate a hardware architecture—if operating system firmware or software is required for the desired software, it must be provided as well (and may itself be emulated). Both the OS and the software will then be interpreted by the emulator, rather than being run by native hardware. Apart from this interpreter for the emulated binary machine's language, some other hardware (such as input or output devices) must be provided in virtual form as well; for example, if writing to a specific memory location should influence what is displayed on the screen, then this would need to be emulated.\n\nWhile emulation could, if taken to the extreme, go down to the atomic level, basing its output on a simulation of the actual circuitry from a virtual power source, this would be a highly unusual solution. Emulators typically stop at a simulation of the documented hardware specifications and digital logic. Sufficient emulation of some hardware platforms requires extreme accuracy, down to the level of individual clock cycles, undocumented features, unpredictable analog elements, and implementation bugs. This is particularly the case with classic home computers such as the Commodore 64, whose software often depends on highly sophisticated low-level programming tricks invented by game programmers and the demoscene.\n\nIn contrast, some other platforms have had very little use of direct hardware addressing. In these cases, a simple compatibility layer may suffice. This translates system calls for the emulated system into system calls for the host system e.g., the Linux compatibility layer used on *BSD to run closed source Linux native software on FreeBSD, NetBSD and OpenBSD. For example, while the Nintendo 64 graphic processor was fully programmable, most games used one of a few pre-made programs, which were mostly self-contained and communicated with the game via FIFO; therefore, many emulators do not emulate the graphic processor at all, but simply interpret the commands received from the CPU as the original program would.\n\nDevelopers of software for embedded systems or video game consoles often design their software on especially accurate emulators called simulators before trying it on the real hardware. This is so that software can be produced and tested before the final hardware exists in large quantities, so that it can be tested without taking the time to copy the program to be debugged at a low level and without introducing the side effects of a debugger. In many cases, the simulator is actually produced by the company providing the hardware, which theoretically increases its accuracy.\n\nMath coprocessor emulators allow programs compiled with math instructions to run on machines that don't have the coprocessor installed, but the extra work done by the CPU may slow the system down. If a math coprocessor isn't installed or present on the CPU, when the CPU executes any coprocessor instruction it will make a determined interrupt (coprocessor not available), calling the math emulator routines. When the instruction is successfully emulated, the program continues executing."
-					},
-					"Target" : 
-					{
-						"Path" : ["Text"],
-						"Property" :"Text",
-						"Index" :0
-					}
-				},
-				{
-					"Source" : 
-					{
-						"Type" : "Source_Static",
+						"Type" : "Static",
 						"Value" : "test/textures/boxfronts/game_1873482493.dds"
 					},
 					"Target" : 
 					{
-						"Path" : ["Image"],
+						"Path" : ["Background"],
 						"Property" :"Image",
 						"Index" :0
 					}
@@ -73,65 +39,7 @@
 				{
 					"Source" : 
 					{
-						"Type" : "Source_Static",
-						"Value" : "test/textures/boxfronts/game_-1019023171.dds"
-					},
-					"Target" : 
-					{
-						"Path" : ["Image2"],
-						"Property" :"Image",
-						"Index" :0
-					}
-				}
-			],
-			"Children" : 
-			[
-				{
-					"Name" : "Image",
-					"_serialize_type_" : "FeUiPanel",
-					"Effect" : "Effect_Default",
-					"Transform" : 
-					{
-						"T" : [0.2,		0.2,	-0.01],
-						"S" : [0.3,		0.8,	1.0]
-					}
-				},
-				{
-					"Name" : "Image2",
-					"_serialize_type_" : "FeUiPanel",
-					"Effect" : "Effect_Default",
-					"Transform" : 
-					{
-						"T" : [0.6,		0.2,	-0.01],
-						"S" : [0.3,		0.8,	1.0]
-					}
-				},
-				{
-					"Name" : "Text",
-					"_serialize_type_" : "FeUiPanel",
-					"Effect" : "Effect_Default",
-					"Transform" : 
-					{
-						"T" : [0.1,		0.0,	-0.02],
-						"S" : [0.8,		0.8,	1.0]
-					}
-				}
-			]
-		},
-		{
-			"Effect" : "Effect_Default",
-			"FontEffect" : "Effect_Default_Font",
-			"Transform" : 
-			{
-				"T" : [0.0,		0.0,	0.0],
-				"S" : [0.3,		0.2,	1.0]
-			},
-			"Bindings" :
-			[
-				{
-					"Source" : 
-					{
-						"Type" : "Source_Static",
+						"Type" : "Static",
 						"Value" :"Font_Default0"
 					},
 					"Target" : 
@@ -144,8 +52,8 @@
 				{
 					"Source" :
 					{
-						"Type" : "Source_Static",
-						"Value" :"Here is another line."
+						"Type" : "Static",
+						"Value" :"Hanc regionem praestitutis celebritati diebus invadere parans dux ante edictus per solitudines Aboraeque amnis herbidas ripas, suorum indicio proditus, qui admissi flagitii metu exagitati ad praesidia descivere Romana. absque ullo egressus effectu deinde tabescebat immobilis."
 					},
 					"Target" : 
 					{
@@ -158,6 +66,21 @@
 			"Children" : 
 			[
 				{
+					"Transform" : 
+					{
+						"T" : [0.0,		0.0,	0.1],
+						"S" : [1.0,		1.0,	1.0]
+					},
+					"Name" : "Background",
+					"_serialize_type_" : "FeUiPanel",
+					"Effect" : "Effect_Default"
+				},
+				{
+					"Transform" : 
+					{
+						"T" : [0.0,		0.0,	0.0],
+						"S" : [1.0,		1.0,	1.0]
+					},
 					"Name" : "Text",
 					"_serialize_type_" : "FeUiPanel",
 					"Effect" : "Effect_Default"

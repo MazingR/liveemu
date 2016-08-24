@@ -4,6 +4,8 @@
 #include <jsonparser.hpp>
 #include "maths.hpp"
 
+#define EMPTY_MACRO
+
 // -------------------------------------------------------------------------------------------------------------------------
 // Class declaration preprocessing for serialization
 // -------------------------------------------------------------------------------------------------------------------------
@@ -139,9 +141,9 @@ void ComputeSqlPropertyValue(const FeTPtr<FeSerializable>* pValue, const char* s
 	{																														\
 		void* Value = baseClass::GetPropertyValueByName(szName);															\
 		if (!Value)																											\
-		{																													\
+				{																													\
 			properties(DECLARE_REFLECTION_PROPERTY)																			\
-		}																													\
+				}																													\
 		return Value;																										\
 	}																														\
 
@@ -164,6 +166,7 @@ void ComputeSqlPropertyValue(const FeTPtr<FeSerializable>* pValue, const char* s
 /// Declares the properties of a class with serialization functions following the 3 steps defined above
 /// </summary>
 #define FE_DECLARE_CLASS_BODY(properties, thisClass, baseClass)	\
+	typedef baseClass Super;									\
 	public:														\
 	static const char* ClassName() { return #thisClass; }		\
 	protected:													\

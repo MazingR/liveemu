@@ -23,18 +23,6 @@ struct FeRenderDebugInfos
 	uint32 GeometryBind;
 };
 
-struct FeRenderBatch
-{
-	FeTArray<FeRenderGeometryInstance> GeometryInstances;
-	const FeRenderViewport* Viewport;
-
-	FeRenderBatch()
-	{
-		GeometryInstances.Clear();
-		GeometryInstances.SetHeapId(FE_HEAPID_RENDERER);
-	}
-};
-
 struct FeModuleRenderingInit : public FeModuleInit
 {
 public:
